@@ -1,7 +1,6 @@
 name: Build Windows installer
 
 on:
-  push:
   workflow_dispatch:
 
 jobs:
