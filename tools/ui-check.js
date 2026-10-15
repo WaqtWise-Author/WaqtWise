@@ -1233,6 +1233,37 @@ async function setTime(page, hour, minute, ampm) {
     await a.browser.close();
   });
 
+  await step('Settings: the top bar and the section index stay whole and in place from the top of the page to the bottom', async () => {
+    const svc = createService();
+    exampleSeed(svc);
+    const a = await openApp({ playwright, service: svc, executablePath, width: 1100, height: 700 });
+    const p = a.page;
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.waitForSelector('.settings-nav');
+    const measure = () => p.evaluate(() => {
+      const r = (sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), height: Math.round(b.height) }; };
+      return { bar: r('.topbar'), nav: r('.settings-nav'), y: Math.round(window.scrollY) };
+    });
+    // Scroll in steps, all the way down, checking every time.
+    let last = -1;
+    for (let i = 0; i < 40; i++) {
+      const m = await measure();
+      assert.equal(m.bar.top, 32, `the top bar stays right under the title bar (scrolled ${m.y}px)`);
+      assert.ok(m.nav.top >= m.bar.bottom, `the section index is never behind the top bar (scrolled ${m.y}px)`);
+      if (m.y > 300) assert.equal(m.nav.top, m.bar.bottom, `the section index sits directly under the top bar (scrolled ${m.y}px)`);
+      assert.ok(m.nav.height >= 44, `the section index keeps its full height (scrolled ${m.y}px)`);
+      if (m.y === last) break;
+      last = m.y;
+      await p.mouse.move(600, 400);
+      await p.mouse.wheel(0, 500);
+      await p.waitForTimeout(80);
+    }
+    assert.ok(last > 1500, `the page really was scrolled a long way (${last}px)`);
+    assert.deepEqual(realErrors(a.errors), []);
+    await a.browser.close();
+  });
+
   console.log('Arabic');
   await step('switching to Arabic turns the whole app right-to-left with Western digits, and back again', async () => {
     const arService = createService();

@@ -105,7 +105,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+/* The page is as tall as its content (min-height, not height), so the sticky top bar and the Settings index
+   stay in place all the way down instead of leaving with the first screenful. */
+html { height: 100%; }
+body { min-height: 100%; }
 
 body {
   margin: 0;
