@@ -1,0 +1,28 @@
+name: Build Windows installer
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        shell: bash
+        # npm ci installs exactly what package-lock.json lists, and stops with a clear error if the file is missing
+        run: npm ci
+      - name: Build the installer
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Keep the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: WaqtWise-Installer
+          path: dist/*.exe
+          if-no-files-found: error
