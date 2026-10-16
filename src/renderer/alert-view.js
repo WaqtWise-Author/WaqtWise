@@ -7,7 +7,7 @@
   const { h, clear, T, TP } = WW;
 
   function fontStack(name) {
-    return `'${name}', 'Segoe UI', Tahoma, Arial, sans-serif`;
+    return `'${name}', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif`;
   }
 
   // Applies the user's choices to the stage element.

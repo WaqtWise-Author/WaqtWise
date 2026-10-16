@@ -14,6 +14,11 @@
 @font-face { font-family: 'Plus Jakarta Sans'; font-weight: 700; font-style: normal; font-display: swap; src: url('fonts/PlusJakartaSans-latin-ext-700.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: 'Plus Jakarta Sans'; font-weight: 800; font-style: normal; font-display: swap; src: url('fonts/PlusJakartaSans-latin-ext-800.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 
+/* IBM Plex Sans Arabic (SIL Open Font License, see fonts-arabic/LICENSE-IBMPlexSansArabic.txt): only the Arabic letters use it; English letters and digits stay in the main font. Weights 800 and 500 use the nearest one. */
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts-arabic/ibm-plex-sans-arabic-regular.woff') format('woff'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+060C, U+061B, U+061F; }
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-weight: 600; font-style: normal; font-display: swap; src: url('fonts-arabic/ibm-plex-sans-arabic-semibold.woff') format('woff'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+060C, U+061B, U+061F; }
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-weight: 700; font-style: normal; font-display: swap; src: url('fonts-arabic/ibm-plex-sans-arabic-bold.woff') format('woff'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+060C, U+061B, U+061F; }
+
 :root {
   /* Shape and size scale, shared by every screen:
      cards, dialogs and settings sections use --r-card; buttons, inputs and segmented controls use --r-ctl at --ctl-h;
@@ -21,7 +26,7 @@
   --r-card: 22px; --r-ctl-lg: 14px; --r-ctl: 12px; --r-sm: 10px;
   --ctl-h: 40px; --ctl-h-lg: 44px;
   --gap-card: 18px;
-  --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, Roboto, 'Noto Sans Arabic', Arial, sans-serif;
+  --font: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
   /* light (default) */
   --bg: #edf4f6;
   --surface: #ffffff;
@@ -646,7 +651,6 @@ input.onoff:checked ~ .onoff-state { color: var(--accent); }
 /* Arabic: the screen reads right to left. The title bar and the window buttons stay as Windows draws them. */
 .titlebar { direction: ltr; }
 :root[dir='rtl'] .drawer { box-shadow: -8px 0 32px rgba(7, 26, 46, 0.28); }
-:root[dir='rtl'] body { font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', system-ui, sans-serif; }
 :root[dir='rtl'] * { letter-spacing: 0 !important; } /* spaced letters would break Arabic joining */
 :root[dir='rtl'] .popover h3, :root[dir='rtl'] .day-chip-wd { text-transform: none; }
 .lang-switch { direction: ltr; }

@@ -16,6 +16,6 @@ Open: the exact list of countries and cities to add.
 ## From the code review of 15 Oct 2026 (not done yet)
 
 - **Batch 3, speed**: cache the days and the repeat rules, write `lastTickAt` to a small separate file, stop the timers while the window is hidden, shorten the 3.2 s splash.
-- **Batch 4, look and accessibility**: one font-size scale and fewer weights, an Arabic font inside the app (the font files must be added to the repository), colors with low contrast (zones 1, 3, 4, the bell badge, the error toast), padding with `inline` properties for Arabic, focus in dialogs, real buttons for "Upcoming" and "Continues".
+- **Batch 4, look and accessibility**: one font-size scale and fewer weights (the Arabic font is done), colors with low contrast (zones 1, 3, 4, the bell badge, the error toast), padding with `inline` properties for Arabic, focus in dialogs, real buttons for "Upcoming" and "Continues".
 - **Electron Fuses** (`@electron/fuses`): needs a new dev dependency and an updated `package-lock.json`, so it is done on the user's computer with `npm install`.
 - Full-screen alert: title size in `cqmin` and a maximum height so the buttons are always visible.
