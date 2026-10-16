@@ -201,3 +201,22 @@ test('the workflows install with "npm ci" (exactly the versions in package-lock.
     assert.doesNotMatch(text, /else npm install/, name);
   }
 });
+
+test('Arabic font: IBM Plex Sans Arabic is inside the project (not copied at install), with its license, and both pages use it', () => {
+  const dir = path.join(root, 'src/renderer/fonts-arabic');
+  const names = ['regular', 'semibold', 'bold'].map((w) => `ibm-plex-sans-arabic-${w}.woff`);
+  for (const n of names) assert.ok(fs.statSync(path.join(dir, n)).size > 20000, `${n} exists`);
+  assert.ok(/SIL OPEN FONT LICENSE/i.test(fs.readFileSync(path.join(dir, 'LICENSE-IBMPlexSansArabic.txt'), 'utf8')));
+  for (const file of ['styles.css', 'alert.css']) {
+    const css = fs.readFileSync(path.join(root, 'src/renderer', file), 'utf8');
+    for (const n of names) assert.ok(css.includes(`fonts-arabic/${n}`), `${file} loads ${n}`);
+    assert.match(css, /unicode-range: U\+0600-06FF/);
+  }
+  const css = fs.readFileSync(path.join(root, 'src/renderer/styles.css'), 'utf8');
+  assert.ok(/--font: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic'/.test(css), 'Latin text keeps the main font, Arabic text takes Plex');
+  assert.doesNotMatch(css, /:root\[dir='rtl'\] body \{ font-family/, 'the old Arabic override is gone');
+  const view = fs.readFileSync(path.join(root, 'src/renderer/alert-view.js'), 'utf8');
+  assert.ok(view.includes("'IBM Plex Sans Arabic'"));
+  const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
+  assert.ok(!/fonts-arabic/.test(ignore));
+});
