@@ -389,7 +389,7 @@ class ReminderEngine {
     if (action.type === 'done') {
       const task = this.deps.getTasks().find((t) => t.id === action.taskId);
       if (!task) return { type: 'done', ok: false };
-      this.deps.updateTask(setCompletion(task, action.dateKey, true));
+      this.deps.updateTask(setCompletion(task, action.dateKey, true), action.dateKey);
       this.state.snoozed = this.state.snoozed.filter(
         (s) => !(s.taskId === action.taskId && s.dateKey === action.dateKey)
       );

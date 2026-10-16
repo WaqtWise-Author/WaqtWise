@@ -38,3 +38,15 @@ test('Settings screen uses the shared row, switch and index components', () => {
   assert.match(settings, /settings-nav/);
   assert.doesNotMatch(settings, /class: 'switch' },\n\s+h\('input', \{ type: 'checkbox', checked, onchange/, 'single yes/no settings are not plain checkboxes');
 });
+
+test('Task details: the Settings list matches the core list, and the Daily View reads it', () => {
+  const { TASK_INFO, DEFAULT_TASK_INFO } = require('../src/core');
+  const settings = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'settings.js'), 'utf8');
+  const block = settings.slice(settings.indexOf('const TASK_INFO_DEF'), settings.indexOf('// A made-up task'));
+  const listed = Array.from(block.matchAll(/\['(\w+)', T\('((?:[^'\\]|\\.)*)'\), T\('((?:[^'\\]|\\.)*)'\)\]/g)).map((m) => [m[1], m[2].replace(/\\'/g, "'"), m[3].replace(/\\'/g, "'")]);
+  assert.deepEqual(listed, TASK_INFO.map((x) => [x.id, x.title, x.about]));
+  const defaults = settings.match(/const defaults = (\{[^}]*\})/)[1];
+  assert.deepEqual(Object.entries(eval(`(${defaults})`)), Object.entries(DEFAULT_TASK_INFO), 'the Standard button restores the defaults');
+  const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'app.js'), 'utf8');
+  for (const { id } of TASK_INFO) if (id !== 'time') assert.match(app, new RegExp(`show\\.${id}\\b`), `${id} is used by the task row`);
+});

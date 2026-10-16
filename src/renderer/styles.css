@@ -692,7 +692,7 @@ input.onoff:checked ~ .onoff-state { color: var(--accent); }
 
 /* Lateness statistics */
 .lt-bar { background: var(--accent); max-width: 56px; }
-.lateby-head { font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 6px; }
+.lateby-head { font-size: 12px; font-weight: 700; color: var(--text-soft); margin: 14px 0 6px; }
 .lateby-head:first-child { margin-top: 4px; }
 .late-by-line .cat-pct { white-space: nowrap; min-width: 58px; text-align: end; }
 .lateby-head:first-child { margin-top: 12px; }
@@ -708,3 +708,15 @@ html[dir="rtl"] :is(.stat-text, .task-title, .cat-name, .late-title, .free-notes
 }
 /* While the times are still being worked out the readouts show a dash instead of an empty bubble. */
 .readout:empty::before { content: '–'; color: var(--text-soft); }
+
+/* ---- Daily View details (Settings) and the extra lines on a task row ---- */
+.task-end { margin-top: 1px; }
+.task-notes { margin-top: 4px; font-size: 13px; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: plaintext; text-align: left; }
+html[dir="rtl"] .task-notes { text-align: right; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px 20px; margin-top: 14px; }
+.info-item { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.info-item input { margin-top: 2px; }
+.info-name { display: block; font-weight: 600; }
+.info-about { display: block; font-size: 12px; color: var(--text-soft); margin-top: 1px; }
+.daily-preview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-ctl-lg); padding: 6px; }
+.daily-preview .task, .daily-preview .check { cursor: default; }

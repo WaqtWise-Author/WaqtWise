@@ -42,7 +42,7 @@ const {
 const { t } = require('./i18n');
 const { normalizeRule, validateRule, generateDates } = require('./recurrence');
 
-const { MAX_DURATION_MINUTES, MAX_OFFSET_MINUTES } = require('./limits');
+const { MAX_DURATION_MINUTES, MAX_OFFSET_MINUTES, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH } = require('./limits');
 const PRIORITIES = ['Low', 'Medium', 'High'];
 const SCOPES = ['this', 'following', 'all'];
 const EDITABLE_FIELDS = ['title', 'start', 'durationMinutes', 'notes', 'priority', 'categoryId', 'reminders'];
@@ -105,6 +105,7 @@ function validateTask(task) {
   const errors = [];
   if (!task || typeof task.id !== 'string' || task.id === '') errors.push(t('Task needs an id'));
   if (!task || typeof task.title !== 'string' || task.title.trim() === '') errors.push(t('Please enter a title'));
+  else if (task.title.length > MAX_TITLE_LENGTH) errors.push(t('The title is too long (at most {max} characters)', { max: MAX_TITLE_LENGTH }));
   if (!task) return errors;
   errors.push(...validateStart(task.start));
   errors.push(...validateDuration(task.durationMinutes));
@@ -136,7 +137,7 @@ function createTask(input) {
     reminders: input.reminders || { enabled: false, offsets: [] },
     priority: input.priority || 'Medium',
     categoryId: input.categoryId === undefined ? null : input.categoryId,
-    notes: input.notes || '',
+    notes: String(input.notes || '').slice(0, MAX_NOTES_LENGTH),
     exceptions: [],
     additions: [],
     overrides: {},
@@ -290,7 +291,10 @@ function getOccurrences(provider, task, fromKey, toKey, options = {}) {
 // Occurrences are listed under the Planning Day that contains their START moment.
 function occurrencesForPlanningDay(provider, tasks, planningDayKey, options = {}) {
   const boundaries = getBoundaries(provider, planningDayKey);
-  const from = addDaysToKey(planningDayKey, -2);
+  // A task can last up to 7 days, so one that began several days ago may still be running at this Fajr.
+  const longest = tasks.reduce((max, task) => Math.max(max, Number(task.durationMinutes) || 0), 0);
+  const lookbackDays = Math.max(2, Math.ceil(longest / (24 * 60)) + 1);
+  const from = addDaysToKey(planningDayKey, -lookbackDays);
   const to = addDaysToKey(planningDayKey, 2);
   const context = { ...options, tasks };
   const all = tasks.flatMap((task) => getOccurrences(provider, task, from, to, context));
@@ -353,6 +357,8 @@ function pickFields(patch) {
 function checkPatch(fields) {
   const errors = [];
   if ('title' in fields && String(fields.title).trim() === '') errors.push(t('Please enter a title'));
+  else if ('title' in fields && String(fields.title).length > MAX_TITLE_LENGTH) errors.push(t('The title is too long (at most {max} characters)', { max: MAX_TITLE_LENGTH }));
+  if ('notes' in fields && typeof fields.notes === 'string') fields.notes = fields.notes.slice(0, MAX_NOTES_LENGTH);
   if ('start' in fields) errors.push(...validateStart(fields.start));
   if ('durationMinutes' in fields) errors.push(...validateDuration(fields.durationMinutes));
   if ('reminders' in fields) errors.push(...validateReminders(fields.reminders));

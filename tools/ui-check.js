@@ -671,7 +671,7 @@ async function setTime(page, hour, minute, ampm) {
   console.log('Settings');
   await step('every section is there', async () => {
     const titles = await page.$$eval('.settings-section h2', (els) => els.map((e) => e.textContent));
-    assert.deepEqual(titles, ['اللغة / Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Full-screen reminder', 'Sounds', 'Categories', 'Data']);
+    assert.deepEqual(titles, ['اللغة / Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Daily View', 'Full-screen reminder', 'Sounds', 'Categories', 'Data']);
     await shot(page, 'settings');
   });
   await step('a custom city can be typed in (name, latitude, longitude, time zone) and the list can be used again', async () => {
@@ -847,7 +847,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await page.$$eval('input.onoff', (els) => els.length), 8, 'every single yes/no setting is the same on/off switch');
     assert.equal(await page.$$eval('.settings-nav-btn', (els) => els.length), await page.$$eval('.settings-section', (els) => els.length), 'the index has one button for each section');
     await page.click('.settings-nav-btn:text-is("Data")');
-    await page.waitForFunction(() => document.querySelector('#settings-8').getBoundingClientRect().top < window.innerHeight - 100);
+    await page.waitForFunction(() => document.querySelector('#settings-9').getBoundingClientRect().top < window.innerHeight - 100);
     assert.equal(await page.textContent('label.onoff-row:has-text("Full-screen reminders") .onoff-state'), 'On');
     await page.click('label:has-text("Full-screen reminders") input');
     assert.equal(await page.textContent('label.onoff-row:has-text("Full-screen reminders") .onoff-state'), 'Off');
@@ -1260,6 +1260,83 @@ async function setTime(page, hour, minute, ampm) {
       await p.waitForTimeout(80);
     }
     assert.ok(last > 1500, `the page really was scrolled a long way (${last}px)`);
+    assert.deepEqual(realErrors(a.errors), []);
+    await a.browser.close();
+  });
+
+  await step('Keyboard on a task row: Enter on the tick button only ticks; Enter or Space on the row opens the details', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '10:00') });
+    svc.saveTask({ mode: 'create', form: { title: 'Keys', start: { mode: 'fixed', time: '09:00' }, durationMinutes: 30, date: '2026-10-10', recurrence: null, reminders: { enabled: false, offsets: [] }, priority: 'Medium', categoryId: null, notes: '' } });
+    const a = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 900 });
+    const p = a.page;
+    await p.waitForSelector('.task');
+    await p.focus('.task .check');
+    await p.keyboard.press('Enter');
+    await p.waitForFunction(() => document.querySelector('.task.done'));
+    assert.equal(await p.$('.dialog'), null, 'no details window opened by the tick');
+    await p.focus('.task');
+    await p.keyboard.press('Space');
+    await p.waitForSelector('.dialog');
+    await a.browser.close();
+  });
+
+  await step('Daily View details: the Settings choices decide what each task row shows, with a live preview', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '10:00') });
+    const fixed = (time) => ({ mode: 'fixed', time });
+    const gym = svc.saveTask({ mode: 'create', form: { title: 'Gym', start: fixed('09:00'), durationMinutes: 45, date: null,
+      recurrence: { startDate: '2026-10-01', frequency: 'daily', interval: 1 }, reminders: { enabled: true, offsets: [10], fullScreen: true }, priority: 'High', categoryId: 'cat-health', notes: 'Legs day' } }).taskId;
+    svc.saveTask({ mode: 'create', form: { title: 'Shower', start: { mode: 'task', taskId: gym, point: 'end', direction: 'after', minutes: 15, fallbackTime: '10:00' }, durationMinutes: 20, date: '2026-10-10',
+      recurrence: null, reminders: { enabled: false, offsets: [] }, priority: 'Low', categoryId: null, notes: '' } });
+    const a = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 1000 });
+    const p = a.page;
+    const rowText = async (title) => p.locator('.task', { hasText: title }).first().innerText();
+    await p.waitForSelector('.task');
+    // today's look
+    let gymRow = await rowText('Gym');
+    assert.ok(/9:00 AM/.test(gymRow) && /45m/.test(gymRow) && /Health/.test(gymRow));
+    assert.ok(!/Every day|Legs day|10 min before|Full-screen/.test(gymRow), 'the extra details are off by default');
+    // switch some on
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.waitForSelector('#info-all');
+    assert.equal(await p.$$eval('.info-item input', (els) => els.length), 14, 'one switch for each detail');
+    assert.ok(await p.$('.daily-preview .task'), 'the preview shows a task row');
+    assert.equal(await p.evaluate(() => document.querySelector('.daily-preview').inert), true, 'the preview cannot be clicked');
+    const previewText = () => p.locator('.daily-preview .task').innerText();
+    assert.ok(!/Every day/.test(await previewText()));
+    for (const id of ['repeat', 'startRule', 'reminders', 'fullScreen', 'notes', 'endTime']) await p.check(`.info-item input[data-info="${id}"]`);
+    await p.waitForFunction(() => /Every day/.test(document.querySelector('.daily-preview .task').innerText));
+    const all = await previewText();
+    assert.ok(/Every day/.test(all) && /after Asr/.test(all) && /Full-screen alert/.test(all) && /Open the exercises/.test(all) && /– 9:45 AM/.test(all), all);
+    for (let i = 0; i < 40 && !svc.getSettings().taskInfo.repeat; i++) await new Promise((r) => setTimeout(r, 50));
+    assert.equal(svc.getSettings().taskInfo.repeat, true);
+    await shot(p, 'settings-daily-view');
+    await p.click('.back-link');
+    await p.waitForSelector('.task');
+    gymRow = await rowText('Gym');
+    assert.ok(/Every day/.test(gymRow) && /Legs day/.test(gymRow) && /10 min before/.test(gymRow) && /Full-screen alert/.test(gymRow) && /9:00 AM/.test(gymRow) && /– 9:45 AM/.test(gymRow), gymRow);
+    assert.match(await rowText('Shower'), /Starts 15m after “Gym” ends/);
+    await shot(p, 'daily-more-details');
+    // name only
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.click('#info-none');
+    await p.waitForFunction(() => document.querySelectorAll('.info-item input:checked').length === 0);
+    await p.click('.back-link');
+    await p.waitForSelector('.task');
+    gymRow = (await rowText('Gym')).trim();
+    assert.equal(gymRow, 'Gym', 'only the name is left');
+    assert.equal(await p.$$eval('.task .task-time, .task .task-duration, .task .prio, .task .task-meta', (els) => els.length), 0);
+    // back to standard
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.click('#info-default');
+    await p.waitForFunction(() => document.querySelectorAll('.info-item input:checked').length === 8);
+    await p.click('.back-link');
+    await p.waitForSelector('.task');
+    assert.ok(/9:00 AM/.test(await rowText('Gym')));
     assert.deepEqual(realErrors(a.errors), []);
     await a.browser.close();
   });

@@ -11,6 +11,7 @@ const {
 } = core;
 const EDIT_FIELDS = ['title', 'start', 'durationMinutes', 'notes', 'priority', 'categoryId', 'reminders'];
 const { copy, same } = require('./util');
+const { MAX_TITLE_LENGTH } = require('../../core/limits');
 
 class TaskFormMethods {
   // ---- the task form ---------------------------------------------------------------------------------------
@@ -275,7 +276,7 @@ class TaskFormMethods {
     const old = this.findTask(taskId);
     const task = createTask({
       id: this.newId(),
-      title: t('{title} (copy)', { title: old.title }),
+      title: t('{title} (copy)', { title: old.title.slice(0, Math.max(1, MAX_TITLE_LENGTH - t('{title} (copy)', { title: '' }).length)) }),
       start: copy(old.start),
       durationMinutes: old.durationMinutes,
       date: old.date,
@@ -286,6 +287,7 @@ class TaskFormMethods {
       notes: old.notes,
     });
     this.data.tasks.push(task);
+    if (task.date) this.refreshFrozenOccurrence(task.id, task.date); // a copy dated in a day that is already over
     this.changed();
     return { ok: true, taskId: task.id };
   }

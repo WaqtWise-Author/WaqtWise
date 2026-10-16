@@ -47,8 +47,25 @@ class FileStore {
     try { fs.unlinkSync(this.tempPath); } catch (error) { /* a leftover temporary file does no harm */ }
   }
 
+  // A file that is busy for a moment (a virus scanner, a sync tool) is read again a few times. A read that still
+  // fails is NOT a damaged file: it is reported, and neither the file nor the newer data in it is touched.
   readJson(file) {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    let text;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        text = fs.readFileSync(file, 'utf8');
+        break;
+      } catch (error) {
+        if (!BUSY_CODES.includes(error.code)) throw error;
+        if (attempt >= REPLACE_TRIES - 1) {
+          const failure = new Error(t('The data file {file} cannot be opened right now ({reason}). Close other programs that may be using it and start WaqtWise again. Nothing was changed.', { file, reason: error.code }));
+          failure.unreadable = true;
+          throw failure;
+        }
+        this.sleep(REPLACE_WAIT_MS * (attempt + 1));
+      }
+    }
+    return JSON.parse(text);
   }
 
   // Returns the saved data, or fresh default data on first run.
@@ -65,6 +82,7 @@ class FileStore {
         if (label === 'backup') this.loadNotes.push(t('Your data file was damaged, so the last backup copy was loaded.'));
         return data;
       } catch (error) {
+        if (error && error.unreadable) throw error;
         if (label === 'main') this.setAsideDamagedFile();
       }
     }

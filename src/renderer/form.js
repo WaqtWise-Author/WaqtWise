@@ -202,7 +202,7 @@
           h('option', { value: '', text: choices.length ? T('Choose a task…') : T('There are no other tasks yet') }),
           choices.map((c) => h('option', { value: c.taskId, text: c.label, selected: f.start.taskId === c.taskId })));
         startBox.appendChild(h('div', { class: 'row', style: { marginTop: '10px' } },
-          mins, h('span', { text: T('minutes') }), dirSel, WW.isRtl() ? null : h('span', { text: 'the' }), pointSel, WW.isRtl() ? null : h('span', { text: T('of') })));
+          mins, h('span', { text: T('minutes') }), dirSel, WW.isRtl() ? null : h('span', { text: T('the') }), pointSel, WW.isRtl() ? null : h('span', { text: T('of') })));
         startBox.appendChild(h('div', { style: { marginTop: '8px' } }, taskSel));
         startBox.appendChild(h('div', { class: 'row', style: { marginTop: '10px' } },
           h('span', { class: 'hint', text: T('Backup start time, used on days when that task is not there:') }),

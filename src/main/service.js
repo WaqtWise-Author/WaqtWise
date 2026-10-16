@@ -165,8 +165,10 @@ class PlannerService {
     return this.data.settings;
   }
 
-  updateTaskFromEngine(task) {
+  updateTaskFromEngine(task, dateKey) {
+    this.freezePast();
     this.data.tasks = this.data.tasks.map((t) => (t.id === task.id ? task : t));
+    if (dateKey) this.refreshFrozenOccurrence(task.id, dateKey); // "Mark as Done" from an alert counts in the statistics
     this.changed();
   }
 

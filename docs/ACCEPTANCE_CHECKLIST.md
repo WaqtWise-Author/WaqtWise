@@ -3,7 +3,7 @@
 Every scenario in Section 16 of the specification (plus the later additions 27-37), where it is checked
 automatically, and what still has to be tried on a real Windows computer.
 
-Automatic tests run on every upload to GitHub (**Actions -> Run tests**). `tools/ui-check.js` clicks through the
+Automatic tests run when you start them by hand on GitHub (**Actions -> Run tests -> Run workflow**). `tools/ui-check.js` clicks through the
 real screens in a test browser; it was run while building and is not part of the installed app.
 
 | # | What is checked | Checked automatically in | Also try on a real PC |
@@ -96,6 +96,9 @@ Do these once after installing. They are the parts that cannot be tested without
 
 30. **Look and feel (see `docs/UI_REVIEW.md`)**: open Settings in English and in Arabic, light and dark. The section buttons at the top jump to each section and stay visible while scrolling; every on/off choice is the same sliding switch; fields, buttons and cards have the same rounded corners as the Daily View. Open **New task**: Reminder, Full-screen alert and "Show one note at random" are switches too. Make the window narrow: nothing is cut off. Try Windows text size 125% and 150%.
 
-31. **After an Electron upgrade** (the app now uses Electron 44): install the new build and go through checks 1 to 30 once, with extra care for the tray icon, notifications (click to open), the full-screen reminder and starting with Windows.
+31. **Task details in the Daily View**: Settings -> **Daily View**. Untick Category and Priority: they disappear from every task row at once (and the preview above the switches shows it). Tick **Repeat**, **What the start follows**, **Reminders**, **Notes**: a task that repeats, starts after a prayer or another task, has reminders or notes shows them. **Name only** leaves just the name and the tick; **Standard** returns to the default. Check Arabic too: long details wrap onto the next line and nothing is cut off.
+32. **Cities in other time zones**: in Settings choose a custom city that is far ahead of your computer's time zone (for example Tokyo while your computer is set to Cairo). Leave the app open across the whole day, including 1-5 AM: the zone shown and the reminders keep working, with no "Could not derive a zone" message. Leave the window hidden in the tray past Fajr, then open it: it shows the new day, not yesterday.
+33. **Keyboard and limits**: in the Daily View press Tab to a task's round tick button and press Enter: the task is ticked and the details do NOT open; Tab to the task row itself and press Enter or Space: the details open. A task title longer than 200 characters is refused with a clear message. A task that lasts several days is still listed on each day while it runs.
+34. **After an Electron upgrade** (the app now uses Electron 44): install the new build and go through checks 1 to 33 once, with extra care for the tray icon, notifications (click to open), the full-screen reminder and starting with Windows.
 
 If any of these fails, note which number and what you saw, and send it back.

@@ -69,6 +69,9 @@ class SettingsMethods {
         if (task.overrides[key].categoryId === id) task.overrides[key].categoryId = null;
       }
     }
+    for (const free of this.data.freeTasks || []) {
+      if (free.categoryId === id) free.categoryId = null;
+    }
     this.changed();
     return this.categoriesForView();
   }

@@ -53,10 +53,16 @@ function getZones(boundaries) {
 // Which Planning Day contains this moment?
 // A Planning Day runs from its Fajr to the next day's Fajr, so a moment before
 // that calendar day's Fajr (e.g. 2:00 AM) belongs to the PREVIOUS Planning Day.
+// The prayer times may belong to a city in another time zone than the computer's, so the computer's calendar
+// date can be a day behind (or ahead of) the city's. Look at the next, the same and the previous date, newest first.
 function findPlanningDayKey(provider, moment) {
   const key = dateKey(moment);
-  if (moment.getTime() >= provider(key).fajr.getTime()) return key;
-  return addDaysToKey(key, -1);
+  const t = moment.getTime();
+  for (const offset of [1, 0, -1]) {
+    const candidate = addDaysToKey(key, offset);
+    if (t >= provider(candidate).fajr.getTime()) return candidate;
+  }
+  return addDaysToKey(key, -2);
 }
 
 // "Today" = the Planning Day that contains the current moment (not the calendar date).

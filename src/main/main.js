@@ -304,7 +304,7 @@ function startEngine() {
       })));
     },
     showAlert: (items) => alertManager.show(service.buildAlertItems(items)),
-    updateTask: (task) => service.updateTaskFromEngine(task),
+    updateTask: (task, dateKey) => service.updateTaskFromEngine(task, dateKey),
     initialState: service.getReminderState(),
     saveState: (state) => service.saveReminderState(state),
     onError: (error) => log('Reminder engine:', error),
@@ -439,22 +439,35 @@ function start() {
     app.quit();
     return;
   }
+  // A second launch that arrives before the app is ready waits: nothing can be shown before the service exists.
+  let pendingSecondLaunch = null;
   app.on('second-instance', (event, argv) => {
     const action = findActionUrlInArgv(argv);
+    if (!service) {
+      pendingSecondLaunch = { action };
+      return;
+    }
     if (action) handleAction(action);
     else showWindow();
   });
 
   app.whenReady().then(() => {
     const store = new FileStore(path.join(app.getPath('userData'), 'data.json'));
-    service = new PlannerService({
-      store,
-      onDataChanged: () => {
-        sendToWindow('data-changed');
-        if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer
-      },
-      onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); if (trayController) trayController.setActions(trayActions()); },
-    });
+    try {
+      service = new PlannerService({
+        store,
+        onDataChanged: () => {
+          sendToWindow('data-changed');
+          if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer
+        },
+        onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); if (trayController) trayController.setActions(trayActions()); },
+      });
+    } catch (error) {
+      // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
+      dialog.showErrorBox('WaqtWise', error && error.message ? error.message : String(error));
+      app.quit();
+      return;
+    }
     registerIpc();
     if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
     applyStartWithWindows(service.getSettings());
@@ -470,6 +483,11 @@ function start() {
 
     const launchAction = findActionUrlInArgv(process.argv);
     if (launchAction) handleAction(launchAction);
+    if (pendingSecondLaunch) {
+      if (pendingSecondLaunch.action) handleAction(pendingSecondLaunch.action);
+      else showWindow();
+      pendingSecondLaunch = null;
+    }
   });
 
   // The app keeps running when there are no windows: it lives in the tray.

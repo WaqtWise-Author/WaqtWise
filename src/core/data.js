@@ -16,7 +16,7 @@
 const { t } = require('./i18n');
 const { DEFAULT_SETTINGS, sanitizeSettings } = require('./settings');
 const { validateTask, validateStart, validateDuration, validateReminders, PRIORITIES } = require('./tasks');
-const { MAX_TASKS, MAX_FREE_TASKS } = require('./limits');
+const { MAX_TASKS, MAX_FREE_TASKS, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH } = require('./limits');
 const { normalizeFreeTask } = require('./free-tasks');
 const { normalizeNoteRotation } = require('./random-notes');
 const { normalizeRule } = require('./recurrence');
@@ -122,8 +122,8 @@ function cleanOverrides(raw) {
     const value = raw[key];
     if (!isValidKey(key) || !isPlainObject(value)) continue;
     const kept = {};
-    if (typeof value.title === 'string' && value.title.trim() !== '') kept.title = value.title.trim();
-    if (typeof value.notes === 'string') kept.notes = value.notes;
+    if (typeof value.title === 'string' && value.title.trim() !== '') kept.title = value.title.trim().slice(0, MAX_TITLE_LENGTH);
+    if (typeof value.notes === 'string') kept.notes = value.notes.slice(0, MAX_NOTES_LENGTH);
     if (PRIORITIES.includes(value.priority)) kept.priority = value.priority;
     if (value.categoryId === null || typeof value.categoryId === 'string') kept.categoryId = value.categoryId;
     if ('start' in value && validateStart(value.start).length === 0) kept.start = value.start;
@@ -139,7 +139,7 @@ function normalizeTask(raw) {
   if (!isPlainObject(raw)) return { error: 'not a task' };
   const task = {
     id: raw.id,
-    title: typeof raw.title === 'string' ? raw.title.trim() : raw.title,
+    title: typeof raw.title === 'string' ? raw.title.trim().slice(0, MAX_TITLE_LENGTH) : raw.title,
     start: raw.start,
     durationMinutes: raw.durationMinutes,
     date: raw.recurrence ? null : raw.date,
@@ -147,7 +147,7 @@ function normalizeTask(raw) {
     reminders: cleanReminders(raw.reminders),
     priority: raw.priority || 'Medium',
     categoryId: raw.categoryId === undefined ? null : raw.categoryId,
-    notes: typeof raw.notes === 'string' ? raw.notes : '',
+    notes: typeof raw.notes === 'string' ? raw.notes.slice(0, MAX_NOTES_LENGTH) : '',
     exceptions: Array.isArray(raw.exceptions) ? raw.exceptions.filter(isValidKey) : [],
     additions: Array.isArray(raw.additions) ? raw.additions.filter(isValidKey) : [],
     overrides: cleanOverrides(raw.overrides),

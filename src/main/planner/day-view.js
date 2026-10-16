@@ -7,8 +7,14 @@ const { t, tp, getLanguage, weekdayShort, weekdayLong, monthLong } = require('..
 const core = require('../../core');
 
 const {
-  localCategoryName, occurrencesForPlanningDay, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
+  localCategoryName, occurrencesForPlanningDay, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
 } = core;
+
+// The first non-empty line of a note, cut short for a task row.
+function firstLine(text) {
+  const line = String(text || '').split(/\r?\n/).map((x) => x.trim()).find(Boolean) || '';
+  return line.length > 120 ? `${line.slice(0, 119)}…` : line;
+}
 
 class DayViewMethods {
   // ---- the Daily View -----------------------------------------------------------------------------------
@@ -56,7 +62,18 @@ class DayViewMethods {
       overdue: !o.done && o.end.getTime() <= nowDate.getTime(),
       followsTitle: this.followsTitle(o.startDefinition),
       startWarning: o.startWarning || null,
+      // Extra details a row can show (Settings -> Daily View decides which)
+      repeatSummary: this.repeatSummary(o.taskId),
+      startRuleLabel: describeStart(o.startDefinition, this.followsTitle(o.startDefinition)),
+      reminderOffsets: reminderOffsets(o.reminders, this.settings),
+      notesLine: firstLine(o.notes),
     };
+  }
+
+  // "Every 2 weeks on Sunday": the repeat rule of a task, '' for a task that does not repeat.
+  repeatSummary(taskId) {
+    const task = this.data.tasks.find((x) => x.id === taskId);
+    return task && task.recurrence ? describeRule(normalizeRule(task.recurrence)) : '';
   }
 
   // For a task that follows another task: the other task's title.

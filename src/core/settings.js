@@ -39,6 +39,7 @@ const METHOD_LABELS = {
 };
 
 const THEMES = ['light', 'dark', 'system'];
+const { DEFAULT_TASK_INFO, validateTaskInfo } = require('./task-info');
 
 // Sounds made inside the app (no sound files). The names are played by src/renderer/sounds.js.
 // The charts on the Statistics screen, in their default order. Which ones are shown (and in what order) is a setting.
@@ -211,6 +212,8 @@ const DEFAULT_SETTINGS = {
   statsCharts: STATS_CHART_IDS.slice(),
   // A done task counts as late when it was ticked this many minutes after its start time (default 1 hour)
   lateAfterMinutes: 60,
+  // What each task row in the Daily View shows (see TASK_INFO in task-info.js)
+  taskInfo: { ...DEFAULT_TASK_INFO },
 };
 
 function isWholeNumber(n, min, max) {
@@ -260,6 +263,7 @@ function validateSettings(settings) {
     errors.push(t('The time after which a task counts as late must be a whole number of minutes between 0 and 10080 (7 days)'));
   }
   if ('weekStart' in s && ![6, 0, 1].includes(s.weekStart)) errors.push(t('Choose Saturday, Sunday or Monday as the first day of the week'));
+  if ('taskInfo' in s) errors.push(...validateTaskInfo(s.taskInfo));
   if ('alertScreens' in s && !ALERT_SCREENS.includes(s.alertScreens)) errors.push(t('Choose all screens or the main screen'));
   if ('alertAppearance' in s) errors.push(...validateAppearance(s.alertAppearance));
   for (const key of ['notificationsEnabled', 'soundEnabled', 'zoneStartNotifications', 'startWithWindows', 'showBackgroundMessage', 'backgroundMessageShown', 'welcomeShown', 'fullScreenAlerts', 'fullScreenDefaultForNewTasks', 'alertSoundRepeat', 'useCustomCity']) {
@@ -276,6 +280,7 @@ function mergeSettings(current, patch) {
   if (patch.customCity) merged.customCity = { ...patch.customCity, name: patch.customCity.name.trim(), timeZone: patch.customCity.timeZone.trim() };
   if (merged.useCustomCity && !merged.customCity) throw new Error(t('Enter the city name, latitude, longitude and time zone first'));
   merged.adjustments = { ...current.adjustments, ...(patch.adjustments || {}) };
+  merged.taskInfo = { ...current.taskInfo, ...(patch.taskInfo || {}) };
   if (patch.workingDays) merged.workingDays = Array.from(new Set(patch.workingDays)).sort((a, b) => a - b);
   if (patch.alertAppearance) merged.alertAppearance = mergeAppearance(current.alertAppearance, patch.alertAppearance);
   return merged;
@@ -291,9 +296,12 @@ function sanitizeSettings(raw) {
       clean.alertAppearance = sanitizeAppearance(raw.alertAppearance);
       continue;
     }
-    const candidate = key === 'adjustments' ? { adjustments: { ...clean.adjustments, ...raw.adjustments } } : { [key]: raw[key] };
+    const candidate = key === 'adjustments' ? { adjustments: { ...clean.adjustments, ...raw.adjustments } }
+      : key === 'taskInfo' ? { taskInfo: { ...clean.taskInfo, ...(raw.taskInfo && typeof raw.taskInfo === 'object' && !Array.isArray(raw.taskInfo) ? raw.taskInfo : {}) } }
+        : { [key]: raw[key] };
     if (validateSettings(candidate).length === 0) {
       if (key === 'adjustments') clean.adjustments = candidate.adjustments;
+      else if (key === 'taskInfo') clean.taskInfo = candidate.taskInfo;
       else clean[key] = raw[key];
     }
   }

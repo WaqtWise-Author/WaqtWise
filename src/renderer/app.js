@@ -80,20 +80,30 @@
 
   const percent = (done, total) => (total ? Math.round((done / total) * 100) : 0);
 
-  function taskRow(t) {
+  // The task row follows Settings -> Daily View: each piece of information is shown only when it is switched on there.
+  // `info` may be passed in (the Settings preview does), otherwise the saved choice is used.
+  function taskRow(t, info) {
+    const show = info || (WW.state.settings && WW.state.settings.taskInfo) || {};
     const tags = [];
-    if (t.categoryName) {
+    if (show.category && t.categoryName) {
       tags.push(h('span', { class: 'tag pill' }, h('span', { class: 'dot', style: { background: t.categoryColor } }), t.categoryName));
     }
-    if (t.overdue) tags.push(h('span', { class: 'tag late', text: T('Not done') }));
-    if (t.inProgress) tags.push(h('span', { class: 'tag live', text: T('In progress') }));
-    if (t.overlaps) {
+    if (show.status && t.overdue) tags.push(h('span', { class: 'tag late', text: T('Not done') }));
+    if (show.status && t.inProgress) tags.push(h('span', { class: 'tag live', text: T('In progress') }));
+    if (show.conflicts && t.overlaps) {
       const names = (t.conflictWith || []).map((n) => `“${n}”`).join(T(', '));
       tags.push(h('span', { class: 'tag warn conflict', title: T('Overlaps another task') },
         WW.icon('warn', 13, 2.6), names ? T('Conflict with {names}', { names }) : T('Conflict')));
     }
-    if (t.startWarning) tags.push(h('span', { class: 'tag warn', title: t.startWarning, text: T('⚠ Backup start time') }));
-    if (t.extendsPastZoneEnd) tags.push(h('span', { class: 'tag', title: T('Continues into the next zone'), text: T('→ Continues into next zone') }));
+    if (show.backupStart && t.startWarning) tags.push(h('span', { class: 'tag warn', title: t.startWarning, text: T('⚠ Backup start time') }));
+    if (show.continues && t.extendsPastZoneEnd) tags.push(h('span', { class: 'tag', title: T('Continues into the next zone'), text: T('→ Continues into next zone') }));
+    if (show.repeat && t.repeatSummary) tags.push(h('span', { class: 'tag', title: T('Repeat'), text: `↻ ${t.repeatSummary}` }));
+    if (show.startRule && t.startRuleLabel) tags.push(h('span', { class: 'tag', text: t.startRuleLabel }));
+    if (show.reminders && t.reminderOffsets && t.reminderOffsets.length) {
+      const labels = t.reminderOffsets.slice().sort((x, y) => y - x).map((n) => WW.offsetLabel(n)).join(T(', '));
+      tags.push(h('span', { class: 'tag', title: T('Reminders') }, WW.icon('bell', 13, 2), labels));
+    }
+    if (show.fullScreen && t.hasFullScreen) tags.push(h('span', { class: 'tag', text: T('Full-screen alert') }));
 
     const check = h('button', {
       class: `check ${t.done ? 'on' : ''}`, type: 'button',
@@ -115,16 +125,30 @@
       class: `task ${t.done ? 'done' : ''} ${t.overdue ? 'overdue' : ''} ${t.inProgress ? 'live' : ''}`, role: 'button', tabindex: '0',
       'aria-label': `${t.title}, ${t.startLabel}`,
       onclick: () => WW.openTaskDetails({ taskId: t.taskId, dateKey: t.dateKey }),
-      onkeydown: (e) => { if (e.key === 'Enter') WW.openTaskDetails({ taskId: t.taskId, dateKey: t.dateKey }); },
+      onkeydown: (e) => {
+        if (e.target !== e.currentTarget) return; // a key pressed on the tick button belongs to the button
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          WW.openTaskDetails({ taskId: t.taskId, dateKey: t.dateKey });
+        }
+      },
     },
       check,
-      h('div', { class: 'task-time' }, t.startLabel, t.afterMidnight ? h('small', { text: T('next day') }) : null),
+      show.time || show.endTime
+        ? h('div', { class: 'task-time' },
+          show.time ? t.startLabel : t.endLabel,
+          show.time && show.endTime ? h('small', { class: 'task-end', text: `– ${t.endLabel}` }) : null,
+          show.time && t.afterMidnight ? h('small', { text: T('next day') }) : null)
+        : null,
       h('div', { class: 'task-main' },
         h('div', { class: 'task-title', text: t.title }),
-        tags.length ? h('div', { class: 'task-meta' }, tags) : null),
-      h('div', { class: 'task-duration', text: t.durationLabel }),
-      h('span', { class: `prio ${t.priority}`, title: T('{priority} priority', { priority: T(t.priority) }) }));
+        tags.length ? h('div', { class: 'task-meta' }, tags) : null,
+        show.notes && t.notesLine ? h('div', { class: 'task-notes', text: t.notesLine }) : null),
+      show.duration ? h('div', { class: 'task-duration', text: t.durationLabel }) : null,
+      show.priority ? h('span', { class: `prio ${t.priority}`, title: T('{priority} priority', { priority: T(t.priority) }) }) : null);
   }
+
+  WW.taskRow = taskRow;
 
   function zoneSection(z) {
     const fill = h('div', { class: 'timeline-fill' });
@@ -255,15 +279,20 @@
       h('div', { class: 'zones' }, day.zones.map(zoneSection)));
   }
 
+  // Only the newest request may draw: an older answer that arrives late must not replace the day the person chose.
+  let showSeq = 0;
   WW.showDay = async function showDay(key) {
+    const seq = ++showSeq;
     try {
       // Redrawing the same day (ticking a task, a background refresh) must not throw the page back to the top.
       const keepScroll = WW.state.view === 'daily' && WW.state.dayKey === key;
       const scrollY = window.scrollY;
       WW.state.view = 'daily';
       WW.state.dayKey = key;
-      WW.state.day = await WW.call('getDay', key);
-      WW.state.todayKey = WW.state.day.currentPlanningDayKey;
+      const day = await WW.call('getDay', key);
+      if (seq !== showSeq) return;
+      WW.state.day = day;
+      WW.state.todayKey = day.currentPlanningDayKey;
       renderDay();
       if (keepScroll) window.scrollTo(0, scrollY);
     } catch (error) {
@@ -281,11 +310,21 @@
     window.scrollTo(0, 0);
   };
 
+  // Redraw the day on screen. If it was "today" and a new Planning Day has begun since (Fajr passed while the window
+  // was open or hidden in the tray), move on to the new day instead of staying on yesterday.
+  WW.refreshDay = async function refreshDay() {
+    const wasToday = WW.state.dayKey === WW.state.todayKey;
+    await WW.showDay(WW.state.dayKey);
+    if (wasToday && WW.state.view === 'daily' && WW.state.todayKey && WW.state.todayKey !== WW.state.dayKey) {
+      await WW.showDay(WW.state.todayKey);
+    }
+  };
+
   // Called after anything changes the data.
   WW.afterChange = async function afterChange() {
     refreshBell();
     WW.refreshSaveBanner();
-    if (WW.state.view === 'daily') await WW.showDay(WW.state.dayKey);
+    if (WW.state.view === 'daily') await WW.refreshDay();
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
   };
@@ -663,7 +702,7 @@
       window.api.on('data-changed', () => { if (!anyDialogOpen()) WW.afterChange(); else refreshBell(); });
       window.api.on('missed', (items) => { refreshBell(); WW.showMissed(items); });
       window.api.on('show-daily', () => {
-        if (!anyDialogOpen() && WW.state.settings && WW.state.settings.welcomeShown) WW.showDay(WW.state.todayKey || WW.state.dayKey);
+        if (!anyDialogOpen() && WW.state.settings && WW.state.settings.welcomeShown) { WW.state.view = 'daily'; WW.state.dayKey = WW.state.todayKey || WW.state.dayKey; WW.refreshDay(); }
       });
       window.api.on('open-task', ({ taskId, dateKey }) => {
         if (taskId && dateKey) WW.openTaskDetails({ taskId, dateKey });

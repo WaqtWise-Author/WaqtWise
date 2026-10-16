@@ -105,6 +105,7 @@ other weeks (tasks that repeat every week are not affected).
 - To go back: Settings -> Data -> **Restore from backup…**, pick a copy and click **Restore**. The data you had
   just before is saved first, so a restore can be undone from the same list.
 - **Late tasks**: in Settings choose after how many hours and minutes a task counts as late (counted from its start time to the moment you tick it). Statistics shows which tasks are late most and by how much. Charts can be added in Statistics -> Manage.
+- **What each task shows**: Settings -> **Daily View**. Tick or untick each detail (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes). **Show everything**, **Standard** and **Name only** are quick presets, and the preview shows the result. The name and the done tick are always shown.
 - The window always opens maximized.
 - Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
 

@@ -352,6 +352,80 @@
           h('p', { class: 'hint', text: T('The whole app changes at once: texts and screen direction. Numbers stay 0123456789.') })))));
   }
 
+
+  // ---- Daily View: what each task row shows ------------------------------------------------------------
+  // Must match TASK_INFO in src/core/task-info.js (a test checks that).
+  const TASK_INFO_DEF = () => [
+    ['time', T('Start time'), T('The time the task starts')],
+    ['endTime', T('End time'), T('The time the task ends')],
+    ['duration', T('Duration'), T('How long the task takes')],
+    ['priority', T('Priority'), T('The coloured diamond: low, medium or high')],
+    ['category', T('Category'), T('The category name and colour')],
+    ['status', T('Status'), T('"Not done" and "In progress"')],
+    ['conflicts', T('Conflicts'), T('Which tasks overlap this one')],
+    ['repeat', T('Repeat'), T('How often the task repeats')],
+    ['startRule', T('What the start follows'), T('A prayer or another task the start time is based on')],
+    ['reminders', T('Reminders'), T('When the reminders go off')],
+    ['fullScreen', T('Full-screen alert'), T('That a full-screen alert is on')],
+    ['notes', T('Notes'), T('The first line of the notes')],
+    ['continues', T('Continues into next zone'), T('When the task runs past the end of its zone')],
+    ['backupStart', T('Backup start time warning'), T('When the prayer time was not available and a backup time is used')],
+  ];
+
+  // A made-up task that has every detail, so the preview can show whichever ones are switched on.
+  const sampleTaskRow = () => {
+    const cat = (WW.state.categories || []).find((c) => c.id === 'cat-study');
+    return {
+      id: 'preview', taskId: '__sample__', dateKey: '2026-01-01', title: T('Study SQL'), notes: '',
+      startLabel: `9:00 ${T('AM')}`, endLabel: `9:45 ${T('AM')}`, endsNextDay: false, afterMidnight: false,
+      durationLabel: T('{m}m', { m: 45 }), categoryName: cat ? cat.name : T('Study'), categoryColor: cat ? cat.color : '#8b5cf6', priority: 'High',
+      done: false, overdue: false, inProgress: true, overlaps: true, conflictWith: [T('Team call')],
+      extendsPastZoneEnd: true, startWarning: T('Backup start time'),
+      repeatSummary: T('Every day'),
+      startRuleLabel: T('Starts {time} after {prayer}', { time: T('{m}m', { m: 10 }), prayer: T('Asr') }),
+      reminderOffsets: [60, 10], hasFullScreen: true, notesLine: T('Open the exercises from yesterday.'),
+    };
+  };
+
+  function dailyViewSection() {
+    const preview = h('div', { class: 'daily-preview', 'aria-label': T('Preview of a task in the Daily View') });
+    preview.inert = true; // only a picture: it cannot be ticked or opened
+    const current = () => WW.state.settings.taskInfo;
+    const drawPreview = () => { clear(preview).appendChild(WW.taskRow(sampleTaskRow(), current())); };
+
+    const setAll = async (patch) => {
+      await save({ taskInfo: patch });
+      const y = window.scrollY;
+      WW.renderSettings();
+      window.scrollTo(0, y);
+    };
+    const defaults = { time: true, endTime: false, duration: true, priority: true, category: true, status: true, conflicts: true, repeat: false, startRule: false, reminders: false, fullScreen: false, notes: false, continues: true, backupStart: true };
+    const everything = Object.fromEntries(Object.keys(defaults).map((k) => [k, true]));
+    const nothing = Object.fromEntries(Object.keys(defaults).map((k) => [k, false]));
+
+    const boxes = h('div', { class: 'info-grid' }, TASK_INFO_DEF().map(([id, label, about]) =>
+      h('label', { class: 'info-item', title: about },
+        h('input', {
+          type: 'checkbox', checked: Boolean(current()[id]), 'data-info': id,
+          onchange: async (e) => { await save({ taskInfo: { [id]: e.target.checked } }); drawPreview(); },
+        }),
+        h('span', {},
+          h('span', { class: 'info-name', text: label }),
+          h('span', { class: 'info-about', text: about })))));
+
+    drawPreview();
+    return section(T('Daily View'),
+      h('p', { class: 'dialog-message', text: T('Choose what is shown on each task in the Daily View. The task name and the done tick are always shown.') }),
+      h('div', { class: 'settings-grid' },
+        row(T('Task details'), h('div', {},
+          h('div', { class: 'row' },
+            h('button', { class: 'btn small', type: 'button', id: 'info-all', text: T('Show everything'), onclick: () => setAll(everything) }),
+            h('button', { class: 'btn small', type: 'button', id: 'info-default', text: T('Standard'), onclick: () => setAll(defaults) }),
+            h('button', { class: 'btn small', type: 'button', id: 'info-none', text: T('Name only'), onclick: () => setAll(nothing) })),
+          boxes)),
+        row(T('Preview'), h('div', {}, preview, h('p', { class: 'hint', text: T('A sample task with every detail, shown the way your choices make it look.') })))));
+  }
+
   WW.renderSettings = function renderSettings() {
     const view = clear(document.getElementById('view'));
     const s = WW.state.settings;
@@ -451,6 +525,8 @@
           row(T('First day of the week'), h('div', {}, weekStart, h('p', { class: 'hint', text: T('The day cards at the top of the Daily View and the weeks in Statistics start from this day.') }), h('p', { class: 'hint', text: T('Careful: tasks that repeat every 2 or more weeks also count their weeks from this day, so changing it can move them to other weeks.') }))),
           row(T('Late tasks'), h('div', {}, lateAfter, h('p', { class: 'hint', text: T('A task counts as late when you tick it as done more than this long after its start time. Used by the lateness charts in Statistics.') }))),
           row(T('Working days'), h('div', {}, workingDays, h('p', { class: 'hint', text: T('Used by "last working day" repeat rules.') }))))),
+
+      dailyViewSection(),
 
       alertSection(),
 
