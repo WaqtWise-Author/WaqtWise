@@ -18,7 +18,7 @@ Full specification: WaqtWise_Spec.md (kept outside this folder).
 
 ## GitHub does the work
 
-- **Run tests**: runs the tests on every upload.
+- **Run tests**: runs the tests when you start it by hand (Actions -> Run tests -> Run workflow). The workflows no longer start by themselves on every upload.
 - **Build Windows installer**: builds `WaqtWise-Setup-<version>.exe`. Open the Actions tab, click the
   newest "Build Windows installer" run, and download "WaqtWise-Installer" at the bottom of the page.
 
@@ -28,7 +28,7 @@ English and Arabic (Settings -> Language). Arabic is a full right-to-left screen
 
 ## Free To-Do list and task details
 
-The side menu has a **Free To-Do list** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time* (tasks ticked before this version have no tick time and are not counted). Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
+The side menu has a **Free To-Do list** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time* (tasks ticked before this version have no tick time and are not counted). **Settings -> Daily View** chooses which details each task row shows (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes), with a live preview. Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
 
 ## Saving problems and statistics
 
