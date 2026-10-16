@@ -16,7 +16,7 @@
 const { t } = require('./i18n');
 const { DEFAULT_SETTINGS, sanitizeSettings } = require('./settings');
 const { validateTask, validateStart, validateDuration, validateReminders, PRIORITIES } = require('./tasks');
-const { MAX_TASKS, MAX_FREE_TASKS, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH } = require('./limits');
+const { MAX_TASKS, MAX_FREE_TASKS, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH, MAX_DATES_PER_TASK } = require('./limits');
 const { normalizeFreeTask } = require('./free-tasks');
 const { normalizeNoteRotation } = require('./random-notes');
 const { normalizeRule } = require('./recurrence');
@@ -134,6 +134,15 @@ function cleanOverrides(raw) {
   return out;
 }
 
+// A file cannot make one task carry an unreasonable number of dates (every scan would have to look at all of them).
+function capKeys(object) {
+  const keys = Object.keys(object);
+  if (keys.length <= MAX_DATES_PER_TASK) return object;
+  const kept = {};
+  for (const key of keys.sort().slice(-MAX_DATES_PER_TASK)) kept[key] = object[key];
+  return kept;
+}
+
 // Make a task read from a file safe to use: fill missing fields, then validate it.
 function normalizeTask(raw) {
   if (!isPlainObject(raw)) return { error: 'not a task' };
@@ -148,11 +157,11 @@ function normalizeTask(raw) {
     priority: raw.priority || 'Medium',
     categoryId: raw.categoryId === undefined ? null : raw.categoryId,
     notes: typeof raw.notes === 'string' ? raw.notes.slice(0, MAX_NOTES_LENGTH) : '',
-    exceptions: Array.isArray(raw.exceptions) ? raw.exceptions.filter(isValidKey) : [],
-    additions: Array.isArray(raw.additions) ? raw.additions.filter(isValidKey) : [],
-    overrides: cleanOverrides(raw.overrides),
-    completions: cleanCompletions(raw.completions),
-    completedAt: cleanCompletedAt(raw.completedAt),
+    exceptions: Array.isArray(raw.exceptions) ? raw.exceptions.filter(isValidKey).slice(0, MAX_DATES_PER_TASK) : [],
+    additions: Array.isArray(raw.additions) ? raw.additions.filter(isValidKey).slice(0, MAX_DATES_PER_TASK) : [],
+    overrides: capKeys(cleanOverrides(raw.overrides)),
+    completions: capKeys(cleanCompletions(raw.completions)),
+    completedAt: capKeys(cleanCompletedAt(raw.completedAt)),
   };
   if (typeof raw.continuedFrom === 'string' && raw.continuedFrom !== '') task.continuedFrom = raw.continuedFrom;
   const errors = validateTask(task);

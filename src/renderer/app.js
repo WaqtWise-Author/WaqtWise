@@ -122,7 +122,7 @@
     }, WW.icon('check', 15, 3.4));
 
     return h('div', {
-      class: `task ${t.done ? 'done' : ''} ${t.overdue ? 'overdue' : ''} ${t.inProgress ? 'live' : ''}`, role: 'button', tabindex: '0',
+      class: `task ${t.done ? 'done' : ''} ${t.overdue ? 'overdue' : ''} ${t.inProgress ? 'live' : ''}`, role: 'button', tabindex: '0', 'data-occ': `${t.taskId}@${t.dateKey}`,
       'aria-label': `${t.title}, ${t.startLabel}`,
       onclick: () => WW.openTaskDetails({ taskId: t.taskId, dateKey: t.dateKey }),
       onkeydown: (e) => {
@@ -141,11 +141,11 @@
           show.time && t.afterMidnight ? h('small', { text: T('next day') }) : null)
         : null,
       h('div', { class: 'task-main' },
-        h('div', { class: 'task-title', text: t.title }),
+        h('div', { class: 'task-title', text: t.title, title: t.title }),
         tags.length ? h('div', { class: 'task-meta' }, tags) : null,
         show.notes && t.notesLine ? h('div', { class: 'task-notes', text: t.notesLine }) : null),
       show.duration ? h('div', { class: 'task-duration', text: t.durationLabel }) : null,
-      show.priority ? h('span', { class: `prio ${t.priority}`, title: T('{priority} priority', { priority: T(t.priority) }) }) : null);
+      show.priority ? h('span', { class: `prio ${t.priority}`, role: 'img', 'aria-label': T('{priority} priority', { priority: T(t.priority) }), title: T('{priority} priority', { priority: T(t.priority) }) }) : null);
   }
 
   WW.taskRow = taskRow;
@@ -168,7 +168,7 @@
     const body = h('div', { class: 'zone-body' });
     z.continued.forEach((c) =>
       body.appendChild(h('div', {
-        class: 'continues', text: T('↳ Continues from “{title}” ({minutes} here, until {end})', { title: c.title, minutes: c.minutesLabel, end: c.endLabel }),
+        class: 'continues', role: 'button', tabindex: '0', text: T('↳ Continues from “{title}” ({minutes} here, until {end})', { title: c.title, minutes: c.minutesLabel, end: c.endLabel }),
         onclick: () => WW.openTaskDetails({ taskId: c.taskId, dateKey: c.dateKey }),
       })));
     if (z.tasks.length === 0 && z.continued.length === 0) {
@@ -242,8 +242,24 @@
       strip);
   }
 
+  // The page is drawn again every 30 seconds and after every change. The element that had the keyboard focus
+  // (a task row or its tick button) gets it back, so keyboard users are not thrown to the top of the page.
+  function focusMemory() {
+    const el = document.activeElement;
+    const row = el && el.closest ? el.closest('.task[data-occ]') : null;
+    if (!row || !view().contains(el)) return null;
+    return { occ: row.getAttribute('data-occ'), onCheck: el.classList.contains('check') };
+  }
+  function restoreFocus(memory) {
+    if (!memory) return;
+    const row = Array.from(view().querySelectorAll('.task[data-occ]')).find((r) => r.getAttribute('data-occ') === memory.occ);
+    const target = row && (memory.onCheck ? row.querySelector('.check') : row);
+    if (target) target.focus({ preventScroll: true });
+  }
+
   function renderDay() {
     const day = WW.state.day;
+    const memory = focusMemory();
     const root = clear(view());
 
     const picker = h('input', {
@@ -277,6 +293,7 @@
           h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next week'), onclick: () => WW.showDay(week.nextKey) }, WW.icon(WW.arrowIcon('next'), 18, 2.2)))),
       heroCard(day),
       h('div', { class: 'zones' }, day.zones.map(zoneSection)));
+    restoreFocus(memory);
   }
 
   // Only the newest request may draw: an older answer that arrives late must not replace the day the person chose.

@@ -10,6 +10,7 @@ const { t } = i18n;
 const crypto = require('crypto');
 const core = require('../core');
 const { copy } = require('./planner/util');
+const { isValidKey, addDaysToKey, dateKey: toDateKey } = core;
 const { formatTime12InZone } = require('../core/time');
 
 const { CITIES, localCategoryName, resolveCity, METHOD_KEYS, METHOD_LABELS, currentPlanningDayKey, createPrayerProvider } = core;
@@ -111,6 +112,23 @@ class PlannerService {
     }
   }
 
+  // The five prayers must come in order on every day (an adjustment of +2 hours for Dhuhr and -2 for Asr would not).
+  // Checked on days spread over a year, before new prayer-time settings are accepted.
+  assertPrayerOrder() {
+    try {
+      const provider = this.provider();
+      let key = toDateKey(this.now());
+      for (let i = 0; i < 14; i++, key = addDaysToKey(key, 28)) {
+        const day = provider(key);
+        const next = provider(addDaysToKey(key, 1));
+        const times = [day.fajr, day.dhuhr, day.asr, day.maghrib, day.isha, next.fajr].map((d) => (d instanceof Date ? d.getTime() : NaN));
+        for (let j = 1; j < times.length; j++) if (!(times[j] > times[j - 1])) throw new Error('order');
+      }
+    } catch (error) {
+      throw new Error(t('These prayer time settings put the prayers out of order on some days. Please change the adjustments.'));
+    }
+  }
+
   getSaveStatus() {
     return this.saveProblem ? { ok: false, ...this.saveProblem } : { ok: true };
   }
@@ -125,9 +143,13 @@ class PlannerService {
     return this.getSaveStatus();
   }
 
+  // Even when saving fails, the change is kept in memory (the banner offers "Try again"), so the window must still redraw.
   changed() {
-    this.persist();
-    this.onDataChanged();
+    try {
+      this.persist();
+    } finally {
+      this.onDataChanged();
+    }
   }
 
   findTask(taskId) {
@@ -206,4 +228,17 @@ const PUBLIC_METHODS = [
   'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 
-module.exports = { PlannerService, PUBLIC_METHODS, defaultProviderFactory };
+// A light check of what the window sends, before it reaches the service: ids must be text and dates must be real dates.
+function checkRequest(method, args) {
+  const bad = () => new Error(t('Unknown request.'));
+  if (!PUBLIC_METHODS.includes(method)) throw bad();
+  if (args !== undefined && !Array.isArray(args)) throw bad();
+  for (const arg of args || []) {
+    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
+      for (const name of ['taskId', 'id']) if (name in arg && arg[name] !== null && arg[name] !== undefined && typeof arg[name] !== 'string') throw bad();
+      for (const name of ['dateKey', 'defaultKey']) if (name in arg && arg[name] !== null && arg[name] !== undefined && !isValidKey(arg[name])) throw bad();
+    }
+  }
+}
+
+module.exports = { PlannerService, PUBLIC_METHODS, defaultProviderFactory, checkRequest };

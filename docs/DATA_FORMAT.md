@@ -110,3 +110,10 @@ in the `backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.jso
 
 Numbers are checked when a task is saved and when a data file is loaded (a task or a part that fails is skipped with a message, never trusted): task duration 1 to 10080 minutes (7 days); "minutes before or after a prayer or task" and reminder times 0 to 10080; "every N" 1 to 999; "after N occurrences" 1 to 9999; at most 20000 tasks and 5000 free tasks per file; a title of at most 200 characters; a backup file larger than 20 MB is refused. The limits are in `src/core/limits.js`.
 
+
+## Limits (checked when saving and when reading a file)
+
+- A task title: at most 200 characters (a longer one in an old file is shortened, the task is kept). Notes: at most 20000 characters (cut, not refused).
+- One task keeps at most 3660 dates in each of `exceptions`, `additions`, `overrides`, `completions` and `completedAt` (about 10 years); the newest are kept.
+- A task lasts at most 7 days. `data.json` has `version`: a file with a higher number than the app knows is refused (never opened and overwritten).
+- Import never changes `startWithWindows`: it stays as this computer has it.

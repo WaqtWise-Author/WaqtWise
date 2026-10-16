@@ -22,13 +22,18 @@ class DataTransferMethods {
     this.freezePast();
     const { data, warnings, hasHistory } = parseImport(input);
     if (this.store.backupNow) this.store.backupNow('before-import'); // so a wrong import can be undone
+    // A backup file must not switch on "start with Windows" by itself: that stays as this computer has it.
+    data.settings = { ...data.settings, startWithWindows: this.data.settings.startWithWindows };
     // A file with saved statistics replaces the ones on this computer (they belong to the imported tasks); an older file keeps them.
     this.data = { ...data, reminderState: this.data.reminderState, statsHistory: hasHistory ? data.statsHistory : this.history() };
     this.providerCache = null;
     this.applyLanguage();
-    this.persist();
-    this.onSettingsChanged(copy(this.data.settings));
-    this.onDataChanged();
+    try {
+      this.persist();
+    } finally {
+      this.onSettingsChanged(copy(this.data.settings));
+      this.onDataChanged();
+    }
     return { ok: true, tasks: data.tasks.length, categories: data.categories.length, warnings };
   }
 
@@ -47,9 +52,12 @@ class DataTransferMethods {
     this.data = { ...data, reminderState: this.data.reminderState, statsHistory: this.history() };
     this.providerCache = null;
     this.applyLanguage();
-    this.persist();
-    this.onSettingsChanged(copy(this.data.settings));
-    this.onDataChanged();
+    try {
+      this.persist();
+    } finally {
+      this.onSettingsChanged(copy(this.data.settings));
+      this.onDataChanged();
+    }
     return { ok: true, tasks: data.tasks.length, categories: data.categories.length, warnings };
   }
 }

@@ -9,7 +9,7 @@
 const { t } = require('../core/i18n');
 const fs = require('fs');
 const path = require('path');
-const { emptyData, normalizeData } = require('../core/data');
+const { emptyData, normalizeData, DATA_VERSION } = require('../core/data');
 
 const BUSY_CODES = ['EPERM', 'EBUSY', 'EACCES'];
 const REPLACE_TRIES = 6;
@@ -77,7 +77,14 @@ class FileStore {
     for (const [file, label] of [[this.filePath, 'main'], [this.backupPath, 'backup']]) {
       if (!fs.existsSync(file)) continue;
       try {
-        const { data, warnings } = normalizeData(this.readJson(file));
+        const raw = this.readJson(file);
+        if (raw && typeof raw === 'object' && Number.isInteger(raw.version) && raw.version > DATA_VERSION) {
+          // Made by a newer WaqtWise: this older one would drop what it does not know and overwrite the file.
+          const failure = new Error(t('The data file was made by a newer version of WaqtWise. Please install the newest version. Nothing was changed.'));
+          failure.unreadable = true;
+          throw failure;
+        }
+        const { data, warnings } = normalizeData(raw);
         this.loadNotes.push(...warnings);
         if (label === 'backup') this.loadNotes.push(t('Your data file was damaged, so the last backup copy was loaded.'));
         return data;

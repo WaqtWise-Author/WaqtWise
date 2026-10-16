@@ -165,6 +165,18 @@
       if (event.key === 'Escape') {
         event.stopPropagation();
         close();
+        return;
+      }
+      // Tab stays inside the dialog: from the last control it goes back to the first, and the other way round.
+      if (event.key === 'Tab') {
+        const items = Array.from(box.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+          .filter((el) => !el.disabled && el.offsetParent !== null);
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!box.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+        else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
       }
     }
     closeBtn.addEventListener('click', () => close());
@@ -173,6 +185,8 @@
     });
     document.addEventListener('keydown', onKey, true);
     root.appendChild(overlay);
+    // Keyboard focus moves into the dialog (unless the dialog puts it on a field itself a moment later).
+    setTimeout(() => { if (!closed && !box.contains(document.activeElement)) { const f = box.querySelector('input, select, textarea') || box.querySelector('.dialog-footer .btn.primary') || closeBtn; if (f) f.focus({ preventScroll: true }); } }, 0);
     return { close, body, footer, box };
   };
 
@@ -253,4 +267,14 @@
       );
     });
   };
+
+  // Things drawn as a <div role="button"> (upcoming and missed reminders, late tasks, "continues from") work with Enter and
+  // Space like a real button. A task row has its own handler.
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const el = event.target;
+    if (event.defaultPrevented || !el || !el.matches || !el.matches('div[role="button"]:not(.task)')) return;
+    event.preventDefault();
+    el.click();
+  });
 })();

@@ -31,4 +31,6 @@ Rules: use these variables, not new pixel values; a yes/no choice is `WW.onOffSw
 ## Still open (optional)
 
 - Check the Arabic (right-to-left) screens on a real Windows machine, and with Windows text scaling at 125% and 150%.
-- The sizes of the smallest labels (11-12 px) were left as they are; raising them would change the look of the Daily View.
+- The smallest text is now 12 px (it was 11 px in seven places); a test keeps it that way.
+- Review of 15 Oct 2026, done: zone colors 1, 3 and dark 4, the bell badge, the error toast and the tick now have a contrast of 4.5 or more (tested); digits are equal-width only for times and numbers; Arabic has a line height of 1.65; padding and margins that must mirror use logical properties; priority also differs by size and has a text label for screen readers; dialogs keep Tab inside and move focus in; upcoming, missed, late and "continues" items work with Enter and Space; the keyboard focus stays on the same task when the day is redrawn; a long title shows in full as a tooltip.
+- Still to do (needs font files in the repository): one font-size scale and fewer weights, and an Arabic font inside the app (see `docs/TODO.md`).

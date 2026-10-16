@@ -224,6 +224,9 @@ function isWholeNumber(n, min, max) {
 function validateSettings(settings) {
   const errors = [];
   const s = settings;
+  for (const key of Object.keys(s)) {
+    if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)) errors.push(t('Unknown request.'));
+  }
   if ('cityName' in s && !CITIES.some((c) => c.name === s.cityName)) errors.push(t('Please choose a city from the list'));
   if ('customCity' in s && s.customCity !== null) errors.push(...validateCustomCity(s.customCity));
   if ('method' in s && !METHOD_KEYS.includes(s.method)) errors.push(t('Please choose a calculation method from the list'));

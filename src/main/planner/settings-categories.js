@@ -24,12 +24,25 @@ class SettingsMethods {
     const merged = mergeSettings(previous, patch);
     // Turning the "still running in the background" message back on shows it again at the next close.
     if (patch.showBackgroundMessage === true && !previous.showBackgroundMessage) merged.backgroundMessageShown = false;
+    const prayerSettings = ['cityName', 'useCustomCity', 'customCity', 'method', 'adjustments'];
     this.data.settings = merged;
-    this.applyLanguage();
     this.providerCache = null;
-    this.persist();
-    this.onSettingsChanged(copy(this.data.settings));
-    this.onDataChanged();
+    if (prayerSettings.some((key) => key in patch)) {
+      try {
+        this.assertPrayerOrder();
+      } catch (error) {
+        this.data.settings = previous; // refused: nothing changes
+        this.providerCache = null;
+        throw error;
+      }
+    }
+    this.applyLanguage();
+    try {
+      this.persist();
+    } finally {
+      this.onSettingsChanged(copy(this.data.settings));
+      this.onDataChanged();
+    }
     return copy(this.data.settings);
   }
 

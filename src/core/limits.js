@@ -12,5 +12,6 @@ module.exports = {
   MAX_FREE_TASKS: 5000, // tasks in the free to-do list
   MAX_TITLE_LENGTH: 200, // a free task's title
   MAX_NOTES_LENGTH: 20000, // a free task's notes
+  MAX_DATES_PER_TASK: 3660, // dates in one task's exceptions, additions or single-day changes (about 10 years)
   MAX_IMPORT_BYTES: 20 * 1024 * 1024, // size of a backup file that is read
 };

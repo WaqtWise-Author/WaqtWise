@@ -131,3 +131,74 @@ test('A data file that stays busy is reported, not set aside, and the older back
     fs.readFileSync = real;
   }
 });
+
+// ---- batch 2: security and data safety ----
+const { checkRequest, PUBLIC_METHODS } = require('../src/main/service');
+const { validateSettings } = require('../src/core/settings');
+
+test('Requests from the window: ids must be text, dates must be real dates, methods must be public', () => {
+  assert.doesNotThrow(() => checkRequest('setDone', [{ taskId: 'a', dateKey: '2026-10-04', done: true }]));
+  assert.throws(() => checkRequest('setDone', [{ taskId: { x: 1 }, dateKey: '2026-10-04' }]));
+  assert.throws(() => checkRequest('getTaskDetails', [{ taskId: 'a', dateKey: 'constructor' }]));
+  assert.throws(() => checkRequest('deleteTask', [{ taskId: 5, dateKey: '2026-10-04' }]));
+  assert.throws(() => checkRequest('importData', []));
+  assert.throws(() => checkRequest('getDay', 'x'));
+  assert.ok(PUBLIC_METHODS.length > 10);
+});
+
+test('Settings: unknown keys are refused', () => {
+  assert.ok(validateSettings({ evil: 1 }).length > 0);
+  assert.deepEqual(validateSettings({ startWithWindows: true }), []);
+  const service = makeService();
+  assert.throws(() => service.saveSettings({ notASetting: true }));
+  assert.equal('notASetting' in service.getSettings(), false);
+});
+
+test('Importing a backup does not change "start with Windows" and caps the dates of one task', () => {
+  const service = makeService();
+  service.saveSettings({ startWithWindows: false });
+  const file = JSON.parse(JSON.stringify(service.exportData())); // as it would be read from a file
+  file.settings.startWithWindows = true;
+  const many = Array.from({ length: 6000 }, (_, i) => new Date(Date.UTC(2000, 0, 1 + i)).toISOString().slice(0, 10));
+  file.tasks = [{ ...createTask({ id: 'm', title: 'Many', start: fixed('09:00'), durationMinutes: 30, date: DAY }), exceptions: many, additions: many }];
+  service.importData(JSON.stringify(file));
+  assert.equal(service.getSettings().startWithWindows, false);
+  assert.equal(service.data.tasks[0].exceptions.length, 3660);
+  assert.equal(service.data.tasks[0].additions.length, 3660);
+});
+
+test('Prayer times: adjustments that put the prayers out of order are refused and nothing changes', () => {
+  const service = makeService();
+  const orderProvider = (settings) => (key) => {
+    const a = settings.adjustments;
+    const d = constantProvider(key);
+    const shift = (date, m) => new Date(date.getTime() + m * 60000);
+    return { fajr: shift(d.fajr, a.fajr), dhuhr: shift(d.dhuhr, a.dhuhr), asr: shift(d.asr, a.asr), maghrib: shift(d.maghrib, a.maghrib), isha: shift(d.isha, a.isha) };
+  };
+  service.providerFactory = orderProvider;
+  service.saveSettings({ adjustments: { dhuhr: 10 } });
+  assert.equal(service.getSettings().adjustments.dhuhr, 10);
+  assert.throws(() => service.saveSettings({ adjustments: { dhuhr: 120, asr: -120 } }), /out of order|ترتيب/);
+  assert.equal(service.getSettings().adjustments.dhuhr, 10, 'the refused change was not kept');
+  assert.equal(service.getSettings().adjustments.asr, 0);
+});
+
+test('A data file made by a newer version is refused, not opened and overwritten', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ww-newer-'));
+  const file = path.join(dir, 'data.json');
+  fs.writeFileSync(file, JSON.stringify({ ...emptyData(), version: 99 }));
+  const store = new FileStore(file, { sleep: () => {} });
+  assert.throws(() => store.load(), /newer version|إصدار أحدث/);
+  assert.ok(fs.existsSync(file));
+  assert.equal(fs.readdirSync(dir).filter((x) => x.includes('damaged')).length, 0);
+});
+
+test('When saving fails, the window is still told that the data changed', () => {
+  let changed = 0;
+  const store = new MemoryStore();
+  const service = new PlannerService({ store, now: () => at(DAY, '10:00'), providerFactory: () => constantProvider, onDataChanged: () => { changed += 1; } });
+  store.save = () => { throw Object.assign(new Error('x'), { code: 'EACCES' }); };
+  assert.throws(() => service.saveTask({ mode: 'create', form: form() }));
+  assert.ok(changed >= 1);
+  assert.equal(service.getSaveStatus().ok, false);
+});

@@ -16,10 +16,10 @@ require('../core/i18n-ar');
 const path = require('path');
 const fs = require('fs');
 const {
-  app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu, nativeImage, powerMonitor, screen, nativeTheme,
+  app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu, nativeImage, powerMonitor, screen, nativeTheme, session,
 } = require('electron');
 
-const { PlannerService, PUBLIC_METHODS } = require('./service');
+const { PlannerService, checkRequest } = require('./service');
 const { FileStore } = require('./store');
 const { ReminderEngine } = require('../core/reminder-engine');
 const { formatTime12 } = require('../core/time');
@@ -361,8 +361,8 @@ function refuseOutsiders(event) {
 function registerIpc() {
   ipcMain.handle('svc', async (event, method, args) => {
     refuseOutsiders(event);
-    if (!PUBLIC_METHODS.includes(method)) throw new Error(t('Unknown request.'));
-    return service[method](...(Array.isArray(args) ? args : []));
+    checkRequest(method, args);
+    return service[method](...(args || []));
   });
 
   ipcMain.handle('export-data', async (event) => {
@@ -467,6 +467,11 @@ function start() {
       dialog.showErrorBox('WaqtWise', error && error.message ? error.message : String(error));
       app.quit();
       return;
+    }
+    // The app needs no camera, microphone, location or other browser permission: refuse every request.
+    if (session && session.defaultSession) {
+      session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(false));
+      if (session.defaultSession.setPermissionCheckHandler) session.defaultSession.setPermissionCheckHandler(() => false);
     }
     registerIpc();
     if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
