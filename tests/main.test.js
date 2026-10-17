@@ -89,7 +89,8 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     isMaximized() { return Boolean(this.maximized); }
     show() { this.visible = true; this.shownCount += 1; }
     hide() { this.visible = false; this.hiddenCount += 1; }
-    focus() {}
+    focus() { this.focusCount = (this.focusCount || 0) + 1; }
+    moveTop() { this.movedTop = true; }
   };
 
   fake.Tray = class {
@@ -299,10 +300,27 @@ test('Minimizing hides to the tray without any message', async () => {
   const win = app.win();
   win.emit('ready-to-show');
   const event = win.emit('minimize');
-  assert.equal(event.prevented, true);
+  assert.equal(event.prevented, false, 'Windows cannot cancel a minimize, so the app does not try');
   assert.equal(win.visible, false);
   await app.settleDialogs();
   assert.equal(app.messageBoxes.length, 0);
+  app.cleanup();
+});
+
+test('Opening the window brings it to the front, not only a flashing taskbar button', async () => {
+  const app = await launch();
+  const win = app.win();
+  win.emit('ready-to-show');
+  win.hide();
+  win.alwaysOnTop = null;
+  win.focusCount = 0;
+  app.appEvents['second-instance'][0]({}, ['WaqtWise.exe']);
+  assert.equal(win.visible, true);
+  assert.deepEqual(win.alwaysOnTop && win.alwaysOnTop[0], true, 'put on top for a moment so Windows lets it through');
+  assert.equal(win.movedTop, true);
+  assert.ok(win.focusCount >= 1);
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(win.alwaysOnTop[0], false, 'and released again');
   app.cleanup();
 });
 

@@ -747,6 +747,34 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(service.getSettings().useCustomCity, false);
     assert.equal(service.getSettings().customCity.name, 'Riyadh');
   });
+  await step('a city anywhere in the world: choose the country, search the city, and it becomes the city in use', async () => {
+    assert.equal(await page.inputValue('#settings-country'), 'EG');
+    await page.selectOption('#settings-country', 'SA');
+    await page.waitForSelector('.city-results .city-result');
+    assert.equal(await page.locator('.city-results .city-result').first().innerText().then((t) => t.split('\n')[0]), 'Jeddah', 'biggest first');
+    await page.fill('input[data-city-search="SA"]', 'riyad');
+    await page.waitForFunction(() => document.querySelector('.city-results .city-result .city-name').textContent === 'Riyadh' && document.querySelectorAll('.city-results .city-result').length === 2);
+    await shot(page, 'settings-world-city');
+    await page.click('.city-results .city-result >> nth=0');
+    await page.waitForFunction(() => document.querySelector('.toast') && /City saved/.test(document.querySelector('.toast').textContent));
+    const saved = service.getSettings();
+    assert.equal(saved.customCity.name, 'Riyadh');
+    assert.equal(saved.customCity.timeZone, 'Asia/Riyadh');
+    assert.equal(saved.countryCode, 'SA');
+    assert.equal(saved.method, 'ummAlQura');
+    assert.match(await page.textContent('.current-city'), /Current city: Riyadh/);
+    assert.equal(await page.inputValue('#settings-country'), 'SA');
+    // nothing found: a clear message
+    await page.fill('input[data-city-search="SA"]', 'qqqqqq');
+    await page.waitForFunction(() => /No city matches/.test(document.querySelector('.city-search .hint').textContent));
+    // another country, then back to Egypt's list
+    await page.selectOption('#settings-country', 'EG');
+    assert.equal(await page.inputValue('select[aria-label="City"]'), '', 'asks to choose a city');
+    await page.selectOption('select[aria-label="City"]', 'Cairo');
+    await page.waitForFunction(() => !document.querySelector('.current-city'));
+    assert.equal(service.getSettings().useCustomCity, false);
+    assert.equal(service.getSettings().countryCode, 'EG');
+  });
   await step('Restore from backup lists the saved copies and closes with Esc', async () => {
     service.store.backupNow('before-import');
     await page.click('button:has-text("Restore from backup")');
@@ -985,6 +1013,25 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await p.evaluate(() => window.__rings.length), 2);
     await render({ soundSeq: 4, sound: { id: 'off', volume: 80, repeat: false } });
     assert.equal(await p.evaluate(() => window.__rings.length), 2, '"Off" makes no sound');
+    assert.deepEqual(realErrors(alert.errors), []);
+    await alert.browser.close();
+  });
+  await step('a very long title at the biggest size scrolls inside its box and the buttons stay on the screen', async () => {
+    const alert = await openAlertPage({ playwright, executablePath, width: 1366, height: 768 });
+    const p = alert.page;
+    const { DEFAULT_ALERT_APPEARANCE: base } = require('../src/core');
+    const look = JSON.parse(JSON.stringify(base));
+    look.name.size = 200;
+    const title = 'A very long task title that goes on and on '.repeat(5).slice(0, 200);
+    await p.evaluate(([st]) => window.__render(st), [{
+      items: [{ id: 'x', taskId: 't', dateKey: '2026-10-04', title, notes: '', startLabel: '9:00 AM', endLabel: '9:30 AM',
+        durationLabel: '30m', zoneName: 'Fajr → Dhuhr', zoneIndex: 1, categoryName: '', categoryColor: '', priority: 'Low', snoozed: false }],
+      appearance: look, snoozeMinutes: 5, guardMs: 0,
+    }]);
+    const viewport = p.viewportSize();
+    const boxes = await p.$$eval('.alert-actions button', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }));
+    assert.ok(boxes.length >= 1);
+    for (const b of boxes) assert.ok(b.top >= 0 && b.bottom <= viewport.height, `button inside the screen (${Math.round(b.bottom)} of ${viewport.height})`);
     assert.deepEqual(realErrors(alert.errors), []);
     await alert.browser.close();
   });
@@ -1484,6 +1531,32 @@ async function setTime(page, hour, minute, ampm) {
     const again = await openApp({ playwright, service: fresh, executablePath, width: 1000, height: 800 });
     assert.equal((await again.page.$$('.welcome')).length, 0);
     await again.browser.close();
+  });
+
+  await step('the welcome screen takes a country and a city from anywhere in the world', async () => {
+    const fresh = createService({ firstRun: true });
+    const first = await openApp({ playwright, service: fresh, executablePath, width: 1000, height: 800 });
+    const p = first.page;
+    await p.waitForSelector('.welcome');
+    assert.equal(await p.inputValue('#welcome-country'), 'EG');
+    await p.selectOption('#welcome-country', 'JP');
+    await p.fill('input[data-city-search="JP"]', 'osaka');
+    await p.waitForFunction(() => /No city|Showing|city|cities/.test(document.querySelector('.city-search .hint').textContent) && /sak/i.test(document.querySelector('.city-results .city-result').textContent));
+    // not allowed to start before a city is chosen
+    await p.click('.welcome .btn.primary');
+    await p.waitForSelector('.toast.error');
+    assert.equal((await p.$$('.welcome')).length, 1);
+    await p.click('.city-results .city-result >> nth=0');
+    await p.waitForSelector('.welcome .current-city');
+    assert.match(await p.textContent('.welcome .current-city'), /Osaka.*Asia\/Tokyo/);
+    await shot(p, 'welcome-world');
+    await p.click('.welcome .btn.primary');
+    await p.waitForSelector('.welcome', { state: 'detached' });
+    assert.equal(fresh.getSettings().welcomeShown, true);
+    assert.equal(fresh.getSettings().countryCode, 'JP');
+    assert.equal(fresh.getSettings().method, 'muslimWorldLeague');
+    assert.deepEqual(realErrors(first.errors), []);
+    await first.browser.close();
   });
 
   console.log(`\n${passed} steps passed${process.exitCode ? ', some FAILED' : ''}`);
