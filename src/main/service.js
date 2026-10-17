@@ -170,6 +170,7 @@ class PlannerService {
       settings: copy(this.settings),
       categories: this.categoriesForView(),
       cities: CITIES.map((c) => c.name),
+      countries: this.getCountries().map((c) => ({ code: c.code, name: c.name })),
       methods: METHOD_KEYS.map((key) => ({ key, label: t(METHOD_LABELS[key]) })),
       currentPlanningDayKey: currentPlanningDayKey(this.provider(), this.now()),
       city: this.cityInfo(),
@@ -233,7 +234,7 @@ for (const mixin of MIXINS) {
 const PUBLIC_METHODS = [
   'bootstrap', 'getDay', 'getStats', 'getUpcoming', 'getMissed', 'dismissMissed', 'clearMissed', 'newTaskDefaults', 'getTaskForEdit', 'previewForm', 'saveTask',
   'getReferenceChoices', 'getDeleteImpact', 'getAlertPreset', 'deleteTask', 'setDone', 'duplicateTask', 'getSettings', 'saveSettings', 'addCategory', 'updateCategory',
-  'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo',
+  'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
   'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 

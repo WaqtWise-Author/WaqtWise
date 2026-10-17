@@ -6,7 +6,7 @@
   const WW = (window.WW = window.WW || {});
   const { h, clear, T, TP, arrowHead } = WW;
 
-  WW.state = { settings: null, categories: [], cities: [], methods: [], dayKey: null, view: 'daily', day: null, zoneOpen: {} };
+  WW.state = { settings: null, categories: [], cities: [], countries: [], methods: [], dayKey: null, view: 'daily', day: null, zoneOpen: {} };
 
   const view = () => document.getElementById('view');
   const anyDialogOpen = () => document.querySelector('.overlay') !== null;
@@ -259,7 +259,10 @@
       const grow = `${z.minutes} 1 0`;
       const dim = day.isCurrentDay && !z.isCurrent ? 0.45 : 1;
       bars.appendChild(h('div', { class: `z${z.index}`, style: { flex: grow, opacity: String(dim) }, title: `${z.name} · ${z.startLabel} – ${z.endLabel}` }));
-      labels.appendChild(h('div', { style: { flex: grow }, text: arrowHead(z.name) }));
+      // A short zone (like Maghrib) has no room for its name: it goes on a second line instead of being cut off.
+      const narrow = day.zones.length > 0 && (z.minutes / day.zones.reduce((n, x) => n + x.minutes, 0)) < 0.09;
+      if (narrow) labels.classList.add('has-narrow');
+      labels.appendChild(h('div', { class: narrow ? 'narrow' : '', style: { flex: grow }, text: arrowHead(z.name) }));
     });
     const strip = h('div', { class: 'day-strip' }, bars);
     if (day.dayNowPct !== null) strip.appendChild(h('div', { class: 'strip-now', style: { insetInlineStart: `${day.dayNowPct}%` }, title: T('Now') }));
@@ -611,7 +614,7 @@
   WW.reloadEverything = reloadEverything;
   async function reloadEverything() {
     const boot = await WW.call('bootstrap');
-    Object.assign(WW.state, { settings: boot.settings, categories: boot.categories, cities: boot.cities, methods: boot.methods, city: boot.city, todayKey: boot.currentPlanningDayKey });
+    Object.assign(WW.state, { settings: boot.settings, categories: boot.categories, cities: boot.cities, countries: boot.countries, methods: boot.methods, city: boot.city, todayKey: boot.currentPlanningDayKey });
     WW.applyLanguage(boot.settings.language);
     const add = document.getElementById('add-btn');
     if (add) clear(add).append(WW.icon('plus', 16, 2.6), T('New task'));
@@ -650,14 +653,39 @@
   // First run: the welcome screen asks for the city (prayer times depend on it), then the app starts.
   WW.showWelcome = function showWelcome() {
     let city = WW.state.settings.cityName;
+    let country = 'EG';
+    let worldChosen = null; // { name, timeZone } once a city of another country has been picked (it is saved at once)
     const select = h('select', { id: 'welcome-city', 'aria-label': T('Your city'), onchange: (e) => { city = e.target.value; } },
       WW.state.cities.map((name) => h('option', { value: name, text: T(name), selected: name === city })));
+    const cityBox = h('div', { class: 'welcome-city-box' });
+    const drawCity = () => {
+      cityBox.replaceChildren();
+      if (country === 'EG') { cityBox.append(select); return; }
+      cityBox.append(
+        worldChosen ? h('p', { class: 'current-city', role: 'status' }, `✓ ${worldChosen.name}`, h('small', { text: ` · ${T('Time zone')}: ${worldChosen.timeZone}` })) : null,
+        WW.worldCitySearch({
+          country,
+          onChosen: async () => {
+            const saved = await WW.call('getSettings');
+            WW.state.settings = saved;
+            worldChosen = { name: saved.customCity.name, timeZone: saved.customCity.timeZone };
+            drawCity();
+          },
+        }));
+    };
+    const countrySel = WW.countrySelect({ id: 'welcome-country', value: country, onChange: (code) => { country = code; worldChosen = null; drawCity(); } });
+    drawCity();
     const strip = h('div', { class: 'splash-strip', 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map((n) => h('div', { class: `z${n}` })));
     const start = h('button', {
       class: 'btn primary', type: 'button',
       onclick: async () => {
         try {
-          WW.state.settings = await WW.call('saveSettings', { cityName: city, welcomeShown: true });
+          if (country !== 'EG' && !worldChosen) { WW.toast(T('Choose your city first.'), 'error'); return; }
+          WW.state.settings = await WW.call('saveSettings', country === 'EG'
+            ? { cityName: city, useCustomCity: false, countryCode: 'EG', welcomeShown: true }
+            : { welcomeShown: true });
+          const boot = await WW.call('bootstrap'); // the chosen city decides which Planning Day it is
+          Object.assign(WW.state, { city: boot.city, todayKey: boot.currentPlanningDayKey });
           screen.releaseBehind();
           screen.remove();
           await WW.showDay(WW.state.todayKey);
@@ -676,8 +704,10 @@
         h('div', { class: 'welcome-eyebrow', text: T('WELCOME') }),
         h('h2', { text: T('Let\u2019s set up your day') }),
         h('p', { class: 'lead', text: T('WaqtWise divides your day into 5 zones using the prayer times, so it needs to know your city.') }),
+        h('label', { for: 'welcome-country', text: T('Your country') }),
+        countrySel,
         h('label', { for: 'welcome-city', text: T('Your city') }),
-        select,
+        cityBox,
         h('p', { class: 'hint', text: T('You can change this later in Settings. Everything stays on this computer.') }),
         start));
     // A real dialog: nothing behind it can be reached with Tab or the mouse until the city is chosen.
@@ -687,7 +717,7 @@
     start.focus();
     screen.addEventListener('keydown', (event) => {
       if (event.key !== 'Tab') return;
-      const items = [...screen.querySelectorAll('select, button')];
+      const items = [...screen.querySelectorAll('select, button:not(:disabled), input')];
       const first = items[0];
       const last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }

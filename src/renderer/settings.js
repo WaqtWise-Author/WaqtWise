@@ -289,6 +289,7 @@
 
   const CUSTOM_VALUE = '__custom__';
   let customPending = false; // "Custom city…" chosen but not saved yet
+  let pickerCountry = null; // the country shown in the picker when it is not the country of the city in use
 
   // Name, latitude, longitude and time zone of a city that is not in the list.
   function customCityPanel(s) {
@@ -322,7 +323,7 @@
             const latitude = num(lat);
             const longitude = num(lon);
             if (Number.isNaN(latitude) || Number.isNaN(longitude)) { WW.toast(T('Latitude and longitude must be numbers, like 24.7136 and 46.6753'), 'error'); return; }
-            await save({ useCustomCity: true, customCity: { name: name.value, latitude, longitude, timeZone: zone.value } });
+            await save({ useCustomCity: true, countryCode: null, customCity: { name: name.value, latitude, longitude, timeZone: zone.value } });
             if (WW.state.settings.useCustomCity) { customPending = false; await WW.refreshCity(); WW.toast(T('City saved')); WW.renderSettings(); }
           },
         })),
@@ -434,24 +435,53 @@
     const view = clear(document.getElementById('view'));
     const s = WW.state.settings;
 
-    const customShown = s.useCustomCity || customPending;
+    const manual = s.useCustomCity && s.countryCode === null; // a city typed in by hand
+    const customShown = manual || customPending;
+    const country = pickerCountry || s.countryCode || 'EG';
+    const egyptCurrent = !s.useCustomCity && (s.countryCode || 'EG') === 'EG';
+    const cityChosen = async () => { pickerCountry = null; customPending = false; await WW.refreshCity(); };
     const city = h('select', {
       'aria-label': T('City'),
       onchange: async (e) => {
+        if (e.target.value === '') return;
         if (e.target.value === CUSTOM_VALUE) {
           customPending = true;
-          if (s.customCity) { await save({ useCustomCity: true }); await WW.refreshCity(); } // the one typed in before
+          if (s.customCity) { await save({ useCustomCity: true, countryCode: null }); await WW.refreshCity(); } // the one typed in before
           WW.renderSettings();
           return;
         }
-        customPending = false;
-        await save({ useCustomCity: false, cityName: e.target.value });
-        await WW.refreshCity();
+        await save({ useCustomCity: false, cityName: e.target.value, countryCode: 'EG' });
+        await cityChosen();
         WW.renderSettings();
       },
     },
-    [...WW.state.cities.map((name) => h('option', { value: name, text: T(name), selected: !customShown && s.cityName === name })),
+    [...(egyptCurrent || customShown ? [] : [h('option', { value: '', text: T('Choose a city…'), selected: true })]),
+      ...WW.state.cities.map((name) => h('option', { value: name, text: T(name), selected: egyptCurrent && !customShown && s.cityName === name })),
       h('option', { value: CUSTOM_VALUE, text: T('Custom city…'), selected: customShown })]);
+    const countrySel = WW.countrySelect({
+      id: 'settings-country', value: country,
+      onChange: (code) => { pickerCountry = code; WW.renderSettings(); },
+    });
+    const worldPart = () => {
+      const here = s.useCustomCity && s.countryCode === country && s.customCity;
+      const cityInfo = WW.state.city;
+      return h('div', {},
+        here ? h('p', { class: 'current-city' }, T('Current city: {city}', { city: s.customCity.name }), h('small', { text: ` · ${T('Time zone')}: ${s.customCity.timeZone}` })) : null,
+        here && cityInfo && cityInfo.custom && cityInfo.differs
+          ? h('p', { class: 'hint', text: T("Prayer times (zone start and end) are shown in {zone} time. Your tasks keep using this computer's clock ({computer}).", { zone: cityInfo.timeZone, computer: cityInfo.computerTimeZone }) })
+          : null,
+        WW.worldCitySearch({
+          country,
+          onChosen: async (result) => {
+            await cityChosen();
+            WW.state.settings = await WW.call('getSettings');
+            const method = (WW.state.methods.find((m) => m.key === result.method) || {}).label || result.method;
+            WW.toast(T('City saved. Calculation method: {method} (you can change it below).', { method }));
+            WW.renderSettings();
+          },
+        }),
+        customPending ? null : h('button', { type: 'button', class: 'btn small', id: 'city-not-listed', text: T('My city is not in the list'), onclick: () => { customPending = true; WW.renderSettings(); } }));
+    };
     const customPanel = customShown ? customCityPanel(s) : null;
     const method = h('select', { 'aria-label': T('Calculation method'), onchange: (e) => save({ method: e.target.value }) },
       WW.state.methods.map((m) => h('option', { value: m.key, text: m.label, selected: s.method === m.key })));
@@ -494,7 +524,8 @@
 
       section(T('Prayer Times'),
         h('div', { class: 'settings-grid' },
-          row(T('City'), h('div', {}, city, customPanel)),
+          row(T('Country'), countrySel),
+          row(T('City'), h('div', {}, country === 'EG' ? city : worldPart(), customPanel)),
           row(T('Calculation method'), method),
           row(T('Manual adjustment'), h('div', {}, adjustments, h('p', { class: 'hint', text: T('Minutes added to the calculated time (negative = earlier).') }))),
           row(T('Hijri date'), hijri))),

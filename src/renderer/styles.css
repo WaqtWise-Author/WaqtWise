@@ -753,3 +753,23 @@ html[dir="rtl"] .task-notes { text-align: right; }
 /* The priority also differs by size, so it is not told by color alone. */
 .prio.Low { width: 8px; height: 8px; opacity: 0.85; }
 .prio.High { width: 12px; height: 12px; }
+
+/* ---- Country and city pickers ---- */
+.city-search { display: grid; gap: 8px; margin-block: 8px; }
+.city-search input[type='search'] { inline-size: 100%; }
+.city-results { list-style: none; margin: 0; padding: 0; max-block-size: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-ctl); background: var(--surface); }
+.city-results li + li { border-block-start: 1px solid var(--border); }
+.city-result { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; inline-size: 100%; min-block-size: 44px; padding-block: 8px; padding-inline: 14px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: start; cursor: pointer; }
+.city-result:hover, .city-result:focus-visible { background: var(--chip); }
+.city-result:disabled { opacity: .6; cursor: default; }
+.city-name { font-weight: 600; }
+.city-region { font-size: var(--fs-sm); color: var(--text-soft); }
+.current-city { margin: 4px 0; font-weight: 700; }
+.current-city small { font-weight: 400; color: var(--text-soft); font-size: var(--fs-sm); }
+.welcome-city-box { display: grid; gap: 6px; }
+.welcome-form label + .welcome-city-box { margin-block-start: 0; }
+.welcome-form .city-results { max-block-size: 200px; }
+.welcome-form label[for='welcome-city'] { margin-block-start: 22px; }
+
+.strip-labels.has-narrow { padding-block-end: 1.5em; }
+.strip-labels > div.narrow { position: relative; inset-block-start: 1.5em; overflow: visible; text-overflow: clip; }

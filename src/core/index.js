@@ -10,6 +10,7 @@ module.exports = {
   ...require('./reminders'),
   ...require('./reminder-engine'),
   ...require('./cities'),
+  ...require('./world'),
   ...require('./task-info'),
   ...require('./settings'),
   ...require('./free-tasks'),

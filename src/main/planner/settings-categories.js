@@ -24,7 +24,7 @@ class SettingsMethods {
     const merged = mergeSettings(previous, patch);
     // Turning the "still running in the background" message back on shows it again at the next close.
     if (patch.showBackgroundMessage === true && !previous.showBackgroundMessage) merged.backgroundMessageShown = false;
-    const prayerSettings = ['cityName', 'useCustomCity', 'customCity', 'method', 'adjustments'];
+    const prayerSettings = ['cityName', 'useCustomCity', 'customCity', 'countryCode', 'method', 'adjustments'];
     this.data.settings = merged;
     this.providerCache = null;
     if (prayerSettings.some((key) => key in patch)) {
@@ -44,6 +44,37 @@ class SettingsMethods {
       this.onDataChanged();
     }
     return copy(this.data.settings);
+  }
+
+  // ---- countries and cities of the world ----------------------------------------------------------------------
+
+  getCountries() {
+    return core.countryList(this.settings.language);
+  }
+
+  searchCities({ country, query } = {}) {
+    return core.searchCities(country, query);
+  }
+
+  // Picks a city from the world list: it is kept as the custom city (coordinates + time zone), with the country's usual method.
+  chooseWorldCity({ country, id } = {}) {
+    const city = core.worldCity(country, id);
+    const method = core.methodForCountry(country);
+    try {
+      this.saveSettings({
+        useCustomCity: true,
+        customCity: { name: city.name, latitude: city.latitude, longitude: city.longitude, timeZone: city.timeZone },
+        countryCode: country,
+        method,
+      });
+    } catch (error) {
+      // Very far north or south the sun does not set or rise for weeks, and the prayers cannot be worked out all year.
+      if (error.message === t('These prayer time settings put the prayers out of order on some days. Please change the adjustments.')) {
+        throw new Error(t('Prayer times cannot be worked out all year for {city} (it is too far north or south). Choose another city, or enter one by hand.', { city: city.name }));
+      }
+      throw error;
+    }
+    return { city: this.cityInfo(), method };
   }
 
   validateCategory({ name, color }, ignoreId) {

@@ -94,6 +94,7 @@ The Free To-Do list holds tasks that have no time yet. It has no reminders, no z
 - `lateAfterMinutes` (0-10080, default 60): a done task is *late* when it was ticked more than this many minutes after its start time. It only affects the lateness charts in Statistics.
 - `taskInfo` (object of 14 true/false keys): which details each task row shows in the Daily View. Keys: `time`, `endTime`, `duration`, `priority`, `category`, `status`, `conflicts`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`, `continues`, `backupStart`. Default: all on except `endTime`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`. It only changes how rows look; no task data changes.
 - `collapseZones` (true/false, default true): Daily View shows a zone with no tasks, and on today a zone that is over with all tasks done, as one line. Only changes how the page looks.
+- `countryCode` (two capital letters, or null): the country of the city in use. `"EG"` with `useCustomCity` false means Egypt's built-in list (`cityName`); another country means a city chosen from the world list and kept in `customCity`; null means a city typed in by hand. Files from older versions with a typed-in city get null.
 
 `settings.useCustomCity` (true/false) and `settings.customCity` (`null` or `{ "name", "latitude", "longitude", "timeZone" }`,
 the time zone being an IANA name such as `Asia/Riyadh`). An invalid city is dropped when a backup is imported.

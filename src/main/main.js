@@ -125,6 +125,7 @@ function createWindow({ visible }) {
     if (showOnReady && mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.maximize(); // always opens full size
       mainWindow.show();
+      bringToFront();
     }
   });
 
@@ -138,9 +139,10 @@ function createWindow({ visible }) {
     event.preventDefault();
     hideToTray(true);
   });
-  mainWindow.on('minimize', (event) => {
+  // "minimize" cannot be cancelled on Windows (preventDefault does nothing there), so the window is simply hidden
+  // after it has been minimized; showWindow() restores it first.
+  mainWindow.on('minimize', () => {
     if (quitting) return;
-    event.preventDefault();
     hideToTray(false);
   });
   // Windows is shutting down or logging off: never get in its way.
@@ -154,6 +156,32 @@ function createWindow({ visible }) {
   });
 }
 
+// Windows does not let a program that is running in the background take the screen: the window only flashes in the
+// taskbar. This is the case after a start with Windows, when the person later opens the app from its shortcut or the
+// tray. Asking for the focus, and putting the window on top for a moment, makes it come to the front.
+let frontTimer = null;
+function bringToFront() {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return;
+  try {
+    if (typeof app.focus === 'function') app.focus({ steal: true });
+    if (typeof win.setAlwaysOnTop === 'function') {
+      win.setAlwaysOnTop(true);
+      if (typeof win.moveTop === 'function') win.moveTop();
+      win.focus();
+      clearTimeout(frontTimer);
+      frontTimer = setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(false);
+      }, 400);
+      if (frontTimer.unref) frontTimer.unref();
+    } else {
+      win.focus();
+    }
+  } catch (error) {
+    log('Could not bring the window to the front:', error);
+  }
+}
+
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createWindow({ visible: true });
@@ -163,7 +191,7 @@ function showWindow() {
   if (mainWindow.isMinimized()) mainWindow.restore();
   if (!mainWindow.isMaximized()) mainWindow.maximize(); // opening from the tray brings it back full size
   mainWindow.show();
-  mainWindow.focus();
+  bringToFront();
 }
 
 function hideWindow() {

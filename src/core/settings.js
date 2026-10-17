@@ -5,6 +5,7 @@
 
 const { t } = require('./i18n');
 const { CITIES, DEFAULT_CITY, validateCustomCity } = require('./cities');
+const { isCountryCode } = require('./world');
 const { PRAYERS } = require('./zones');
 const { DEFAULT_REMINDER_SETTINGS } = require('./reminders');
 
@@ -185,6 +186,7 @@ const DEFAULT_SETTINGS = {
   cityName: DEFAULT_CITY,
   useCustomCity: false, // true: use customCity below instead of the list
   customCity: null, // { name, latitude, longitude, timeZone }
+  countryCode: 'EG', // ISO code of the country of the city (null: a city typed in by hand); Egypt uses the built-in list
   method: 'egyptian',
   adjustments: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
   hijriAdjustment: 0, // -1, 0 or +1 day
@@ -230,6 +232,7 @@ function validateSettings(settings) {
     if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)) errors.push(t('Unknown request.'));
   }
   if ('cityName' in s && !CITIES.some((c) => c.name === s.cityName)) errors.push(t('Please choose a city from the list'));
+  if ('countryCode' in s && s.countryCode !== null && !isCountryCode(s.countryCode)) errors.push(t('Please choose a country from the list'));
   if ('customCity' in s && s.customCity !== null) errors.push(...validateCustomCity(s.customCity));
   if ('method' in s && !METHOD_KEYS.includes(s.method)) errors.push(t('Please choose a calculation method from the list'));
   if ('adjustments' in s) {
@@ -311,6 +314,8 @@ function sanitizeSettings(raw) {
     }
   }
   if (clean.useCustomCity && !clean.customCity) clean.useCustomCity = false;
+  // Before 0.8.0 a custom city was always typed by hand; Egypt's list never uses one.
+  if (clean.useCustomCity && clean.countryCode === 'EG' && !('countryCode' in raw)) clean.countryCode = null;
   return clean;
 }
 
