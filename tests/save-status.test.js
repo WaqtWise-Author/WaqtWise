@@ -49,9 +49,11 @@ test('A background save that fails raises the same flag, and a normal change cle
   const { service, store } = make();
   const good = store.save.bind(store);
   store.save = () => { throw new Error('locked'); };
+  store.saveState = () => { throw new Error('locked'); }; // the small file fails too, so the app tries a full save and the flag is raised
   assert.throws(() => service.saveReminderState({ delivered: {}, lastTickAt: null, snoozed: [] }), /locked/);
   assert.equal(service.getSaveStatus().ok, false);
   store.save = good;
+  delete store.saveState;
   service.saveTask({ mode: 'create', form: form() });
   assert.equal(service.getSaveStatus().ok, true);
 });

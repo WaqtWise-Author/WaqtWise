@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const WEIGHTS = [400, 500, 600, 700, 800];
+const WEIGHTS = [400, 600, 700, 800]; // the four weights of the type scale (see the top of styles.css)
 const SUBSETS = ['latin', 'latin-ext'];
 
 function main() {

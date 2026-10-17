@@ -191,7 +191,14 @@ async function launch(options = {}) {
   fake.alertWindows = () => fake.windows.filter((w) => w.options.title === 'WaqtWise reminder' && !w.destroyed);
   fake.fire = (h, m, sec = 0) => tickEngineAt(fake, h, m, sec);
   fake.svc = (method, ...args) => fake.ipc.svc(undefined, method, args);
-  fake.dataFile = () => JSON.parse(fs.readFileSync(path.join(userData, 'data.json'), 'utf8'));
+  // The data file as the next start would read it: the newest reminder bookkeeping lives in state.json.
+  fake.dataFile = () => {
+    const mainFile = path.join(userData, 'data.json');
+    const data = fs.existsSync(mainFile) ? JSON.parse(fs.readFileSync(mainFile, 'utf8')) : { tasks: [] }; // nothing but the small state file may have been written yet
+    const stateFile = path.join(userData, 'state.json');
+    if (fs.existsSync(stateFile)) data.reminderState = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    return data;
+  };
   fake.settleDialogs = () => new Promise((resolve) => setImmediate(resolve));
   fake.cleanup = () => {
     // stop the reminder engine's timer, otherwise the test process would never finish

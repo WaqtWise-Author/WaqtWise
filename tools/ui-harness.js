@@ -49,7 +49,8 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
     calls.push(method);
     return JSON.parse(JSON.stringify(await service[method](...args)));
   });
-  await page.addInitScript(() => {
+  await page.addInitScript((splashMs) => {
+    if (splashMs !== null) window.WW_SPLASH_MS = splashMs; // the real start-up splash lasts 3 seconds; the checks do not wait for it
     window.__exports = [];
     window.api = {
       call: (method, ...args) => window.__invoke(method, args),
@@ -59,11 +60,11 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
       previewAlert: async () => { window.__exports.push('preview-alert'); return { ok: true }; },
       on: (channel, cb) => { (window.__handlers = window.__handlers || {})[channel] = cb; },
     };
-  });
+  }, keepSplash ? null : 300);
   const file = path.resolve(__dirname, '../src/renderer/index.html');
   await page.goto(`file://${file}`);
   await page.waitForSelector('.zone');
-  if (!keepSplash) await page.waitForSelector('#splash', { state: 'detached' }); // the start-up splash lasts about 2 seconds
+  if (!keepSplash) await page.waitForSelector('#splash', { state: 'detached' }); // the real splash lasts 3 seconds; here it is cut to 0.3 s
   return { browser, context, page, errors, calls };
 }
 

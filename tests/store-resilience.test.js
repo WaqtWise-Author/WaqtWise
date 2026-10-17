@@ -24,7 +24,7 @@ test('a save is tried again when Windows says the file is busy for a moment', ()
   store.save(withTask('first'));
   const real = fs.renameSync;
   let calls = 0;
-  fs.renameSync = (...args) => { calls += 1; if (calls <= 3) throw failing('EPERM'); return real(...args); };
+  fs.renameSync = (...args) => { if (args[1] !== store.filePath) return real(...args); calls += 1; if (calls <= 3) throw failing('EPERM'); return real(...args); };
   try {
     store.save(withTask('second'));
   } finally {

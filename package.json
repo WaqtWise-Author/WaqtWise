@@ -1,7 +1,7 @@
 {
   "name": "waqtwise",
   "productName": "WaqtWise",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "WaqtWise - task manager with prayer-time zones",
   "private": true,
   "author": "WaqtWise",
@@ -33,6 +33,13 @@
       "src/**/*",
       "package.json"
     ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableCookieEncryption": true,
+      "onlyLoadAppFromAsar": true
+    },
     "win": {
       "target": [
         {

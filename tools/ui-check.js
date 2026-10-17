@@ -65,6 +65,7 @@ async function setTime(page, hour, minute, ampm) {
   const exampleSeed = require(process.env.SEED_PATH || './ui-seed');
   const service = createService();
   exampleSeed(service);
+  service.saveSettings({ collapseZones: false }); // the steps below look at every zone in full; folding has its own step
   const app = await openApp({ playwright, service, executablePath, width: 1100, height: 1100 });
   const { page, errors } = app;
 
@@ -81,22 +82,71 @@ async function setTime(page, hour, minute, ampm) {
     await splashApp.page.waitForSelector('#splash', { state: 'detached', timeout: 6000 });
     await splashApp.browser.close();
   });
-  await step('a click skips the splash', async () => {
-    const skipApp = await openApp({ playwright, service: createService(), executablePath, width: 1100, height: 700, keepSplash: true });
-    await skipApp.page.waitForSelector('.zone');
-    await skipApp.page.click('#splash');
-    await skipApp.page.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
-    await skipApp.browser.close();
-  });
-  await step('a key press skips the splash too', async () => {
-    const keyApp = await openApp({ playwright, service: createService(), executablePath, width: 1100, height: 700, keepSplash: true });
-    await keyApp.page.waitForSelector('.zone');
-    await keyApp.page.keyboard.press('Space');
-    await keyApp.page.waitForSelector('#splash', { state: 'detached', timeout: 2000 });
-    await keyApp.browser.close();
+  await step('nothing skips the splash: a click or a key press does nothing, and it stays for 3 seconds', async () => {
+    const app = await openApp({ playwright, service: createService(), executablePath, width: 1100, height: 700, keepSplash: true });
+    const p = app.page;
+    await p.waitForSelector('.zone');
+    await p.click('#splash');
+    await p.keyboard.press('Space');
+    await p.keyboard.press('Enter');
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(400);
+    assert.equal(await p.isVisible('#splash'), true, 'still there after a click and key presses');
+    assert.equal(await p.$('.dialog'), null, 'the keys did not reach the page behind it');
+    await p.waitForSelector('#splash', { state: 'detached', timeout: 6000 });
+    const shownFor = await p.evaluate(() => performance.now());
+    assert.ok(shownFor >= 2900, `the splash lasted ${Math.round(shownFor)} ms`);
+    await app.browser.close();
   });
 
   console.log('Daily View');
+  await step('Daily View folds empty zones and finished past zones into one line, and opens them again', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '15:30') });
+    const add = (title, time, minutes, categoryId) => svc.saveTask({ mode: 'create', form: {
+      title, start: { mode: 'fixed', time }, durationMinutes: minutes, date: '2026-10-10', recurrence: null,
+      reminders: { enabled: false, offsets: [] }, priority: 'Medium', categoryId: categoryId || null, notes: '' } }).taskId;
+    const done = [add('Morning walk', '06:30', 30), add('Read Quran', '07:00', 20), add('Team call', '12:30', 45)];
+    add('Send the report', '14:00', 30); add('Gym', '16:00', 60); add('Study SQL', '20:00', 90);
+    done.forEach((taskId) => svc.setDone({ taskId, dateKey: '2026-10-10', done: true }));
+    const app = await openApp({ playwright, service: svc, executablePath, width: 1100, height: 700 });
+    const p = app.page;
+    await p.waitForSelector('.zone');
+    const folded = () => p.$$eval('.zone.folded', (els) => els.map((e) => e.getAttribute('aria-label')));
+    assert.deepEqual(await folded(), ['Fajr → Dhuhr', 'Maghrib → Isha'], 'the finished past zone and the empty zone');
+    assert.match(await p.textContent('.zone.z1 .zone-fold'), /2 of 2 done/);
+    assert.match(await p.textContent('.zone.z4 .zone-fold'), /No tasks · 1h 20m free/);
+    assert.match(await p.textContent('.zone.z2 .notdone-chip'), /1 not done/, 'a past zone with something not done stays open and says so');
+    const top = await p.$eval('.zone.current', (el) => el.getBoundingClientRect().top);
+    assert.ok(top >= 0 && top < 700, `the current zone is on screen when today opens (${Math.round(top)}px from the top)`);
+    // keyboard: Enter opens it, focus stays on its button, which is now the "hide" button
+    await p.focus('.zone.z4 .zone-fold');
+    assert.equal(await p.getAttribute('.zone.z4 .zone-fold', 'aria-expanded'), 'false');
+    await p.keyboard.press('Enter');
+    assert.match(await p.textContent('.zone.z4 .empty-zone'), /No tasks/);
+    assert.equal(await p.evaluate(() => document.activeElement.getAttribute('aria-expanded')), 'true');
+    assert.deepEqual(await folded(), ['Fajr → Dhuhr']);
+    // it stays open across a redraw, and can be hidden again
+    await p.evaluate(() => WW.refreshDay());
+    assert.equal(await p.$$eval('.zone.z4.folded', (e) => e.length), 0, 'a zone you opened stays open');
+    await p.click('.zone.z4 .zone-unfold');
+    assert.deepEqual(await folded(), ['Fajr → Dhuhr', 'Maghrib → Isha']);
+    // another day: only the empty zones fold
+    await p.evaluate(() => WW.showDay('2026-10-09'));
+    await p.waitForSelector('.zone');
+    assert.equal(await p.$$eval('.zone.folded', (e) => e.length), 5, 'a day with no tasks folds every zone');
+    await p.evaluate(() => WW.showDay('2026-10-10'));
+    // the setting
+    await p.evaluate(() => WW.showSettings());
+    await p.selectOption('#collapse-zones', 'full');
+    await p.evaluate(() => WW.showDaily());
+    await p.waitForSelector('.zone');
+    assert.equal(await p.$$eval('.zone.folded', (e) => e.length), 0, 'Show in full: nothing is folded');
+    assert.equal(await p.$$('.zone-unfold').then((a) => a.length), 0);
+    assert.deepEqual(realErrors(app.errors), []);
+    await app.browser.close();
+  });
+
   await step('shows the header, Hijri date, Planning Day line and 5 zones', async () => {
     assert.match(await page.textContent('.day-title'), /Sunday, October 4, 2026/);
     assert.match(await page.textContent('.day-sub'), /1448/);
@@ -1361,8 +1411,10 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(overflow, false, 'no sideways scrolling');
     await p.click('.back-link');
     await p.waitForSelector('.zone');
-    const names = await p.$$eval('.zone-name', (els) => els.map((e) => e.firstChild.textContent));
+    const names = await p.$$eval('.zone-name, .zf-name', (els) => els.map((e) => e.firstChild.textContent));
     assert.deepEqual(names, ['الفجر ← الظهر', 'الظهر ← العصر', 'العصر ← المغرب', 'المغرب ← العشاء', 'العشاء ← الفجر']);
+    assert.match(await p.textContent('.zone.z4 .zone-fold'), /لا مهام · .* متاحة/, 'the empty zone is folded, in Arabic');
+    await shot(p, 'ar-daily-folded');
     const body = await p.textContent('body');
     assert.equal(/[٠-٩]/.test(body), false, 'digits stay 0123456789');
     assert.match(await p.textContent('.day-title'), /(الأحد|الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت)، \d+ \S+ \d{4}/);

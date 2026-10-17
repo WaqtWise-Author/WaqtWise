@@ -52,3 +52,18 @@ test('Dialogs keep Tab inside, and div buttons answer Enter and Space', () => {
   assert.match(domJs, /event\.key === 'Tab'/);
   assert.match(domJs, /div\[role="button"\]:not\(\.task\)/);
 });
+
+test('Type scale: seven font sizes and four weights, set once at the top of the stylesheet', () => {
+  const tokens = [...css.matchAll(/--fs-(xs|sm|md|lg|xl|2xl|3xl):\s*(\d+)px/g)].map((m) => Number(m[2]));
+  assert.deepEqual(tokens, [12, 14, 16, 18, 22, 28, 36]);
+  const sizes = [...css.matchAll(/font-size:\s*([^;}]+)/g)].map((m) => m[1].trim());
+  const allowed = (v) => /^var\(--fs-(xs|sm|md|lg|xl|2xl|3xl)\)$/.test(v) || /^clamp\(/.test(v);
+  assert.deepEqual(sizes.filter((v) => !allowed(v)), [], 'only the scale (or the splash/welcome clamp for the screen height) is used');
+  assert.ok(sizes.filter((v) => /^clamp\(/.test(v)).length <= 3, 'only the start-up and welcome screens scale with the window');
+  const weights = new Set([...css.matchAll(/font-weight:\s*(\d+)/g)].map((m) => Number(m[1])));
+  assert.deepEqual([...weights].sort(), [400, 600, 700, 800]);
+  const bold800 = [...css.split('\n')].filter((l) => !l.startsWith('@font-face') && /font-weight: 800/.test(l));
+  assert.ok(bold800.length <= 4, 'the heaviest weight is for the big numbers and the brand name only');
+  const faces = [...css.matchAll(/@font-face \{ font-family: 'Plus Jakarta Sans'; font-weight: (\d+)/g)].map((m) => Number(m[1]));
+  assert.deepEqual([...new Set(faces)].sort(), [400, 600, 700, 800], 'a font file for each weight, none for unused ones');
+});

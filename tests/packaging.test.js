@@ -166,7 +166,7 @@ test('fonts: the stylesheet, the copy script and the security policy agree', () 
   assert.equal(pkg.scripts.postinstall, 'node tools/copy-fonts.js');
   assert.ok(pkg.devDependencies['@fontsource/plus-jakarta-sans']);
   const urls = [...css.matchAll(/url\('(fonts\/[^']+)'\)/g)].map((m) => m[1]);
-  assert.equal(urls.length, 10, '5 weights x latin / latin-ext');
+  assert.equal(urls.length, 8, '4 weights x latin / latin-ext');
   for (const u of urls) {
     const [, subset, weight] = u.match(/PlusJakartaSans-(latin(?:-ext)?)-(\d+)\.woff2$/);
     assert.ok(script.includes(`'${subset}'`) && script.includes(String(weight)), `${u} is produced by copy-fonts.js`);
@@ -219,4 +219,30 @@ test('Arabic font: IBM Plex Sans Arabic is inside the project (not copied at ins
   assert.ok(view.includes("'IBM Plex Sans Arabic'"));
   const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
   assert.ok(!/fonts-arabic/.test(ignore));
+});
+
+test('Electron Fuses: the packed app cannot be used as a plain Node program, and still loads its pages from files', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const fuses = pkg.build.electronFuses;
+  assert.equal(fuses.runAsNode, false);
+  assert.equal(fuses.enableNodeOptionsEnvironmentVariable, false);
+  assert.equal(fuses.enableNodeCliInspectArguments, false);
+  assert.equal(fuses.onlyLoadAppFromAsar, true);
+  // The windows are loaded with loadFile(), so the file: protocol keeps its normal rights: it must not be switched off.
+  assert.ok(!('grantFileProtocolExtraPrivileges' in fuses) || fuses.grantFileProtocolExtraPrivileges === true);
+  assert.ok(pkg.build.asar !== false, 'onlyLoadAppFromAsar needs the app to be packed in an asar archive');
+  // Nothing in the app starts Node as a child process (that is what runAsNode=false would break).
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+  for (const file of walk(path.join(root, 'src')).filter((f) => f.endsWith('.js'))) {
+    const text = fs.readFileSync(file, 'utf8');
+    assert.ok(!/child_process|ELECTRON_RUN_AS_NODE|utilityProcess/.test(text), `${path.relative(root, file)} does not start processes`);
+  }
+});
+
+test('The version is 0.8.0 or newer, and the changelog has an entry for it', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const [maj, min] = pkg.version.split('.').map(Number);
+  assert.ok(maj > 0 || min >= 8, pkg.version);
+  const log = fs.readFileSync(path.join(root, 'docs/CHANGELOG.md'), 'utf8');
+  assert.ok(log.includes(`## ${pkg.version}`), `docs/CHANGELOG.md has a "## ${pkg.version}" section`);
 });

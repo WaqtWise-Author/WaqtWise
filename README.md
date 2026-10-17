@@ -14,7 +14,7 @@ Full specification: WaqtWise_Spec.md (kept outside this folder).
 - `tools/` - screenshot / click-through tools used while building (not part of the installed app)
 - `build/` - icon and installer script
 - `docs/` - HOW_TO_INSTALL_AND_USE.md (for the user), ACCEPTANCE_CHECKLIST.md (what is checked where, and what to
-  try on a real PC), DATA_FORMAT.md (backup file format)
+  try on a real PC), DATA_FORMAT.md (backup file format), CHANGELOG.md (what changed in each version; raise `version` in `package.json` and add a section there before every release)
 
 ## GitHub does the work
 
