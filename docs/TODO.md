@@ -15,7 +15,7 @@ Open: the exact list of countries and cities to add.
 
 ## From the code review of 15 Oct 2026 (not done yet)
 
-- **Batch 3, speed**: cache the days and the repeat rules, write `lastTickAt` to a small separate file, stop the timers while the window is hidden, shorten the 3.2 s splash.
-- **Batch 4, look and accessibility**: one font-size scale and fewer weights (the Arabic font is done), colors with low contrast (zones 1, 3, 4, the bell badge, the error toast), padding with `inline` properties for Arabic, focus in dialogs, real buttons for "Upcoming" and "Continues".
-- **Electron Fuses** (`@electron/fuses`): needs a new dev dependency and an updated `package-lock.json`, so it is done on the user's computer with `npm install`.
+- **Batch 3, speed (done: the repeat count is worked out once per rule, overlap check in one pass, remembered date conversions, `state.json` for the minute-by-minute bookkeeping, no redraw while the window is hidden, splash 1.8 s, one start-up request instead of two). Left**: a cache of whole days shared by the day view and the reminder engine, and a worker for very large plans (thousands of tasks).
+- **Batch 4, look and accessibility**:  colors with low contrast (zones 1, 3, 4, the bell badge, the error toast), padding with `inline` properties for Arabic, focus in dialogs, real buttons for "Upcoming" and "Continues".
+- **Electron Fuses**: done through `build.electronFuses` in `package.json` (electron-builder applies them while packing, no new package needed). Still to do: `enableEmbeddedAsarIntegrityValidation`, only after the installer has been tried on Windows.
 - Full-screen alert: title size in `cqmin` and a maximum height so the buttons are always visible.

@@ -47,8 +47,15 @@ const DEFAULT_OPTIONS = {
 
 const MAX_PERIODS = 200000; // safety stop
 
+// A copy of plain data (numbers, text, true/false, lists, plain objects). Same result as a JSON copy, without the text step.
 function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+  if (Array.isArray(value)) return value.map(clone);
+  if (value !== null && typeof value === 'object') {
+    const out = {};
+    for (const key of Object.keys(value)) if (value[key] !== undefined) out[key] = clone(value[key]);
+    return out;
+  }
+  return value;
 }
 
 function uniqueSorted(numbers) {
@@ -101,9 +108,12 @@ function checkPositions(positions, label, errors) {
 const { MAX_INTERVAL, MAX_COUNT } = require('./limits');
 
 function validateRule(rule) {
-  const errors = [];
   if (!rule || typeof rule !== 'object') return [t('Recurrence is missing')];
-  const r = normalizeRule(rule);
+  return validateNormalized(normalizeRule(rule));
+}
+
+function validateNormalized(r) {
+  const errors = [];
 
   if (!isValidKey(r.startDate)) errors.push(t('Start date is not a valid date'));
   if (!FREQUENCIES.includes(r.frequency)) errors.push(t('Repeat must be daily, weekly, monthly or yearly'));
@@ -278,13 +288,37 @@ function periodInfo(rule, opts) {
   throw new Error(`Unknown frequency: ${rule.frequency}`);
 }
 
+// The day number of the last occurrence of a rule that ends after a number of times (-Infinity when it never occurs).
+// Remembered per rule object; the remembered value is only used while the rule and the options are unchanged.
+const lastDayMemo = new WeakMap();
+
+function lastDayOfCount(rule, r, opts, info, startDay) {
+  const signature = JSON.stringify([r, opts.workingDays, opts.weekStartsOn]);
+  const known = lastDayMemo.get(rule);
+  if (known && known.signature === signature) return known.lastDay;
+  let emitted = 0;
+  let lastDay = -Infinity;
+  for (let k = 0, guard = 0; guard < MAX_PERIODS && emitted < r.end.count; guard++, k++) {
+    for (const key of info.datesOf(k)) {
+      const day = keyToDayNumber(key);
+      if (day < startDay) continue;
+      lastDay = day;
+      emitted++;
+      if (emitted >= r.end.count) break;
+    }
+  }
+  lastDayMemo.set(rule, { signature, lastDay });
+  return lastDay;
+}
+
 // All dates the rule produces between fromKey and toKey (inclusive), in order.
 // options: { workingDays, weekStartsOn, limit }  (limit = stop after this many results)
 function generateDates(rule, fromKey, toKey, options = {}) {
-  const errors = validateRule(rule);
+  if (!rule || typeof rule !== 'object') throw new Error(t('Recurrence is missing'));
+  const r = normalizeRule(rule);
+  const errors = validateNormalized(r);
   if (errors.length) throw new Error(errors.join('; '));
 
-  const r = normalizeRule(rule);
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const limit = options.limit === undefined ? Infinity : options.limit;
 
@@ -293,24 +327,22 @@ function generateDates(rule, fromKey, toKey, options = {}) {
   let endDay = keyToDayNumber(toKey);
   if (r.end.type === 'date') endDay = Math.min(endDay, keyToDayNumber(r.end.date));
 
-  const maxCount = r.end.type === 'count' ? r.end.count : Infinity;
   const info = periodInfo(r, opts);
 
-  // Count-limited rules must be counted from the very first occurrence.
-  // Other rules can safely jump close to the requested range.
-  let k = r.end.type === 'count' ? 0 : Math.max(0, info.estimate(fromDay) - 1);
+  // A rule that ends "after N times" is counted from its first occurrence once; the day of its last occurrence is
+  // remembered, so after that it works like a rule with an end date and can jump close to the requested range.
+  if (r.end.type === 'count') endDay = Math.min(endDay, lastDayOfCount(rule, r, opts, info, startDay));
+
+  let k = Math.max(0, info.estimate(fromDay) - 1);
 
   const result = [];
-  let emitted = 0;
 
   for (let guard = 0; guard < MAX_PERIODS; guard++, k++) {
     if (info.startOf(k) > endDay) break;
     for (const key of info.datesOf(k)) {
       const day = keyToDayNumber(key);
       if (day < startDay) continue;
-      if (emitted >= maxCount) return result;
       if (day > endDay) return result;
-      emitted++;
       if (day >= fromDay) {
         result.push(key);
         if (result.length >= limit) return result;

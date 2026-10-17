@@ -214,6 +214,8 @@ const DEFAULT_SETTINGS = {
   lateAfterMinutes: 60,
   // What each task row in the Daily View shows (see TASK_INFO in task-info.js)
   taskInfo: { ...DEFAULT_TASK_INFO },
+  // Daily View: empty zones, and zones that are over and fully done, are shown as one line (click to open)
+  collapseZones: true,
 };
 
 function isWholeNumber(n, min, max) {
@@ -269,7 +271,7 @@ function validateSettings(settings) {
   if ('taskInfo' in s) errors.push(...validateTaskInfo(s.taskInfo));
   if ('alertScreens' in s && !ALERT_SCREENS.includes(s.alertScreens)) errors.push(t('Choose all screens or the main screen'));
   if ('alertAppearance' in s) errors.push(...validateAppearance(s.alertAppearance));
-  for (const key of ['notificationsEnabled', 'soundEnabled', 'zoneStartNotifications', 'startWithWindows', 'showBackgroundMessage', 'backgroundMessageShown', 'welcomeShown', 'fullScreenAlerts', 'fullScreenDefaultForNewTasks', 'alertSoundRepeat', 'useCustomCity']) {
+  for (const key of ['notificationsEnabled', 'soundEnabled', 'zoneStartNotifications', 'startWithWindows', 'showBackgroundMessage', 'backgroundMessageShown', 'welcomeShown', 'fullScreenAlerts', 'fullScreenDefaultForNewTasks', 'alertSoundRepeat', 'useCustomCity', 'collapseZones']) {
     if (key in s && typeof s[key] !== 'boolean') errors.push(`${key} must be on or off`);
   }
   return errors;

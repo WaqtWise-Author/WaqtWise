@@ -153,6 +153,7 @@ class DayViewMethods {
         scheduledLabel: z.scheduledLabel,
         freeLabel: z.freeLabel,
         isCurrent,
+        isPast: planningKey === currentKey && nowMs >= z.end.getTime(),
         nowPct: isCurrent ? ((nowMs - z.start.getTime()) / span) * 100 : null,
         segments,
         tasks: z.tasks.map((o) => this.viewOccurrence(o, planningKey, nowDate, conflictTitles.get(o.id))),

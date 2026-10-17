@@ -36,14 +36,29 @@ function splitKey(key) {
 }
 
 // Whole days since 1970-01-01 for a calendar date.
+// The same few thousand dates are converted again and again (every scan of every task), so the answers are remembered.
+const MEMO_LIMIT = 50000;
+const dayNumberMemo = new Map();
+const keyMemo = new Map();
+
 function keyToDayNumber(key) {
-  const { y, m, d } = splitKey(key);
-  return Math.round(Date.UTC(y, m - 1, d) / 86400000);
+  const known = dayNumberMemo.get(key);
+  if (known !== undefined) return known;
+  const { y, m, d } = splitKey(key); // throws for a bad key, which is then not remembered
+  const value = Math.round(Date.UTC(y, m - 1, d) / 86400000);
+  if (dayNumberMemo.size >= MEMO_LIMIT) dayNumberMemo.clear();
+  dayNumberMemo.set(key, value);
+  return value;
 }
 
 function dayNumberToKey(n) {
+  const known = keyMemo.get(n);
+  if (known !== undefined) return known;
   const date = new Date(n * 86400000);
-  return makeKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+  const value = makeKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+  if (keyMemo.size >= MEMO_LIMIT) keyMemo.clear();
+  keyMemo.set(n, value);
+  return value;
 }
 
 function isValidKey(key) {

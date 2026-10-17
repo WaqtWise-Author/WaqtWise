@@ -93,6 +93,7 @@ The Free To-Do list holds tasks that have no time yet. It has no reminders, no z
 
 - `lateAfterMinutes` (0-10080, default 60): a done task is *late* when it was ticked more than this many minutes after its start time. It only affects the lateness charts in Statistics.
 - `taskInfo` (object of 14 true/false keys): which details each task row shows in the Daily View. Keys: `time`, `endTime`, `duration`, `priority`, `category`, `status`, `conflicts`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`, `continues`, `backupStart`. Default: all on except `endTime`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`. It only changes how rows look; no task data changes.
+- `collapseZones` (true/false, default true): Daily View shows a zone with no tasks, and on today a zone that is over with all tasks done, as one line. Only changes how the page looks.
 
 `settings.useCustomCity` (true/false) and `settings.customCity` (`null` or `{ "name", "latitude", "longitude", "timeZone" }`,
 the time zone being an IANA name such as `Asia/Riyadh`). An invalid city is dropped when a backup is imported.
@@ -110,6 +111,10 @@ in the `backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.jso
 
 Numbers are checked when a task is saved and when a data file is loaded (a task or a part that fails is skipped with a message, never trusted): task duration 1 to 10080 minutes (7 days); "minutes before or after a prayer or task" and reminder times 0 to 10080; "every N" 1 to 999; "after N occurrences" 1 to 9999; at most 20000 tasks and 5000 free tasks per file; a title of at most 200 characters; a backup file larger than 20 MB is refused. The limits are in `src/core/limits.js`.
 
+
+## state.json (reminder bookkeeping)
+
+Next to `data.json` the app keeps `state.json`: the small reminder bookkeeping (`delivered`, `snoozed`, `lastTickAt`), written about once a minute. Before this, the whole data file was rewritten every minute. Every full save writes it too, and when the app starts the content of `state.json` is used for `reminderState` (the copy inside `data.json` is the fallback if the small file is missing or damaged). It is not part of the export file and is not copied into the daily backups; deleting it is harmless (a reminder may be shown a second time at most).
 
 ## Limits (checked when saving and when reading a file)
 

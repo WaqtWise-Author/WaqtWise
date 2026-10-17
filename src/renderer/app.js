@@ -6,7 +6,7 @@
   const WW = (window.WW = window.WW || {});
   const { h, clear, T, TP, arrowHead } = WW;
 
-  WW.state = { settings: null, categories: [], cities: [], methods: [], dayKey: null, view: 'daily', day: null };
+  WW.state = { settings: null, categories: [], cities: [], methods: [], dayKey: null, view: 'daily', day: null, zoneOpen: {} };
 
   const view = () => document.getElementById('view');
   const anyDialogOpen = () => document.querySelector('.overlay') !== null;
@@ -150,7 +150,43 @@
 
   WW.taskRow = taskRow;
 
-  function zoneSection(z) {
+  // Zones that can be folded into one line (Settings -> Daily View): a zone with nothing in it, and - on today - a zone
+  // that is over with every task done. A zone that is over with something not done always stays open.
+  function zoneKey(day, z) { return `${day.planningDayKey}#${z.index}`; }
+  function isFoldable(day, z) {
+    if (!(WW.state.settings && WW.state.settings.collapseZones)) return false;
+    if (z.continued.length > 0) return false;
+    if (z.taskCount === 0) return true;
+    return Boolean(day.isCurrentDay && z.isPast && z.doneCount === z.taskCount);
+  }
+  function setZoneOpen(day, z, open) {
+    WW.state.zoneOpen[zoneKey(day, z)] = open;
+    const memory = { index: z.index, open };
+    renderDay();
+    const btn = view().querySelector(`.zone.z${memory.index} [data-zone-toggle]`);
+    if (btn) btn.focus({ preventScroll: true });
+  }
+
+  function foldedZone(day, z) {
+    const summary = z.taskCount === 0
+      ? T('No tasks · {free} free', { free: z.freeLabel })
+      : `✓ ${T('{done} of {total} done', { done: z.doneCount, total: z.taskCount })}`;
+    return h('section', { class: `zone z${z.index} folded`, 'aria-label': z.name },
+      h('button', {
+        class: 'zone-fold', type: 'button', 'data-zone-toggle': String(z.index), 'aria-expanded': 'false',
+        'aria-label': `${T('Show {zone} zone', { zone: z.name })}: ${summary}`,
+        onclick: () => setZoneOpen(day, z, true),
+      },
+      h('span', { class: 'zf-icon' }, WW.zoneIcon(z.index, 22)),
+      h('span', { class: 'zf-name', text: z.name }),
+      h('span', { class: 'zf-range', text: `${z.startLabel} – ${z.endLabel}` }),
+      h('span', { class: `zf-sum${z.taskCount ? ' ok' : ''}` }, summary, h('span', { class: 'zf-chev', 'aria-hidden': 'true' }, WW.icon('chevron-down', 16, 2.4)))));
+  }
+
+  function zoneSection(z, day) {
+    if (isFoldable(day, z) && !WW.state.zoneOpen[zoneKey(day, z)]) return foldedZone(day, z);
+    const foldBack = isFoldable(day, z);
+    const notDone = z.isPast && day.isCurrentDay ? z.taskCount - z.doneCount : 0;
     const fill = h('div', { class: 'timeline-fill' });
     // Square, touching pieces: back-to-back tasks look like one continuous band.
     z.segments.forEach((s) =>
@@ -185,8 +221,15 @@
           WW.zoneIcon(z.index, 26),
           h('h2', { class: 'zone-name' }, z.name),
           z.isCurrent ? h('span', { class: 'band-chip now-chip', text: T('NOW') }) : null,
+          notDone > 0 ? h('span', { class: 'band-chip notdone-chip', text: TP(notDone, '{n} not done', '{n} not done') }) : null,
           z.conflictCount ? h('span', { class: 'band-chip conflict-chip' }, WW.icon('warn', 13, 2.6), conflictText) : null),
-        h('span', { class: 'zone-range', text: `${z.startLabel} – ${z.endLabel}` })),
+        h('span', { class: 'zone-band-right' },
+          h('span', { class: 'zone-range', text: `${z.startLabel} – ${z.endLabel}` }),
+          foldBack ? h('button', {
+            class: 'zone-unfold', type: 'button', 'data-zone-toggle': String(z.index), 'aria-expanded': 'true',
+            'aria-label': T('Hide {zone} zone', { zone: z.name }), title: T('Hide {zone} zone', { zone: z.name }),
+            onclick: () => setZoneOpen(day, z, false),
+          }, WW.icon('chevron-up', 16, 2.4)) : null)),
       h('div', { class: 'zone-summary' },
         h('div', { class: 'zone-summary-main' },
           h('div', { class: 'zone-times' }, h('span', { text: z.startLabel }), timeline, h('span', { text: z.endLabel })),
@@ -292,7 +335,7 @@
           ...week.days.map(chip),
           h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next week'), onclick: () => WW.showDay(week.nextKey) }, WW.icon(WW.arrowIcon('next'), 18, 2.2)))),
       heroCard(day),
-      h('div', { class: 'zones' }, day.zones.map(zoneSection)));
+      h('div', { class: 'zones' }, day.zones.map((z) => zoneSection(z, day))));
     restoreFocus(memory);
   }
 
@@ -312,6 +355,12 @@
       WW.state.todayKey = day.currentPlanningDayKey;
       renderDay();
       if (keepScroll) window.scrollTo(0, scrollY);
+      else if (day.isCurrentDay) {
+        // Opening today: when the zone happening now (or the next one with something in it) starts low on the screen,
+        // scroll it up. When it is already well in view the top of the page - the "Right now" card - stays.
+        const target = view().querySelector('.zone.current') || view().querySelector('.zone:not(.folded)');
+        if (target && target.scrollIntoView && target.getBoundingClientRect().top > window.innerHeight * 0.6) target.scrollIntoView({ block: 'start' });
+      }
     } catch (error) {
       WW.toast(error.message, 'error');
     }
@@ -572,6 +621,7 @@
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
     else await WW.showDay(WW.state.todayKey);
+    return boot;
   }
 
   // ---- Missed reminders --------------------------------------------------------------------------------------------------
@@ -646,25 +696,24 @@
     screen.releaseBehind = () => behind.forEach((el) => { el.inert = false; });
   };
 
-  // The splash covers the window for a moment at every start; a click or key skips it.
-  const SPLASH_MS = 3200;
+  // The splash covers the window for 3 seconds at every start. Nothing skips it: a click or a key press does nothing.
+  const SPLASH_MS = Number.isFinite(window.WW_SPLASH_MS) ? window.WW_SPLASH_MS : 3000; // the checks in tools/ui-check.js shorten it
+  function ignoreWhileSplash(event) { event.preventDefault(); event.stopPropagation(); }
   const splashStarted = Date.now();
   function hideSplash() {
     const splash = document.getElementById('splash');
     if (!splash || splash.dataset.leaving) return;
     splash.dataset.leaving = '1';
+    // While it shows, key presses are swallowed so nothing behind it can be triggered by accident.
+    document.addEventListener('keydown', ignoreWhileSplash, true);
+    document.addEventListener('keyup', ignoreWhileSplash, true);
     const leave = () => {
+      document.removeEventListener('keydown', ignoreWhileSplash, true);
+      document.removeEventListener('keyup', ignoreWhileSplash, true);
       splash.classList.add('hide');
       setTimeout(() => splash.remove(), 500);
     };
-    setTimeout(() => skip(), Math.max(0, SPLASH_MS - (Date.now() - splashStarted)));
-    const skip = () => {
-      splash.removeEventListener('click', skip);
-      document.removeEventListener('keydown', skip);
-      leave();
-    };
-    splash.addEventListener('click', skip);
-    document.addEventListener('keydown', skip);
+    setTimeout(leave, Math.max(0, SPLASH_MS - (Date.now() - splashStarted)));
   }
 
   // ---- Start-up -------------------------------------------------------------------------------------------------------------
@@ -691,8 +740,7 @@
     });
 
     try {
-      await reloadEverything();
-      const boot = await WW.call('bootstrap');
+      const boot = await reloadEverything();
       if (boot.loadNotes && boot.loadNotes.length) WW.toast(boot.loadNotes[0], 'error');
     } catch (error) {
       clear(view()).appendChild(h('div', { class: 'errors', text: T('Could not start: {error}', { error: error.message }) }));
@@ -702,21 +750,23 @@
 
     refreshBell();
     WW.refreshSaveBanner();
-    setInterval(() => WW.refreshSaveBanner(), 15000);
+    // While the window is hidden in the tray nothing is redrawn; when it comes back the page is refreshed at once.
+    setInterval(() => { if (!document.hidden) WW.refreshSaveBanner(); }, 15000);
     if (!WW.state.settings.welcomeShown) WW.showWelcome();
     hideSplash();
 
     // The window keeps itself fresh: current zone, overdue marks, and changes made elsewhere.
     setInterval(() => {
-      if (anyDialogOpen()) return;
+      if (document.hidden || anyDialogOpen()) return;
       // The Statistics screen is heavy, so it is recalculated only when asked for (opening it, changing the range, a change of data).
       if (WW.state.view === 'daily') WW.afterChange();
       else refreshBell();
     }, 30000);
     window.addEventListener('focus', () => { if (!anyDialogOpen()) WW.afterChange(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !anyDialogOpen()) WW.afterChange(); });
 
     if (window.api && window.api.on) {
-      window.api.on('data-changed', () => { if (!anyDialogOpen()) WW.afterChange(); else refreshBell(); });
+      window.api.on('data-changed', () => { if (document.hidden) return; if (!anyDialogOpen()) WW.afterChange(); else refreshBell(); });
       window.api.on('missed', (items) => { refreshBell(); WW.showMissed(items); });
       window.api.on('show-daily', () => {
         if (!anyDialogOpen() && WW.state.settings && WW.state.settings.welcomeShown) { WW.state.view = 'daily'; WW.state.dayKey = WW.state.todayKey || WW.state.dayKey; WW.refreshDay(); }

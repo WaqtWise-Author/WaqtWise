@@ -198,8 +198,17 @@ class PlannerService {
     return this.data.reminderState;
   }
 
+  // Called about once a minute by the reminder engine: only the small bookkeeping file is written, not all the data.
   saveReminderState(state) {
     this.data.reminderState = state;
+    if (typeof this.store.saveState === 'function') {
+      try {
+        this.store.saveState(state);
+        return;
+      } catch (error) {
+        // fall back to a full save below
+      }
+    }
     this.persist();
   }
 }

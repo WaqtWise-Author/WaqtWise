@@ -38,17 +38,19 @@ function clipInterval(interval, windowStart, windowEnd) {
 }
 
 // Ids of occurrences that overlap at least one other occurrence.
+// One pass over the occurrences sorted by start: everything still running when the next one starts overlaps it, and
+// all of those overlap each other (they all contain that start moment).
 function findOverlappingIds(occurrences) {
   const ids = new Set();
-  for (let i = 0; i < occurrences.length; i++) {
-    for (let j = i + 1; j < occurrences.length; j++) {
-      const a = occurrences[i];
-      const b = occurrences[j];
-      if (a.start < b.end && b.start < a.end) {
-        ids.add(a.id);
-        ids.add(b.id);
-      }
+  const items = occurrences.map((o) => ({ id: o.id, start: o.start.getTime(), end: o.end.getTime() })).sort((a, b) => a.start - b.start);
+  let active = [];
+  for (const item of items) {
+    active = active.filter((a) => a.end > item.start);
+    if (active.length > 0) {
+      ids.add(item.id);
+      for (const a of active) ids.add(a.id);
     }
+    active.push(item);
   }
   return ids;
 }

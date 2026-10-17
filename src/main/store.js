@@ -10,6 +10,7 @@ const { t } = require('../core/i18n');
 const fs = require('fs');
 const path = require('path');
 const { emptyData, normalizeData, DATA_VERSION } = require('../core/data');
+const { normalizeState } = require('../core/reminder-engine');
 
 const BUSY_CODES = ['EPERM', 'EBUSY', 'EACCES'];
 const REPLACE_TRIES = 6;
@@ -24,6 +25,7 @@ class FileStore {
     this.filePath = filePath;
     this.backupPath = `${filePath}.bak`;
     this.tempPath = `${filePath}.tmp`;
+    this.statePath = path.join(path.dirname(filePath), 'state.json'); // the reminder bookkeeping, written often, so kept small and apart
     this.loadNotes = []; // things the app may want to tell the user after loading
     this.backupDir = path.join(path.dirname(filePath), 'backups');
     this.now = (options && options.now) || (() => new Date());
@@ -85,6 +87,7 @@ class FileStore {
           throw failure;
         }
         const { data, warnings } = normalizeData(raw);
+        this.applyState(data);
         this.loadNotes.push(...warnings);
         if (label === 'backup') this.loadNotes.push(t('Your data file was damaged, so the last backup copy was loaded.'));
         return data;
@@ -95,6 +98,30 @@ class FileStore {
     }
     this.loadNotes.push(t('Your data file could not be read, so the app started empty.'));
     return emptyData();
+  }
+
+  // The newest reminder bookkeeping is in state.json (every full save writes it too). A missing or damaged one is ignored.
+  applyState(data) {
+    try {
+      if (!fs.existsSync(this.statePath)) return;
+      const { state } = normalizeState(JSON.parse(fs.readFileSync(this.statePath, 'utf8')));
+      if (state) data.reminderState = state;
+    } catch (error) {
+      // the copy inside data.json is used
+    }
+  }
+
+  // Only the reminder bookkeeping (about once a minute). A few hundred bytes instead of the whole data file.
+  saveState(state) {
+    fs.mkdirSync(path.dirname(this.statePath), { recursive: true });
+    const temp = `${this.statePath}.tmp`;
+    fs.writeFileSync(temp, JSON.stringify(state), 'utf8');
+    try {
+      fs.renameSync(temp, this.statePath);
+    } catch (error) {
+      fs.copyFileSync(temp, this.statePath); // Windows may hold the file for a moment
+      try { fs.unlinkSync(temp); } catch (ignore) { /* a leftover temporary file does no harm */ }
+    }
   }
 
   setAsideDamagedFile() {
@@ -126,6 +153,7 @@ class FileStore {
     }
     this.replaceDataFile();
     this.dailyBackup();
+    try { this.saveState(data.reminderState); } catch (error) { /* the copy inside data.json is enough */ }
   }
 
   // ---- backups ------------------------------------------------------------------------------------
@@ -223,6 +251,11 @@ class MemoryStore {
     this.saveCount = 0;
     this.loadNotes = [];
     this.backups = []; // [{ id, kind, date, time, data }] newest first
+  }
+
+  saveState(state) {
+    this.data.reminderState = state;
+    this.stateSaveCount = (this.stateSaveCount || 0) + 1;
   }
 
   backupNow(kind) {

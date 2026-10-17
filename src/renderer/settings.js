@@ -423,6 +423,10 @@
             h('button', { class: 'btn small', type: 'button', id: 'info-default', text: T('Standard'), onclick: () => setAll(defaults) }),
             h('button', { class: 'btn small', type: 'button', id: 'info-none', text: T('Name only'), onclick: () => setAll(nothing) })),
           boxes)),
+        row(T('Empty and finished zones'), h('div', {},
+          h('select', { class: 'sel-auto', id: 'collapse-zones', 'aria-label': T('Empty and finished zones'), onchange: (e) => save({ collapseZones: e.target.value === 'collapse' }) },
+            [['collapse', T('Collapse')], ['full', T('Show in full')]].map(([v, l]) => h('option', { value: v, text: l, selected: (WW.state.settings.collapseZones ? 'collapse' : 'full') === v }))),
+          h('p', { class: 'hint', text: T('A zone with no tasks, and on today a zone that is over with every task done, is shown as one line. Click the line to open it.') }))),
         row(T('Preview'), h('div', {}, preview, h('p', { class: 'hint', text: T('A sample task with every detail, shown the way your choices make it look.') })))));
   }
 
