@@ -661,8 +661,8 @@
     const drawCity = () => {
       cityBox.replaceChildren();
       if (country === 'EG') { cityBox.append(select); return; }
+      if (worldChosen) cityBox.append(h('p', { class: 'current-city', role: 'status' }, `✓ ${worldChosen.name}`, h('small', { text: ` · ${T('Time zone')}: ${worldChosen.timeZone}` })));
       cityBox.append(
-        worldChosen ? h('p', { class: 'current-city', role: 'status' }, `✓ ${worldChosen.name}`, h('small', { text: ` · ${T('Time zone')}: ${worldChosen.timeZone}` })) : null,
         WW.worldCitySearch({
           country,
           onChosen: async () => {

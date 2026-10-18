@@ -314,7 +314,7 @@ function sanitizeSettings(raw) {
     }
   }
   if (clean.useCustomCity && !clean.customCity) clean.useCustomCity = false;
-  // Before 0.8.0 a custom city was always typed by hand; Egypt's list never uses one.
+  // Before 1.0.0 a custom city was always typed by hand; Egypt's list never uses one.
   if (clean.useCustomCity && clean.countryCode === 'EG' && !('countryCode' in raw)) clean.countryCode = null;
   return clean;
 }

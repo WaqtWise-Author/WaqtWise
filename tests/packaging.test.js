@@ -152,7 +152,7 @@ test('the build workflows exist and do the right things', () => {
 });
 
 test('the guides for the user exist', () => {
-  for (const file of ['docs/HOW_TO_INSTALL_AND_USE.md', 'docs/ACCEPTANCE_CHECKLIST.md', 'docs/DATA_FORMAT.md']) {
+  for (const file of ['docs/USER_GUIDE.md', 'docs/ACCEPTANCE_CHECKLIST.md', 'docs/DATA_FORMAT.md']) {
     assert.ok(fs.existsSync(path.join(root, file)), `${file} exists`);
   }
 });
@@ -239,10 +239,10 @@ test('Electron Fuses: the packed app cannot be used as a plain Node program, and
   }
 });
 
-test('The version is 0.8.0 or newer, and the changelog has an entry for it', () => {
+test('The version is 1.0.0 or newer, and the changelog has an entry for it', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const [maj, min] = pkg.version.split('.').map(Number);
-  assert.ok(maj > 0 || min >= 8, pkg.version);
+  assert.ok(maj >= 1, pkg.version);
   const log = fs.readFileSync(path.join(root, 'docs/CHANGELOG.md'), 'utf8');
   assert.ok(log.includes(`## ${pkg.version}`), `docs/CHANGELOG.md has a "## ${pkg.version}" section`);
 });
