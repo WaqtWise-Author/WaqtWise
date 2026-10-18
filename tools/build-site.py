@@ -89,7 +89,7 @@ def convert(src, out, lang, title):
 </head>
 <body>
 <header class="site-header"><div class="wrap">
-  <a class="brand" href="{home}"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <a class="brand" href="{home}"><img src="assets/logo.png" alt="">WaqtWise</a>
   <nav class="nav">
     <a href="{home}#features">{nav[0]}</a><a href="{home}#install">{nav[1]}</a><a href="{guide}">{nav[2]}</a>
     <a class="lang" href="{other}">{nav[3]}</a>
