@@ -1,0 +1,64 @@
+name: Release
+
+# Manual only. Builds the Windows installer from this commit, writes its SHA256 checksum, and creates a DRAFT release
+# for you to read and publish. Nothing is published until you press "Publish release" on GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, exactly as in package.json (for example 1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the version
+        shell: bash
+        run: |
+          current=$(node -p "require('./package.json').version")
+          if [ "$current" != "${{ inputs.version }}" ]; then
+            echo "package.json says $current, but you asked for ${{ inputs.version }}. Raise the version first."
+            exit 1
+          fi
+      - name: Install
+        shell: bash
+        run: npm ci
+      - name: Run the tests
+        shell: bash
+        run: npm test
+      - name: Build the installer
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Checksums and release notes
+        shell: bash
+        run: |
+          cd dist
+          sha256sum WaqtWise-Setup-*.exe > SHA256SUMS.txt
+          cd ..
+          python - <<'PY'
+          import re, pathlib
+          v = "${{ inputs.version }}"
+          text = pathlib.Path("docs/CHANGELOG.md").read_text(encoding="utf-8")
+          m = re.search(r"^## " + re.escape(v) + r"\s*$(.*?)(?=^## |\Z)", text, re.S | re.M)
+          notes = m.group(1).strip() if m else "See docs/CHANGELOG.md"
+          sums = pathlib.Path("dist/SHA256SUMS.txt").read_text()
+          notes += "\n\n---\n\n**Windows may show \"Windows protected your PC\"** because this installer is not code-signed yet. Click *More info*, then *Run anyway*. See docs/WINDOWS_WARNING.md.\n\n**SHA256**\n\n```\n" + sums + "```\n"
+          pathlib.Path("release-notes.md").write_text(notes, encoding="utf-8")
+          PY
+      - name: Create the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" dist/WaqtWise-Setup-*.exe dist/SHA256SUMS.txt \
+            --draft --title "WaqtWise ${{ inputs.version }}" --notes-file release-notes.md --target "${{ github.sha }}"
