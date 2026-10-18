@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>What changed in each version - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="what-changed-in-each-version">What changed in each version</h1>
+<p>The version number is in <code>package.json</code> (<code>version</code>). The installer file is named after it: <code>WaqtWise-Setup-&lt;version&gt;.exe</code>.
+Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).</p>
+<h2 id="100">1.0.0</h2>
+<p>The first public release. The work before it was numbered 0.x while the app was private; this section lists what changed since the last private version.</p>
+<p>New
+- <strong>Daily View details</strong> (Settings -&gt; Daily View): choose which of 14 details each task row shows (start and end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes, "continues", backup-time warning), with three presets and a live preview.
+- <strong>Shorter Daily View</strong>: a zone with no tasks, and (on today) a zone that is over with every task done, is shown as one line (click it to open; the arrow in its band hides it again). A zone that is over with something not done stays open and shows "N not done". Opening today scrolls to the zone happening now. Settings -&gt; Daily View -&gt; <em>Empty and finished zones</em>: Collapse (default) or Show in full.
+- <strong>Any country, any city</strong>: Settings -&gt; Prayer Times and the welcome screen have a country list, then a searchable list of that country's cities (about 30,000 cities of 15,000 people or more, 209 countries). The city's coordinates and time zone are saved, and the calculation method of the country is chosen for you (Umm al-Qura for Saudi Arabia, Turkey, North America, and so on); you can change it. Egypt keeps its own list. Country names follow the app language. City data: GeoNames (CC BY 4.0), see <code>src/core/WORLD_CITIES_SOURCE.md</code>.
+- <strong>Late tasks</strong> (Settings -&gt; Application): set after how many hours and minutes a ticked task counts as late. Statistics has <em>Done on time</em>, <em>Most late tasks</em>, <em>Lateness by zone and category</em> and <em>Lateness over time</em>.
+- The window opens <strong>maximized</strong>.
+- <strong>Arabic font</strong>: IBM Plex Sans Arabic is inside the app (English letters and numbers keep Plus Jakarta Sans).
+- Start-up screen shows for 3 seconds and nothing skips it.</p>
+<p>Public release (documents and website; the app itself is unchanged by this part)
+- License: <strong>GPL-3.0-or-later</strong> (<code>LICENSE</code>, <code>NOTICE.md</code>, <code>THIRD_PARTY_NOTICES.md</code>); the license files ship inside the installer. The name, logo and icon are not licensed.
+- New README (English and Arabic) with screenshots, and a full <strong>user guide</strong> in English and Arabic (<code>docs/USER_GUIDE.md</code>, <code>docs/USER_GUIDE.ar.md</code>) replacing <code>HOW_TO_INSTALL_AND_USE.md</code>. Developer notes moved to <code>docs/DEVELOPMENT.md</code>.
+- <code>docs/WINDOWS_WARNING.md</code> (+ Arabic): why Windows SmartScreen warns about the unsigned installer, how to install anyway, how to check the SHA256 checksum.
+- <code>PRIVACY.md</code>, <code>SECURITY.md</code>, <code>CONTRIBUTING.md</code>, <code>CODE_OF_CONDUCT.md</code>, issue and pull-request templates, <code>docs/CODE_SIGNING_POLICY.md</code> (for the SignPath Foundation application) and <code>docs/PUBLISHING.md</code> (the owner's checklist).
+- <strong>Website</strong> in <code>site/</code> (English and Arabic, no cookies or third-party content): home page, guide pages built from the Markdown by <code>tools/build-site.py</code>. Manual workflows: <strong>Publish website</strong> (GitHub Pages) and <strong>Release</strong> (builds the installer, writes SHA256SUMS and creates a draft release).
+- Screenshots of the real app with example data (<code>tools/make-screenshots.js</code>, <code>tools/shots-to-webp.py</code>) in <code>docs/images/</code> and <code>site/assets/screens/</code>.
+- <code>tests/docs.test.js</code> checks the license files, links between documents, screenshots, the website and the workflows, and that the app code makes no network requests.</p>
+<p>Look and feel
+- One look for every screen (sizes, corners, switches, Settings rows, a section index that stays visible while scrolling). See <code>docs/UI_REVIEW.md</code>.
+- One type scale: seven font sizes and four weights; nothing smaller than 12 px.
+- Better contrast on the zone colors, the bell number, the error message and the tick.
+- Keyboard: Tab stays inside dialogs; Enter and Space work on every list item; Enter on the tick button only ticks; focus stays on the same task when the day is redrawn.
+- Arabic: taller lines and mirrored spacing.</p>
+<p>Fixed
+- The five-zone strip at the top of the Daily View no longer cuts off the name of a short zone (Maghrib): it goes on a second line.
+- Full-screen reminder: a very long title at the biggest size scrolls inside its own box, so the buttons always stay on the screen (checked at 1366 x 768).
+- Opening WaqtWise after Windows started (from its shortcut or the tray) now brings the window to the front instead of only flashing in the taskbar.
+- Minimizing no longer relies on cancelling the minimize (Windows ignores that); the window is hidden to the tray after it.
+- A custom city many hours ahead of the computer no longer stops reminders for some hours each day.
+- The window shows the new day after Fajr instead of yesterday.
+- A data file that is busy for a moment (antivirus) is no longer treated as damaged; a file from a newer version is refused instead of overwritten.
+- Task titles are limited to 200 characters; a task that lasts several days is listed on every day it runs.
+- Deleting a category also clears it from the free list; copies and "Mark as Done" from an alert count in saved statistics.
+- Prayer-time adjustments that put the prayers out of order are refused.
+- A second launch that arrives while the app is starting is handled after it is ready.</p>
+<p>Safety
+- Browser permissions (camera, microphone, location, ...) are refused; stricter page security policy; the requests from the window are checked.
+- An imported backup cannot switch on "Start with Windows"; limits on how many dates one task can hold.
+- The packed app is built with Electron Fuses: it cannot be started as a plain Node program or with Node debugging switches.</p>
+<p>Speed
+- The small reminder bookkeeping is saved in <code>state.json</code> about once a minute instead of rewriting all the data.
+- Repeat-after-N-times rules, overlap checks and date conversions are much cheaper; nothing is redrawn while the window is hidden in the tray.</p>
+<h2 id="070">0.7.0</h2>
+<p>Everything before this list (see the git history).</p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

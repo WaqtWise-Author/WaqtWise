@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>Third-party licenses - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="third-party-software-and-data-used-by-waqtwise">Third-party software and data used by WaqtWise</h1>
+<p>WaqtWise is licensed under the GNU GPL v3 or later (see <a href="#repo:blob/main/LICENSE">LICENSE</a> and <a href="notice.html">NOTICE.md</a>). The parts
+below are made by other people and keep their own licenses. All of them allow use inside a GPL program.</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What it is used for</th>
+<th>License</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.electronjs.org/">Electron</a></td>
+<td>The program that runs WaqtWise as a Windows app (it includes Chromium and Node.js; their license texts are installed with the app)</td>
+<td>MIT (Electron), BSD-style and others (Chromium, Node.js)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/batoulapps/adhan-js">adhan</a></td>
+<td>Works out the five prayer times from the city's coordinates</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/tokotype/PlusJakartaSans">Plus Jakarta Sans</a> (through the npm package <code>@fontsource/plus-jakarta-sans</code>)</td>
+<td>The font of English text and digits</td>
+<td>SIL Open Font License 1.1</td>
+</tr>
+<tr>
+<td><a href="https://github.com/IBM/plex">IBM Plex Sans Arabic</a></td>
+<td>The font of Arabic text (files and license in <code>src/renderer/fonts-arabic/</code>)</td>
+<td>SIL Open Font License 1.1</td>
+</tr>
+<tr>
+<td><a href="https://www.geonames.org/">GeoNames</a></td>
+<td>Names, regions, coordinates and population of about 30,000 cities (<code>src/core/world-cities.json</code>, see <code>src/core/WORLD_CITIES_SOURCE.md</code>)</td>
+<td>Creative Commons Attribution 4.0 - attribution is given here and in the app's website</td>
+</tr>
+<tr>
+<td><a href="https://www.iana.org/time-zones">IANA time zone database</a></td>
+<td>Which time zone each city is in (the file <code>zone.tab</code> was used to build the city list)</td>
+<td>Public domain</td>
+</tr>
+<tr>
+<td><a href="https://www.electron.build/">electron-builder</a></td>
+<td>Builds the Windows installer (a development tool, not part of the app)</td>
+<td>MIT</td>
+</tr>
+</tbody>
+</table>
+<p>Attribution required by CC BY 4.0: <em>City data from GeoNames (https://www.geonames.org), licensed under Creative
+Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Cities were filtered by population, their
+time zones were assigned from the IANA database, and the data was reduced to the fields the app needs.</em></p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

@@ -3,7 +3,9 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
-## 0.8.0
+## 1.0.0
+
+The first public release. The work before it was numbered 0.x while the app was private; this section lists what changed since the last private version.
 
 New
 - **Daily View details** (Settings -> Daily View): choose which of 14 details each task row shows (start and end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes, "continues", backup-time warning), with three presets and a live preview.
@@ -13,6 +15,15 @@ New
 - The window opens **maximized**.
 - **Arabic font**: IBM Plex Sans Arabic is inside the app (English letters and numbers keep Plus Jakarta Sans).
 - Start-up screen shows for 3 seconds and nothing skips it.
+
+Public release (documents and website; the app itself is unchanged by this part)
+- License: **GPL-3.0-or-later** (`LICENSE`, `NOTICE.md`, `THIRD_PARTY_NOTICES.md`); the license files ship inside the installer. The name, logo and icon are not licensed.
+- New README (English and Arabic) with screenshots, and a full **user guide** in English and Arabic (`docs/USER_GUIDE.md`, `docs/USER_GUIDE.ar.md`) replacing `HOW_TO_INSTALL_AND_USE.md`. Developer notes moved to `docs/DEVELOPMENT.md`.
+- `docs/WINDOWS_WARNING.md` (+ Arabic): why Windows SmartScreen warns about the unsigned installer, how to install anyway, how to check the SHA256 checksum.
+- `PRIVACY.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and pull-request templates, `docs/CODE_SIGNING_POLICY.md` (for the SignPath Foundation application) and `docs/PUBLISHING.md` (the owner's checklist).
+- **Website** in `site/` (English and Arabic, no cookies or third-party content): home page, guide pages built from the Markdown by `tools/build-site.py`. Manual workflows: **Publish website** (GitHub Pages) and **Release** (builds the installer, writes SHA256SUMS and creates a draft release).
+- Screenshots of the real app with example data (`tools/make-screenshots.js`, `tools/shots-to-webp.py`) in `docs/images/` and `site/assets/screens/`.
+- `tests/docs.test.js` checks the license files, links between documents, screenshots, the website and the workflows, and that the app code makes no network requests.
 
 Look and feel
 - One look for every screen (sizes, corners, switches, Settings rows, a section index that stays visible while scrolling). See `docs/UI_REVIEW.md`.

@@ -1,6 +1,6 @@
 # To do later
 
-## More countries and cities (done in 0.8.0)
+## More countries and cities (done in 1.0.0)
 
 Settings -> Prayer Times and the welcome screen have a country list and a city search for every country (about 30,000 cities of 15,000 people or more, from GeoNames). Egypt keeps its own short list. A chosen city is saved as the city in use (coordinates + time zone) with the usual calculation method of its country.
 
@@ -16,3 +16,7 @@ Still open:
 - **Batch 4, look and accessibility**:  colors with low contrast (zones 1, 3, 4, the bell badge, the error toast), padding with `inline` properties for Arabic, focus in dialogs, real buttons for "Upcoming" and "Continues".
 - **Electron Fuses**: done through `build.electronFuses` in `package.json` (electron-builder applies them while packing, no new package needed). Still to do: `enableEmbeddedAsarIntegrityValidation`, only after the installer has been tried on Windows.
 - Full-screen alert: done (the title has a maximum height and scrolls; its size setting is unchanged).
+
+## Public release (next steps for the owner)
+
+See `docs/PUBLISHING.md`: make the repository public, publish the website, make the first release, apply to the SignPath Foundation. After approval: add SignPath's GitHub Action to `.github/workflows/release.yml` and change "not signed yet" in `docs/CODE_SIGNING_POLICY.md`, `docs/WINDOWS_WARNING.md(.ar)` and the website.

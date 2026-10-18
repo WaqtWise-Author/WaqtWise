@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>Privacy - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="privacy">Privacy</h1>
+<p><strong>Short version: WaqtWise keeps everything on your computer. It collects nothing and sends nothing.</strong></p>
+<ul>
+<li><strong>Program privacy statement.</strong> This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</li>
+<li><strong>No network.</strong> The app does not connect to the internet. Prayer times are calculated on your computer. There is
+  no update check, no analytics, no crash reporting, no advertising and no account.</li>
+<li><strong>Where your data is.</strong> Your tasks, settings and statistics are stored in files in the app's data folder on your
+  computer: <code>%APPDATA%\WaqtWise</code> (<code>data.json</code> and <code>state.json</code>, plus a <code>backups</code> folder). Nothing else leaves it.</li>
+<li><strong>Location.</strong> The app does not ask Windows for your location. You choose your country and city yourself (or type
+  coordinates); they are stored only in the data file, and are used only to calculate prayer times. Browser
+  permissions such as location, camera and microphone are refused by the app.</li>
+<li><strong>Backups you export</strong> are normal files that you create and keep. Anyone who has the file can read it, so
+  store it where you trust.</li>
+<li><strong>Removing everything.</strong> Uninstall WaqtWise and choose to delete its data, or delete the folder above.</li>
+<li><strong>This website and this repository</strong> are hosted by GitHub. GitHub may log visits according to its own
+  <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">privacy statement</a>.
+  The website of this project has no cookies, no analytics and no third-party scripts, fonts or images. Its
+  "What's new" box asks GitHub's public API for the latest release when you open the page.</li>
+<li><strong>Downloading.</strong> Releases are downloaded from GitHub, which sees the download like any other.</li>
+</ul>
+<p>Questions? Open an <a href="#repo:issues">issue</a>.</p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

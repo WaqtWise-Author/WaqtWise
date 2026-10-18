@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>Windows warning - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="windows-protected-your-pc---why-you-see-it-and-what-to-do">"Windows protected your PC" - why you see it and what to do</h1>
+<p><strong>Languages:</strong> English · <a href="windows-warning-ar.html">العربية</a></p>
+<p>When you run the installer for the first time, Windows may show a blue window:</p>
+<blockquote>
+<p><strong>Windows protected your PC</strong>
+Microsoft Defender SmartScreen prevented an unrecognized app from starting.</p>
+</blockquote>
+<h2 id="why-it-happens">Why it happens</h2>
+<p>SmartScreen is a Windows feature that warns about programs it does not know. A program is "known" when it is
+<strong>signed</strong> with a certificate (a digital signature that proves who published it) and has been downloaded by many
+people. WaqtWise is a free, open-source app by a small team. At the moment its installer is <strong>not signed</strong>, and it
+is new, so Windows has no reputation for it yet.</p>
+<p>This warning does <strong>not</strong> mean the file is infected. It means "Windows does not know this publisher".</p>
+<p>We are applying for free code signing for open-source projects (SignPath Foundation); see
+<a href="code-signing.html">the code signing policy</a>. Even after signing, SmartScreen may still show the warning for
+a while until enough people have downloaded the app. That is normal.</p>
+<h2 id="how-to-install-anyway">How to install anyway</h2>
+<ol>
+<li>In the blue window click <strong>More info</strong>.</li>
+<li>Click <strong>Run anyway</strong>.</li>
+<li>Continue with the installer as usual.</li>
+</ol>
+<h2 id="check-that-your-download-is-genuine-recommended">Check that your download is genuine (recommended)</h2>
+<p>Download the installer only from this project's <strong>Releases</strong> page. Each release lists a <strong>SHA256</strong> checksum next
+to the file (and a <code>SHA256SUMS.txt</code> file). To compare it:</p>
+<ol>
+<li>Open <strong>PowerShell</strong> in the folder that contains the installer (Shift + right-click in the folder → <em>Open
+   PowerShell window here</em>).</li>
+<li>Run (change the name to match your file):
+   <code>Get-FileHash .\WaqtWise-Setup-1.0.0.exe -Algorithm SHA256</code></li>
+<li>The long value in the <strong>Hash</strong> column must be <strong>identical</strong> to the one on the Releases page. If it is
+   different, do not run the file; download it again.</li>
+</ol>
+<p>You can also upload the file to <a href="https://www.virustotal.com">virustotal.com</a> to see what many antivirus engines say.
+A single "unknown" or a very rare false alarm from one engine can happen with new, unsigned programs.</p>
+<h2 id="other-things-worth-knowing">Other things worth knowing</h2>
+<ul>
+<li>The app does not connect to the internet and needs no administrator rights.</li>
+<li>All the source code is public. You can read it, or build the installer yourself (see
+  <a href="#repo:blob/main/docs/DEVELOPMENT.md">DEVELOPMENT</a>). The release installer is built by an automatic GitHub workflow from the public code.</li>
+<li>If your antivirus quarantines the file, please <a href="#repo:issues/new/choose">report it</a> so that we can ask the
+  vendor to review it.</li>
+</ul>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

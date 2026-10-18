@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>Code signing policy - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="code-signing-policy">Code signing policy</h1>
+<p><strong>Current status: the installer is NOT signed yet.</strong> We are applying to the
+<a href="https://signpath.org/">SignPath Foundation</a> for free code signing for open-source projects. This page is the
+public policy that the programme requires. Until the application is accepted and the first signed release is
+published, releases are unsigned and Windows SmartScreen shows a warning (see <a href="windows-warning.html">WINDOWS_WARNING</a>).</p>
+<p>Once accepted, this text will be shown on the download page:</p>
+<blockquote>
+<p>Free code signing provided by <a href="https://about.signpath.io/">SignPath.io</a>, certificate by
+<a href="https://signpath.org/">SignPath Foundation</a>.</p>
+</blockquote>
+<h2 id="what-is-signed">What is signed</h2>
+<p>Only the Windows installer <code>WaqtWise-Setup-&lt;version&gt;.exe</code> (and the program files inside it) built by this project's
+own GitHub workflow from the public source code in this repository. Nothing else is signed with this
+certificate, and no third-party or closed-source binaries are added by us.</p>
+<h2 id="how-a-release-is-made">How a release is made</h2>
+<ol>
+<li>The source code is public in this repository under GPL-3.0-or-later.</li>
+<li>A maintainer starts the <strong>Release</strong> workflow by hand. It builds on GitHub's own Windows runner from the exact
+   commit, so the build is verifiable and repeatable.</li>
+<li>The workflow sends the unsigned build to SignPath. A maintainer <strong>approves each signing request manually</strong>.</li>
+<li>The signed installer is attached to a GitHub release together with its SHA256 checksum.</li>
+</ol>
+<h2 id="roles">Roles</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Who</th>
+<th>What they do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Committer / author</td>
+<td>Project maintainers and accepted contributors</td>
+<td>Write code. Their changes go through review before a release.</td>
+</tr>
+<tr>
+<td>Reviewer</td>
+<td>Project maintainer</td>
+<td>Reviews changes that go into a release.</td>
+</tr>
+<tr>
+<td>Approver</td>
+<td>Project maintainer</td>
+<td>Approves each signing request.</td>
+</tr>
+</tbody>
+</table>
+<p>At the moment the project is small, so one maintainer may hold all roles; the approver always checks that the
+build comes from this repository and the intended tag before approving. All team members with signing access use
+multi-factor authentication on GitHub and SignPath.</p>
+<h2 id="what-the-app-does-privacy">What the app does (privacy)</h2>
+<p>This program will not transfer any information to other networked systems unless specifically requested by the
+user or the person installing or operating it. See <a href="privacy.html">PRIVACY</a>.</p>
+<h2 id="reporting-abuse-or-problems-with-a-signed-file">Reporting abuse or problems with a signed file</h2>
+<p>If you think a signed file is not from this project or behaves badly, please use the private report in the
+<a href="security.html">security policy</a>. We can ask SignPath to revoke a certificate or a file if needed.</p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

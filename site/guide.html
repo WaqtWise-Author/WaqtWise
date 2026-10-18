@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>User guide - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="waqtwise-user-guide">WaqtWise user guide</h1>
+<p><strong>Languages:</strong> English · <a href="guide-ar.html">العربية</a></p>
+<p>This guide explains what WaqtWise is, how its system works, and every feature you can use. Nothing here needs
+technical knowledge. Questions that are not answered here: see <a href="#14-faq-and-troubleshooting">FAQ and troubleshooting</a>.</p>
+<p><strong>Contents</strong>
+1. <a href="#1-what-waqtwise-is">What WaqtWise is</a>
+2. <a href="#2-install">Install</a>
+3. <a href="#3-first-start">First start</a>
+4. <a href="#4-the-idea-five-zones">The idea: five zones</a>
+5. <a href="#5-the-daily-view">The Daily View</a>
+6. <a href="#6-tasks">Tasks</a>
+7. <a href="#7-free-to-do-list">Free To-Do list</a>
+8. <a href="#8-reminders-and-full-screen-alerts">Reminders and full-screen alerts</a>
+9. <a href="#9-statistics">Statistics</a>
+10. <a href="#10-settings-section-by-section">Settings, section by section</a>
+11. <a href="#11-your-data-backups-and-privacy">Your data, backups and privacy</a>
+12. <a href="#12-background-running-tray-and-windows-start">Background running, tray and Windows start</a>
+13. <a href="#13-updating-and-uninstalling">Updating and uninstalling</a>
+14. <a href="#14-faq-and-troubleshooting">FAQ and troubleshooting</a>
+15. <a href="#15-keyboard-and-accessibility">Keyboard and accessibility</a></p>
+<hr />
+<h2 id="1-what-waqtwise-is">1. What WaqtWise is</h2>
+<p>WaqtWise is a free Windows app that plans your day around the five daily prayer times. Instead of a plain hour
+grid, your day is split into <strong>five zones</strong> (Fajr to Dhuhr, Dhuhr to Asr, Asr to Maghrib, Maghrib to Isha, Isha to
+Fajr). You add tasks, and each task lands in the right zone by itself, so you always see how much room you have
+before the next prayer.</p>
+<ul>
+<li>Works <strong>without internet</strong>. Prayer times are calculated on your computer.</li>
+<li>Everything stays <strong>on your computer</strong>. No account, no sign-in, no tracking. See <a href="privacy.html">PRIVACY</a>.</li>
+<li>English and Arabic (full right-to-left), light and dark themes.</li>
+<li>Free and open source under the GNU GPL v3 or later. See <a href="notice.html">NOTICE</a>.</li>
+</ul>
+<p><img alt="The Daily View" src="assets/screens/daily-light-top.webp" loading="lazy" /></p>
+<h2 id="2-install">2. Install</h2>
+<p><strong>You need:</strong> Windows 10 or 11 (64-bit). No administrator rights are needed.</p>
+<ol>
+<li>Open the <a href="#repo:releases/latest">latest release</a> and download <strong>WaqtWise-Setup-&lt;version&gt;.exe</strong>.</li>
+<li>Double-click it. Windows may show a blue screen, <strong>"Windows protected your PC"</strong> (SmartScreen). This is
+   expected for a new, free app that is not signed yet. Click <strong>More info</strong>, then <strong>Run anyway</strong>. The full
+   explanation, and how to check that your download is genuine, is in <a href="windows-warning.html">WINDOWS_WARNING</a>.</li>
+<li>Click <strong>Next</strong>, choose where to install (the suggested place is fine), click <strong>Install</strong>, then <strong>Finish</strong>.</li>
+<li>A shortcut is placed on the Desktop and in the Start menu.</li>
+</ol>
+<h2 id="3-first-start">3. First start</h2>
+<p>A welcome screen asks for your <strong>country</strong> and then your <strong>city</strong>. Choose the country, type a few letters of the
+city, and click it. Click <strong>Start planning</strong>. You can change this later in Settings.</p>
+<p><img alt="Welcome screen" src="assets/screens/welcome.webp" loading="lazy" /></p>
+<ul>
+<li>The list covers about 30,000 cities of 15,000 people or more in 209 countries. The prayer-time method that is
+  usual in your country is chosen for you.</li>
+<li>Check the prayer times at the top of each zone against a timetable you trust. If one differs by a few
+  minutes, add or subtract minutes for that prayer in Settings → Prayer Times. You can also choose another
+  calculation method.</li>
+<li>Your city is not listed? Use <strong>Custom city…</strong> and type its name, latitude, longitude and time zone.</li>
+</ul>
+<h2 id="4-the-idea-five-zones">4. The idea: five zones</h2>
+<table>
+<thead>
+<tr>
+<th>Zone</th>
+<th>From</th>
+<th>To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Fajr</td>
+<td>Dhuhr</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Dhuhr</td>
+<td>Asr</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Asr</td>
+<td>Maghrib</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Maghrib</td>
+<td>Isha</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Isha</td>
+<td>Fajr (next morning)</td>
+</tr>
+</tbody>
+</table>
+<p>Each zone has its own colour. A task belongs to the zone where it <strong>starts</strong>. The <em>Planning Day</em> starts at Fajr:
+if it is 1 a.m., you are still in the previous day's last zone, and the app shows that day.</p>
+<h2 id="5-the-daily-view">5. The Daily View</h2>
+<p>The main screen shows one day: the zones from top to bottom, with tasks inside them.</p>
+<ul>
+<li><strong>Top bar:</strong> the date (also in the Hijri calendar), arrows and a week strip to move between days, <strong>Today</strong>,
+  the day's completion ring, the missed-reminders bell, the light/dark button and <strong>+ New task</strong>.</li>
+<li><strong>Each zone:</strong> its start and end time, a time bar that shows the tasks and the free space, the planned time,
+  the free time left, and the zone's completion ring.</li>
+<li><strong>Each task row:</strong> a tick circle on the right (click to mark done), the title, and small details (time,
+  duration, priority, category, repeat, and so on). <strong>Click a task</strong> to see its details; <strong>Edit task</strong> opens the
+  form.</li>
+<li><strong>Conflicts:</strong> if two tasks overlap, both show a <em>conflict</em> tag. Nothing is blocked; you decide.</li>
+<li><strong>Shorter view:</strong> a zone with no tasks, or a finished zone in the past, shrinks to one line. Click it to
+  open it, and use the arrow in its band to hide it again. A zone that is over with something not done stays
+  open and says "N not done". When you open today, the view scrolls to the zone happening now.
+  You can turn this off in Settings → Daily View.</li>
+<li><strong>Details you want:</strong> Settings → Daily View chooses which details each row shows.</li>
+</ul>
+<p><img alt="A full day" src="assets/screens/daily-light.webp" loading="lazy" /></p>
+<h2 id="6-tasks">6. Tasks</h2>
+<p>Click <strong>+ New task</strong>. Fill in:</p>
+<p><img alt="The task form" src="assets/screens/task-form.webp" loading="lazy" /></p>
+<ul>
+<li><strong>Title</strong> (up to 200 characters) and optional <strong>notes</strong>.</li>
+<li><strong>Start time</strong> (three ways):</li>
+<li><strong>Fixed Time</strong>: for example 9:00 AM.</li>
+<li><strong>Relative to Prayer</strong>: for example "10 minutes after Asr".</li>
+<li><strong>Relative to Task</strong>: for example "15 minutes after the end of <em>another task</em>". If that task is not on the
+    day, a <strong>backup start time</strong> you choose is used and a warning is shown.</li>
+</ul>
+<p><img alt="Relative to prayer" src="assets/screens/task-form-prayer.webp" loading="lazy" />
+  <img alt="Relative to task" src="assets/screens/task-form-relative.webp" loading="lazy" />
+- <strong>Duration</strong> in hours and minutes; the form shows the end time and the zone the task falls in.
+- <strong>Date</strong> and <strong>Repeat</strong>: none, daily, weekly (choose weekdays, every N weeks), monthly (a day of the month,
+  the last day, the Nth weekday such as "first Friday", the last working day, or chosen weekdays), or yearly. A
+  repeat ends <strong>never</strong>, on a <strong>date</strong>, or after <strong>N times</strong>.</p>
+<p><img alt="Repeat options" src="assets/screens/task-form-repeat.webp" loading="lazy" />
+- <strong>Category</strong> (defaults: Work, Study, Worship, Personal, Health; you can add your own) and <strong>Priority</strong>
+  (High, Medium, Low).
+- <strong>Reminders</strong> and the <strong>Full-screen alert</strong> (see <a href="#8-reminders-and-full-screen-alerts">section 8</a>).</p>
+<p><strong>Changing a repeating task.</strong> The app asks whether the change applies to this occurrence only, this and the
+following ones, or all of them. Deleting works the same way. You can also skip one date without touching the rest.</p>
+<p><strong>Marking done.</strong> Click the circle on the task row. The app remembers when you ticked it; it is used for the
+"done on time" statistics. Completed occurrences get no reminders.</p>
+<p><strong>Tasks that follow other tasks.</strong> If you delete a task that others follow, the app warns you; the followers keep
+the times they have now as fixed times. Marking a task done does not move the tasks after it.</p>
+<p><img alt="Task details" src="assets/screens/task-details.webp" loading="lazy" /></p>
+<h2 id="7-free-to-do-list">7. Free To-Do list</h2>
+<p>For things you want to remember but have no time for yet. Open the menu and choose <strong>Free To-Do list</strong>.</p>
+<ul>
+<li>Type a title and press <strong>Enter</strong> to add it; <strong>Add with details</strong> opens the full form.</li>
+<li><strong>Schedule task</strong> opens the normal form with the title and notes filled in; pick the time and Save. The task
+  moves into the five zones.</li>
+<li>Tick a task to finish it, use the arrows to reorder, give it a category and priority.</li>
+</ul>
+<p><img alt="Free To-Do list" src="assets/screens/free-list.webp" loading="lazy" /></p>
+<h2 id="8-reminders-and-full-screen-alerts">8. Reminders and full-screen alerts</h2>
+<p><strong>Reminders (notifications).</strong> New tasks have a reminder switched on. With no times added, it reminds you
+<strong>10 minutes before</strong> (change this in Settings). You can add several reminders to one task, for example
+1 hour before and at the start. Click a notification to open WaqtWise on the Daily View.</p>
+<p><strong>Missed reminders.</strong> If the computer was off or asleep, the bell lists what you missed. A reminder up to 2
+minutes late is still shown normally.</p>
+<p><strong>Full-screen alert.</strong> For tasks you must not miss, switch on <strong>Full-screen alert at the start time</strong>. At exactly
+the start time the whole screen (all screens, if you have several) shows the task until you press a button:</p>
+<p><img alt="Full-screen alert" src="assets/screens/fullscreen-alert.webp" loading="lazy" /></p>
+<ul>
+<li><strong>Got it</strong> (always there), <strong>Snooze</strong>, <strong>Open task</strong>, <strong>Mark as Done</strong>.</li>
+<li><strong>One note at random:</strong> write several notes separated by <code>;</code> (for example <code>Drink water; Stretch; Breathe</code>)
+  and tick <em>Show one note at random</em>. Each alert shows one note, and all are used before any repeats.</li>
+<li>A few presses right after it appears are ignored on purpose, so typing cannot close it by accident.</li>
+<li>If it is more than 15 seconds late (for example after sleep), the task goes into the missed list instead.</li>
+<li>Look, colours, fonts, size and buttons: Settings → Full-screen reminder (with ready-made looks and a
+  <strong>Preview full screen</strong> button).</li>
+</ul>
+<p><img alt="Full-screen alert settings" src="assets/screens/settings-fullscreen.webp" loading="lazy" /></p>
+<p>Programs running in exclusive full-screen (some games and videos) can hide every other window. Use the
+program's windowed or borderless mode if the alert does not appear on top.</p>
+<h2 id="9-statistics">9. Statistics</h2>
+<p>Open <strong>Statistics</strong> from the menu. Choose <strong>Day, Week, Month, Year</strong> or <strong>Custom</strong> and move between periods
+with the arrows.</p>
+<p><img alt="Statistics" src="assets/screens/statistics.webp" loading="lazy" /></p>
+<p>The charts (use <strong>Manage</strong> to show, hide or reorder them):</p>
+<table>
+<thead>
+<tr>
+<th>Chart</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Completion rate</td>
+<td>Share of counted tasks that are done</td>
+</tr>
+<tr>
+<td>Tasks done</td>
+<td>How many were done out of how many</td>
+</tr>
+<tr>
+<td>Current streak</td>
+<td>Days in a row with at least 70% done</td>
+</tr>
+<tr>
+<td>Planned time</td>
+<td>Total time of the counted tasks</td>
+</tr>
+<tr>
+<td>Done on time</td>
+<td>Share of done tasks that were not late</td>
+</tr>
+<tr>
+<td>Done vs planned</td>
+<td>One bar per day, done against planned</td>
+</tr>
+<tr>
+<td>By zone</td>
+<td>Share done in each of the five zones</td>
+</tr>
+<tr>
+<td>Calendar heat map</td>
+<td>Every day as a colour; click a day to open it</td>
+</tr>
+<tr>
+<td>Completion trend</td>
+<td>How the rate moves, with a smoothed line</td>
+</tr>
+<tr>
+<td>By category</td>
+<td>Share done and planned time for each category</td>
+</tr>
+<tr>
+<td>Needs attention</td>
+<td>Tasks not done and already past their time</td>
+</tr>
+<tr>
+<td>Most late tasks</td>
+<td>Which tasks are done late and by how much on average</td>
+</tr>
+<tr>
+<td>Lateness by zone and category</td>
+<td>Average delay in each</td>
+</tr>
+<tr>
+<td>Lateness over time</td>
+<td>Average delay per day, week or month</td>
+</tr>
+</tbody>
+</table>
+<p>Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
+A task counts as <strong>late</strong> if you tick it more than a chosen time after its start (Settings → Application →
+Late tasks). Tasks ticked in very old versions have no tick time and are not counted for lateness.</p>
+<h2 id="10-settings-section-by-section">10. Settings, section by section</h2>
+<p>Open the menu → <strong>Settings</strong>. A row of buttons at the top jumps to each section.</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>What you can change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Language</strong></td>
+<td>English or العربية, applied immediately. Your own text (task names, notes, your categories) is never translated. Numbers always use 0123456789.</td>
+</tr>
+<tr>
+<td><strong>Prayer Times</strong></td>
+<td>Country and city (or a custom city), calculation method (12 are offered), minutes to add or subtract for each prayer, and the Hijri date adjustment.</td>
+</tr>
+<tr>
+<td><strong>Reminders &amp; Notifications</strong></td>
+<td>Windows notifications on/off, a sound, the default reminder time (10 minutes before), the snooze length, an optional notification at the start of each zone, and a <strong>Send a test notification</strong> button.</td>
+</tr>
+<tr>
+<td><strong>Application</strong></td>
+<td><strong>Start with Windows</strong>, the background message, theme (system, light or dark), first day of the week, <strong>late tasks</strong> (after how long a ticked task counts as late) and working days (used by "last working day" repeats).</td>
+</tr>
+<tr>
+<td><strong>Daily View</strong></td>
+<td>Which details each task row shows (with <em>Show everything</em>, <em>Standard</em> and <em>Name only</em> presets and a live preview), and whether empty and finished zones are collapsed.</td>
+</tr>
+<tr>
+<td><strong>Full-screen reminder</strong></td>
+<td>Whether new tasks get it, which screens, colours, font, name and note sizes, details and buttons shown, and ready-made looks.</td>
+</tr>
+<tr>
+<td><strong>Sounds</strong></td>
+<td>The sound for finishing a task and for the full-screen alert (or off).</td>
+</tr>
+<tr>
+<td><strong>Categories</strong></td>
+<td>Add, rename, colour or delete categories. Deleting one also clears it from tasks.</td>
+</tr>
+<tr>
+<td><strong>Data</strong></td>
+<td>Export, import, restore from backup.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Prayer time settings" src="assets/screens/settings-prayer-times.webp" loading="lazy" />
+<img alt="Daily View settings" src="assets/screens/settings-daily-view.webp" loading="lazy" /></p>
+<p><strong>A city that is not in the list.</strong> Settings → Prayer Times → City → <strong>Custom city…</strong>: type the name, latitude,
+longitude and time zone (for example <code>Asia/Riyadh</code>; a button fills in this computer's time zone), then <strong>Save
+city</strong>. The start and end of each zone are shown in that city's time zone, while your tasks keep using this
+computer's clock. Very far north or south places where the sun does not rise or set cannot be used; the app says so.</p>
+<p><strong>Tasks that repeat every 2 or more weeks</strong> count their weeks from the first day of the week chosen in Settings.
+Changing it can move such tasks to other weeks.</p>
+<h2 id="11-your-data-backups-and-privacy">11. Your data, backups and privacy</h2>
+<ul>
+<li>Everything is stored <strong>only on your computer</strong>, in the app's data folder
+  (<code>%APPDATA%\WaqtWise</code>, files <code>data.json</code> and <code>state.json</code>). WaqtWise does not use the network.</li>
+<li><strong>Export data</strong> (menu → Export data, or Settings → Data) saves a backup file. <strong>Import data</strong> restores one;
+  it replaces what is in the app, so export first if unsure. Backups also carry the saved statistics, so they
+  move with you to another computer.</li>
+<li><strong>Automatic backups:</strong> one per day (the last 7 days) and one just before each import or restore (the last 5
+  of each) in a <code>backups</code> folder. To go back: Settings → Data → <strong>Restore from backup…</strong>, pick a copy and
+  <strong>Restore</strong>. The data you had a moment before is saved first, so a restore can be undone.</li>
+<li>If saving ever fails (disk full, file locked) a red banner stays at the top with <strong>Try again</strong> and
+  <strong>Export a copy</strong>.</li>
+</ul>
+<p>More: <a href="privacy.html">PRIVACY</a> and the technical <a href="#repo:blob/main/docs/DATA_FORMAT.md">data format</a>.</p>
+<h2 id="12-background-running-tray-and-windows-start">12. Background running, tray and Windows start</h2>
+<ul>
+<li>Closing or minimizing the window <strong>keeps WaqtWise running in the tray</strong> (small icons near the clock; you may
+  need the small arrow). This is what lets reminders appear when the window is closed. The app tells you the
+  first time.</li>
+<li>Click the tray icon to open the window. Right-click for <strong>Open / Show</strong>, <strong>Hide / Minimize</strong> and <strong>Exit</strong>.
+  <strong>Exit</strong> stops the app, and reminders stop too.</li>
+<li>Settings → Application → <strong>Start with Windows</strong> starts it when you log in, quietly in the tray.</li>
+<li>The window always opens maximized. A change of your computer's time zone is noticed within about a minute.</li>
+</ul>
+<h2 id="13-updating-and-uninstalling">13. Updating and uninstalling</h2>
+<ul>
+<li><strong>Update:</strong> WaqtWise does not update itself (it never connects to the internet). Download the newer installer
+  from the <a href="#repo:releases">releases page</a> and run it. Your tasks and settings are kept.</li>
+<li><strong>Uninstall:</strong> Windows Settings → Apps → WaqtWise → Uninstall. It asks whether to delete your data too;
+  choose <strong>No</strong> to keep it for a later reinstall.</li>
+</ul>
+<h2 id="14-faq-and-troubleshooting">14. FAQ and troubleshooting</h2>
+<p><strong>Is it really free? Is there an account or ads?</strong> Free, open source, no account, no ads, no tracking.</p>
+<p><strong>Why does Windows warn me when I install?</strong> The installer is not signed yet. See
+<a href="windows-warning.html">WINDOWS_WARNING</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>What to try</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No notifications appear</td>
+<td>Settings → Reminders → <strong>Send a test notification</strong>. If nothing shows: Windows Settings → System → Notifications, make sure notifications are on and WaqtWise is allowed, and turn off Focus assist / Do not disturb.</td>
+</tr>
+<tr>
+<td>Clicking a notification does not open WaqtWise</td>
+<td>Please <a href="#repo:issues/new/choose">report it</a>.</td>
+</tr>
+<tr>
+<td>The full-screen alert is hidden by a game or video</td>
+<td>The program runs in exclusive full-screen. Use its windowed or borderless mode.</td>
+</tr>
+<tr>
+<td>The window disappeared</td>
+<td>It is in the tray. Click the tray icon.</td>
+</tr>
+<tr>
+<td>After Windows starts, the window only flashes in the taskbar</td>
+<td>Click it. If it keeps happening, please report it.</td>
+</tr>
+<tr>
+<td>Prayer times look wrong</td>
+<td>Check the city and calculation method, then adjust minutes for the prayer that differs.</td>
+</tr>
+<tr>
+<td>A task shows "Backup start time"</td>
+<td>It follows another task that is not on that day. Change the task it follows, or accept the backup time.</td>
+</tr>
+<tr>
+<td>I cannot find my small town</td>
+<td>Choose a larger town nearby, or use <strong>Custom city…</strong> with exact coordinates.</td>
+</tr>
+<tr>
+<td>City names are only in English</td>
+<td>Yes, the city list is English only for now. Country names follow the app language.</td>
+</tr>
+<tr>
+<td>Everything is gone after reinstalling Windows</td>
+<td>Import your exported backup file (menu → Import data). Make exports regularly.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="15-keyboard-and-accessibility">15. Keyboard and accessibility</h2>
+<ul>
+<li>Tab stays inside dialogs; Enter and Space work on every list item; Enter on the tick button only ticks.</li>
+<li>Focus stays on the same task when the day is redrawn.</li>
+<li>Text is never smaller than 12 px, contrast follows common guidelines, and the whole app mirrors for Arabic.</li>
+<li>It follows Windows text-size settings (125% and 150% were checked).</li>
+</ul>
+<hr />
+<p><em>Found a mistake, or something missing in this guide? Please <a href="#repo:issues/new/choose">open an issue</a>.</em></p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

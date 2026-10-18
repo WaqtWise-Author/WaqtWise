@@ -1,0 +1,106 @@
+# WaqtWise - notes for developers
+
+Everything here is for people who build or change the app. If you only want to use WaqtWise, read the
+[README](../README.md) and the [user guide](USER_GUIDE.md).
+
+## Run and test
+
+```
+npm ci
+npm start          # run the app (Electron)
+npm test           # unit and integration tests (node --test)
+npm run dist       # build the Windows installer into dist/ (on Windows)
+```
+
+Browser click-through (needs Playwright): `node tools/ui-check.js`. New screenshots for the docs and the site:
+`OUT=/tmp/shots node tools/make-screenshots.js`, then `python3 tools/shots-to-webp.py /tmp/shots`.
+The guide pages of the website are produced by `python3 tools/build-site.py`.
+
+## Folders
+
+- `src/core/` - all the logic (no screens, no Windows): zones, durations, prayer times, recurrence,
+  tasks, reminders, settings, saved-data format
+- `src/main/` - the Windows app itself (Electron): window, saved data, planner service, Windows
+  notifications, installer-related files
+- `src/renderer/` - the screens (Daily View, task form, Settings)
+- `tests/` - automated tests (spec scenarios 1-18, 20, 27-29 and many more)
+- `tools/` - screenshot / click-through tools used while building (not part of the installed app)
+- `build/` - icon and installer script
+- `docs/` - USER_GUIDE.md (for the user), ACCEPTANCE_CHECKLIST.md (what is checked where, and what to
+  try on a real PC), DATA_FORMAT.md (backup file format), CHANGELOG.md (what changed in each version; raise `version` in `package.json` and add a section there before every release)
+
+## GitHub does the work
+
+- **Run tests**: runs the tests when you start it by hand (Actions -> Run tests -> Run workflow). The workflows no longer start by themselves on every upload.
+- **Build Windows installer**: builds `WaqtWise-Setup-<version>.exe`. Open the Actions tab, click the
+  newest "Build Windows installer" run, and download "WaqtWise-Installer" at the bottom of the page.
+
+## Languages
+
+English and Arabic (Settings -> Language). Arabic is a full right-to-left screen; numbers are always 0123456789. The texts live in `src/core/i18n-ar.js` (the English text is the key). `node tools/i18n-scan.js` lists every text, and `tests/i18n.test.js` fails if a text has no Arabic or an Arabic text is no longer used.
+
+## Free To-Do list and task details
+
+The side menu has a **Free To-Do list** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time* (tasks ticked before this version have no tick time and are not counted). **Settings -> Daily View** chooses which details each task row shows (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes), with a live preview. Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
+
+## Saving problems and statistics
+
+If the data cannot be saved (disk full, file locked), a red banner stays at the top until a save works again; it has **Try again** and **Export a copy**. The export file also carries the saved statistics of finished days (`statsHistory`), so they survive moving to another computer. See `docs/DATA_FORMAT.md`.
+
+## Alert buttons and details
+
+Settings -> Full-screen reminder lets you choose which details and which buttons (Snooze, Open task, Mark as Done) the alert shows; "Got it" always stays.
+
+## One note at random
+
+In the task form (full-screen alert on) tick **Show one note at random** and separate the notes with `;`. The full-screen alert shows one of them, every note once before any repeats. See `docs/DATA_FORMAT.md`.
+
+## Start time options
+
+Fixed Time, Relative to Prayer, and Relative to Task ("15 minutes after the end of <task>").
+
+## Full-screen alert
+
+`src/core/reminder-engine.js` sets one timer for the next start time, so the alert appears at the exact second.
+`src/main/alert-window.js` opens the borderless windows (one per screen); the page is `src/renderer/alert.html`
+(drawn by `alert-view.js`, which the Settings preview uses too). Settings: `src/core/settings.js`.
+
+## First run
+
+A welcome screen asks for the city once. Settings -> Reminders has a "Send a test notification" button that also
+checks that Windows shows notifications; clicking one opens WaqtWise on the Daily View.
+
+## Keep package-lock.json
+
+The workflows use `npm ci`, which needs `package-lock.json` in the repository. It is not part of the zip files sent for review: keep the one that is already on GitHub (or make a new one with the Lockfile workflow after changing a dependency).
+
+## Later
+
+See `docs/TODO.md` (more countries and cities).
+
+## Assumptions made so far
+
+- Asr uses the standard (Shafi) calculation.
+- Recurrence weeks run Sunday to Saturday when counting "every N weeks".
+- For "After N occurrences", excluded dates still count toward N; added one-offs do not.
+- "Last working day" uses the working days from Settings (default Sunday-Thursday).
+- A reminder up to 2 minutes late is still shown normally; older ones go to the missed summary.
+- A full-screen alert is only shown if it is at most 15 seconds late; otherwise the task goes into the missed summary.
+- The full-screen alert replaces the plain notification with offset 0; earlier reminders stay notifications.
+- The full-screen alert stays until a button is clicked (no automatic closing) and covers all screens by default.
+- Completed occurrences get no reminders.
+- New tasks start with reminders On and no custom times, so the default reminder time (10 minutes) is used.
+- The Hijri date shown is the Umm al-Qura date of the Planning Day's start date.
+- Notification buttons use a `waqtwise://` link (registered by the installer) handed to the running app.
+- Closing or minimizing the window hides it to the tray; only "Exit" in the tray menu stops the app.
+- The "still running in the background" message is shown once, at the first close (or again after it is
+  switched back on in Settings).
+- Start with Windows registers the installed app with the `--hidden` option so it starts in the tray.
+- A change of the PC's time zone is noticed within about a minute (and at wake from sleep); this needs a
+  check on a real Windows PC.
+- Relative to Task: a task follows the SAME DAY's occurrence of the other task (matched by calendar date);
+  if the other task is not on that day, the backup start time is used and a warning is shown.
+- Deleting a task completely (one-off, or "All occurrences") warns about tasks that follow it, and they keep the
+  times they have now as fixed times. Deleting one day only does not freeze followers (they use the backup time).
+- A follower that crosses midnight cannot be frozen exactly; it falls back to its backup time (and you are told).
+- Marking a task done does not move the tasks that follow it (they follow the planned times).

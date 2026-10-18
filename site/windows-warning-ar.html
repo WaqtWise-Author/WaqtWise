@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>تحذير ويندوز - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="ar.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="ar.html#features">المزايا</a><a href="ar.html#install">التثبيت</a><a href="guide-ar.html">دليل المستخدم</a>
+    <a class="lang" href="index.html">English</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="windows-protected-your-pc---لماذا-تظهر-وماذا-تفعل">«Windows protected your PC» - لماذا تظهر وماذا تفعل</h1>
+<p><strong>اللغات:</strong> <a href="windows-warning.html">English</a> · العربية</p>
+<p>عند تشغيل المثبّت أول مرة قد تظهر لك نافذة زرقاء مكتوب فيها:</p>
+<blockquote>
+<p><strong>Windows protected your PC</strong>
+Microsoft Defender SmartScreen prevented an unrecognized app from starting.</p>
+</blockquote>
+<h2 id="لماذا-تظهر">لماذا تظهر؟</h2>
+<p>SmartScreen ميزة في ويندوز تحذّر من البرامج التي لا تعرفها. يصبح البرنامج «معروفًا» عندما يكون <strong>موقَّعًا</strong> بشهادة
+(توقيع رقمي يثبت هوية الناشر) وقد نزّله كثيرون. «وقت وايز» تطبيق مجاني ومفتوح المصدر من فريق صغير، ومثبّته حاليًا <strong>غير موقَّع</strong>
+وهو جديد، فليست له سمعة عند ويندوز بعد.</p>
+<p>هذا التحذير <strong>لا يعني</strong> أن الملف مصاب. يعني فقط: «ويندوز لا يعرف هذا الناشر».</p>
+<p>نتقدم بطلب توقيع مجاني للمشاريع المفتوحة المصدر (SignPath Foundation)؛ راجع <a href="code-signing.html">سياسة التوقيع</a>.
+وحتى بعد التوقيع قد يستمر التحذير فترة إلى أن ينزّل التطبيق عدد كافٍ من الناس. وهذا طبيعي.</p>
+<h2 id="كيف-تثبت-رغم-التحذير">كيف تثبّت رغم التحذير</h2>
+<ol>
+<li>في النافذة الزرقاء اضغط <strong>More info</strong>.</li>
+<li>اضغط <strong>Run anyway</strong>.</li>
+<li>أكمل التثبيت كالمعتاد.</li>
+</ol>
+<h2 id="تأكد-أن-ما-نزلته-أصلي-موصى-به">تأكد أن ما نزّلته أصلي (موصى به)</h2>
+<p>نزّل المثبّت من صفحة <strong>Releases</strong> الخاصة بالمشروع فقط. يذكر كل إصدار قيمة <strong>SHA256</strong> بجوار الملف (وملف <code>SHA256SUMS.txt</code>). للمقارنة:</p>
+<ol>
+<li>افتح <strong>PowerShell</strong> في المجلد الذي فيه المثبّت (Shift + زر أيمن في المجلد ← <em>Open PowerShell window here</em>).</li>
+<li>نفّذ (غيّر الاسم ليطابق ملفك):
+   <code>Get-FileHash .\WaqtWise-Setup-1.0.0.exe -Algorithm SHA256</code></li>
+<li>يجب أن تكون القيمة الطويلة في عمود <strong>Hash</strong> <strong>مطابقة تمامًا</strong> لما في صفحة الإصدارات. وإن اختلفت فلا تشغّل الملف ونزّله مجددًا.</li>
+</ol>
+<p>ويمكنك رفع الملف إلى <a href="https://www.virustotal.com">virustotal.com</a> لترى رأي محركات حماية كثيرة. وقد تظهر
+نتيجة «غير معروف» أو إنذار كاذب نادر من محرك واحد مع البرامج الجديدة غير الموقَّعة.</p>
+<h2 id="أمور-أخرى">أمور أخرى</h2>
+<ul>
+<li>التطبيق لا يتصل بالإنترنت ولا يحتاج صلاحيات المسؤول.</li>
+<li>الشيفرة المصدرية كلها علنية؛ يمكنك قراءتها أو بناء المثبّت بنفسك (راجع <a href="#repo:blob/main/docs/DEVELOPMENT.md">DEVELOPMENT</a>). ومثبّت الإصدار يُبنى بسير عمل آلي على GitHub من الشيفرة العلنية.</li>
+<li>إن عزل برنامج الحماية الملف فمن فضلك <a href="#repo:issues/new/choose">بلّغنا</a> لنطلب من الشركة مراجعته.</li>
+</ul>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>

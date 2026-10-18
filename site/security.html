@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src https://api.github.com; base-uri 'self'; form-action 'none'">
+<title>Security - WaqtWise</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/icon-256.png" alt="">WaqtWise</a>
+  <nav class="nav">
+    <a href="index.html#features">Features</a><a href="index.html#install">Install</a><a href="guide.html">User guide</a>
+    <a class="lang" href="ar.html">العربية</a>
+  </nav>
+</div></header>
+<main class="wrap"><article class="doc">
+<h1 id="security-policy">Security policy</h1>
+<h2 id="supported-versions">Supported versions</h2>
+<p>Only the latest release receives fixes.</p>
+<h2 id="reporting-a-vulnerability">Reporting a vulnerability</h2>
+<p>Please <strong>do not</strong> open a public issue for a security problem.
+Use GitHub's private reporting: on the repository page open <strong>Security → Report a vulnerability</strong>.
+If you cannot, open an issue that says only "I have a security report" without details, and we will arrange a
+private way to receive it.</p>
+<p>Please include: the version, what you did, what happened, and what you expected. We will acknowledge within a
+few days and aim to fix confirmed problems in the next release, crediting you if you wish.</p>
+<h2 id="what-the-app-does-to-be-safe">What the app does to be safe</h2>
+<ul>
+<li>No network access, no remote content, no telemetry.</li>
+<li>Strict content security policy; browser permissions are refused; requests from the window to the main process
+  are validated against a fixed list.</li>
+<li>The packaged app uses Electron Fuses (it cannot run as a plain Node program or with Node debugging switches).</li>
+<li>Imported backups are validated; an imported file cannot switch on "Start with Windows".</li>
+</ul>
+<h2 id="checking-a-download">Checking a download</h2>
+<p>Releases list SHA256 checksums; see <a href="windows-warning.html">docs/WINDOWS_WARNING.md</a>.</p>
+</article></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>
