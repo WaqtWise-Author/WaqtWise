@@ -1,10 +1,10 @@
 {
   "name": "waqtwise",
   "productName": "WaqtWise",
-  "version": "0.8.0",
-  "description": "WaqtWise - task manager with prayer-time zones",
+  "version": "1.0.0",
+  "description": "WaqtWise - a daily planner that divides your day into five zones by the prayer times (Windows)",
   "private": true,
-  "author": "WaqtWise",
+  "author": "The WaqtWise authors",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
@@ -24,14 +24,17 @@
   "build": {
     "appId": "com.waqtwise.app",
     "productName": "WaqtWise",
-    "copyright": "WaqtWise",
+    "copyright": "Copyright (C) 2026 The WaqtWise authors",
     "directories": {
       "output": "dist",
       "buildResources": "build"
     },
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "NOTICE.md",
+      "THIRD_PARTY_NOTICES.md"
     ],
     "electronFuses": {
       "runAsNode": false,
@@ -72,5 +75,16 @@
         ]
       }
     ]
-  }
+  },
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "planner",
+    "prayer-times",
+    "salah",
+    "tasks",
+    "electron",
+    "windows",
+    "arabic",
+    "rtl"
+  ]
 }

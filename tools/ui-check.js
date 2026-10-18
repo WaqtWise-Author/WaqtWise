@@ -1542,6 +1542,7 @@ async function setTime(page, hour, minute, ampm) {
     await p.selectOption('#welcome-country', 'JP');
     await p.fill('input[data-city-search="JP"]', 'osaka');
     await p.waitForFunction(() => /No city|Showing|city|cities/.test(document.querySelector('.city-search .hint').textContent) && /sak/i.test(document.querySelector('.city-results .city-result').textContent));
+    assert.doesNotMatch(await p.textContent('.welcome-city-box'), /null|undefined/, 'no stray words in the city box');
     // not allowed to start before a city is chosen
     await p.click('.welcome .btn.primary');
     await p.waitForSelector('.toast.error');

@@ -1,93 +1,79 @@
-# WaqtWise
+<p align="center">
+  <img src="build/icon-256.png" width="110" alt="WaqtWise logo">
+</p>
 
-Windows task manager where the day is divided into 5 zones by the prayer times.
-Full specification: WaqtWise_Spec.md (kept outside this folder).
+<h1 align="center">WaqtWise</h1>
+<p align="center"><b>Make every waqt count, wisely.</b><br>
+A free day planner for Windows that divides your day into five zones by the prayer times.</p>
 
-## Folders
+<p align="center">
+  <a href="../../releases/latest"><b>⬇ Download for Windows</b></a> ·
+  <a href="docs/USER_GUIDE.md">User guide</a> ·
+  <a href="README.ar.md">العربية</a> ·
+  <a href="docs/WINDOWS_WARNING.md">"Windows protected your PC"?</a>
+</p>
 
-- `src/core/` - all the logic (no screens, no Windows): zones, durations, prayer times, recurrence,
-  tasks, reminders, settings, saved-data format
-- `src/main/` - the Windows app itself (Electron): window, saved data, planner service, Windows
-  notifications, installer-related files
-- `src/renderer/` - the screens (Daily View, task form, Settings)
-- `tests/` - automated tests (spec scenarios 1-18, 20, 27-29 and many more)
-- `tools/` - screenshot / click-through tools used while building (not part of the installed app)
-- `build/` - icon and installer script
-- `docs/` - HOW_TO_INSTALL_AND_USE.md (for the user), ACCEPTANCE_CHECKLIST.md (what is checked where, and what to
-  try on a real PC), DATA_FORMAT.md (backup file format), CHANGELOG.md (what changed in each version; raise `version` in `package.json` and add a section there before every release)
+<p align="center">
+  <img alt="License: GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue">
+  <img alt="Platform: Windows 10/11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-informational">
+  <img alt="Works offline" src="https://img.shields.io/badge/works-offline-success">
+  <img alt="English and Arabic" src="https://img.shields.io/badge/language-English%20%7C%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9-lightgrey">
+</p>
 
-## GitHub does the work
+<p align="center">
+  <img src="docs/images/daily-light-top.webp" width="860" alt="The WaqtWise Daily View with five prayer-time zones">
+</p>
 
-- **Run tests**: runs the tests when you start it by hand (Actions -> Run tests -> Run workflow). The workflows no longer start by themselves on every upload.
-- **Build Windows installer**: builds `WaqtWise-Setup-<version>.exe`. Open the Actions tab, click the
-  newest "Build Windows installer" run, and download "WaqtWise-Installer" at the bottom of the page.
+## What it does
 
-## Languages
+Your day is split into **five zones** - Fajr to Dhuhr, Dhuhr to Asr, Asr to Maghrib, Maghrib to Isha, Isha to Fajr.
+Add a task and it lands in the right zone by itself, so you always see how much time you have before the next prayer.
 
-English and Arabic (Settings -> Language). Arabic is a full right-to-left screen; numbers are always 0123456789. The texts live in `src/core/i18n-ar.js` (the English text is the key). `node tools/i18n-scan.js` lists every text, and `tests/i18n.test.js` fails if a text has no Arabic or an Arabic text is no longer used.
+- **Smart start times**: a fixed time, *10 minutes after Asr*, or *15 minutes after the end of another task*.
+- **Repeats**: daily, weekly, monthly (first Friday, last working day, ...), yearly; change one, the following, or all.
+- **Reminders and hard-to-miss full-screen alerts** with snooze, "open task" and "mark as done", and one random note each time.
+- **Free To-Do list** for things with no time yet; schedule them when you decide.
+- **Statistics**: completion, streaks, done on time, lateness, heat map, by zone and category.
+- **Any country and city** (about 30,000 cities, 209 countries), 12 calculation methods, manual minute adjustments, Hijri date.
+- **English and Arabic** (full right-to-left), light and dark themes.
+- **Private by design**: works offline, no account, no tracking; everything stays on your computer.
 
-## Free To-Do list and task details
+| | |
+| --- | --- |
+| ![Task form](docs/images/task-form.webp) | ![Full-screen alert](docs/images/fullscreen-alert.webp) |
+| ![Statistics](docs/images/statistics-top.webp) | ![Arabic, right-to-left](docs/images/daily-arabic-top.webp) |
 
-The side menu has a **Free To-Do list** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time* (tasks ticked before this version have no tick time and are not counted). **Settings -> Daily View** chooses which details each task row shows (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes), with a live preview. Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
+## Install
 
-## Saving problems and statistics
+1. Download **WaqtWise-Setup-&lt;version&gt;.exe** from the [latest release](../../releases/latest).
+2. Run it. If Windows shows **"Windows protected your PC"**, click **More info → Run anyway**.
+   This happens because the installer is not signed yet and the app is new; it does not mean the file is unsafe.
+   Read [why, and how to check your download](docs/WINDOWS_WARNING.md).
+3. Choose your country and city on the welcome screen and start planning.
 
-If the data cannot be saved (disk full, file locked), a red banner stays at the top until a save works again; it has **Try again** and **Export a copy**. The export file also carries the saved statistics of finished days (`statsHistory`), so they survive moving to another computer. See `docs/DATA_FORMAT.md`.
+Requires Windows 10 or 11 (64-bit). No administrator rights. The app never updates itself: to update, run the newer installer.
 
-## Alert buttons and details
+## Learn more
 
-Settings -> Full-screen reminder lets you choose which details and which buttons (Snooze, Open task, Mark as Done) the alert shows; "Got it" always stays.
+- [User guide](docs/USER_GUIDE.md) (every feature and setting, FAQ, troubleshooting) · [دليل المستخدم](docs/USER_GUIDE.ar.md)
+- [Privacy](PRIVACY.md) · [Security policy](SECURITY.md) · [Code signing policy](docs/CODE_SIGNING_POLICY.md)
+- [What changed in each version](docs/CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Developer notes](docs/DEVELOPMENT.md)
 
-## One note at random
+## License
 
-In the task form (full-screen alert on) tick **Show one note at random** and separate the notes with `;`. The full-screen alert shows one of them, every note once before any repeats. See `docs/DATA_FORMAT.md`.
+WaqtWise is free software under the **GNU General Public License v3.0 or later** ([LICENSE](LICENSE)): you may use,
+study, share and change it, and if you share a changed version you must share its source under the same license.
+The name, logo and icon are not covered by the license; see [NOTICE.md](NOTICE.md). Third-party components and data
+(including city data from GeoNames, CC BY 4.0) are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Start time options
+## Build it yourself
 
-Fixed Time, Relative to Prayer, and Relative to Task ("15 minutes after the end of <task>").
+```
+npm ci
+npm start      # run
+npm test       # tests
+npm run dist   # Windows installer (run on Windows)
+```
 
-## Full-screen alert
-
-`src/core/reminder-engine.js` sets one timer for the next start time, so the alert appears at the exact second.
-`src/main/alert-window.js` opens the borderless windows (one per screen); the page is `src/renderer/alert.html`
-(drawn by `alert-view.js`, which the Settings preview uses too). Settings: `src/core/settings.js`.
-
-## First run
-
-A welcome screen asks for the city once. Settings -> Reminders has a "Send a test notification" button that also
-checks that Windows shows notifications; clicking one opens WaqtWise on the Daily View.
-
-## Keep package-lock.json
-
-The workflows use `npm ci`, which needs `package-lock.json` in the repository. It is not part of the zip files sent for review: keep the one that is already on GitHub (or make a new one with the Lockfile workflow after changing a dependency).
-
-## Later
-
-See `docs/TODO.md` (more countries and cities).
-
-## Assumptions made so far
-
-- Asr uses the standard (Shafi) calculation.
-- Recurrence weeks run Sunday to Saturday when counting "every N weeks".
-- For "After N occurrences", excluded dates still count toward N; added one-offs do not.
-- "Last working day" uses the working days from Settings (default Sunday-Thursday).
-- A reminder up to 2 minutes late is still shown normally; older ones go to the missed summary.
-- A full-screen alert is only shown if it is at most 15 seconds late; otherwise the task goes into the missed summary.
-- The full-screen alert replaces the plain notification with offset 0; earlier reminders stay notifications.
-- The full-screen alert stays until a button is clicked (no automatic closing) and covers all screens by default.
-- Completed occurrences get no reminders.
-- New tasks start with reminders On and no custom times, so the default reminder time (10 minutes) is used.
-- The Hijri date shown is the Umm al-Qura date of the Planning Day's start date.
-- Notification buttons use a `waqtwise://` link (registered by the installer) handed to the running app.
-- Closing or minimizing the window hides it to the tray; only "Exit" in the tray menu stops the app.
-- The "still running in the background" message is shown once, at the first close (or again after it is
-  switched back on in Settings).
-- Start with Windows registers the installed app with the `--hidden` option so it starts in the tray.
-- A change of the PC's time zone is noticed within about a minute (and at wake from sleep); this needs a
-  check on a real Windows PC.
-- Relative to Task: a task follows the SAME DAY's occurrence of the other task (matched by calendar date);
-  if the other task is not on that day, the backup start time is used and a warning is shown.
-- Deleting a task completely (one-off, or "All occurrences") warns about tasks that follow it, and they keep the
-  times they have now as fixed times. Deleting one day only does not freeze followers (they use the backup time).
-- A follower that crosses midnight cannot be frozen exactly; it falls back to its backup time (and you are told).
-- Marking a task done does not move the tasks that follow it (they follow the planned times).
+More in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
