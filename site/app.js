@@ -1,5 +1,5 @@
-// WaqtWise website: works out the repository from the address, points the download links at it, and shows the
-// latest release. No tracking. The only request is to GitHub's public API for the latest release.
+// WaqtWise website: works out the repository from the address, points the download links at the latest release, and shows
+// its version number and size. No tracking. The only request is to GitHub's public API for the latest release.
 (function () {
   'use strict';
   var cfg = window.WAQTWISE_SITE || {};
@@ -20,8 +20,7 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('a[href^="#repo:"]'), fix);
 
-  var box = document.getElementById('latest');
-  if (!box || !owner || !repo || !window.fetch) return;
+  if (!owner || !repo || !window.fetch) return;
   fetch('https://api.github.com/repos/' + owner + '/' + repo + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (rel) {
@@ -34,8 +33,6 @@
       Array.prototype.forEach.call(document.querySelectorAll('[data-size]'), function (el) {
         if (exe) el.textContent = (exe.size / 1048576).toFixed(0) + ' MB';
       });
-      var out = document.getElementById('latest-notes');
-      if (out && rel.body) { out.textContent = rel.body.trim().slice(0, 2500); }
     })
     .catch(function () { /* keep the static text */ });
 })();

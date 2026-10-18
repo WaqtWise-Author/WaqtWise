@@ -95,7 +95,7 @@ test('every screenshot used by the documents and the website exists', () => {
 });
 
 test('website: pages, security policy, no third-party content, links resolve', () => {
-  for (const f of ['index.html', 'ar.html', 'guide.html', 'guide-ar.html', 'windows-warning.html', 'windows-warning-ar.html', 'privacy.html', 'code-signing.html', 'security.html', 'changelog.html', 'licenses.html', 'notice.html', 'style.css', 'app.js', 'config.js', 'favicon.ico']) {
+  for (const f of ['index.html', 'ar.html', 'guide.html', 'guide-ar.html', 'windows-warning.html', 'windows-warning-ar.html', 'privacy.html', 'code-signing.html', 'security.html', 'licenses.html', 'notice.html', 'style.css', 'app.js', 'config.js', 'favicon.ico']) {
     assert.ok(exists(`site/${f}`), `site/${f} exists`);
   }
   for (const f of fs.readdirSync(path.join(root, 'site')).filter((x) => x.endsWith('.html'))) {
@@ -120,7 +120,8 @@ test('the guide pages of the website are up to date with the Markdown (run: pyth
   const guide = read('site/guide.html');
   const h2 = [...read('docs/USER_GUIDE.md').matchAll(/^## (.+)$/gm)].map((m) => m[1]);
   for (const title of h2) assert.ok(guide.includes(title.replace(/&/g, '&amp;')), `site/guide.html has "${title}"`);
-  assert.ok(read('site/changelog.html').includes(pkg.version), 'the changelog page mentions the current version');
+  assert.ok(!exists('site/changelog.html'), 'the website has no release notes page (they stay in the repository)');
+  for (const f of ['index.html', 'ar.html']) assert.ok(!/release notes|what's new|الجديد/i.test(read(`site/${f}`)), `${f} has no release notes`);
 });
 
 test('workflows for the website and the release are manual and safe', () => {

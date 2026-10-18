@@ -20,7 +20,6 @@ PAGES = {
     'PRIVACY.md': ('privacy.html', 'en', 'Privacy'),
     'SECURITY.md': ('security.html', 'en', 'Security'),
     'docs/CODE_SIGNING_POLICY.md': ('code-signing.html', 'en', 'Code signing policy'),
-    'docs/CHANGELOG.md': ('changelog.html', 'en', 'What changed in each version'),
     'NOTICE.md': ('notice.html', 'en', 'License notice'),
     'THIRD_PARTY_NOTICES.md': ('licenses.html', 'en', 'Third-party licenses'),
 }

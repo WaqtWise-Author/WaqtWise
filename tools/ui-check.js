@@ -1016,7 +1016,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.deepEqual(realErrors(alert.errors), []);
     await alert.browser.close();
   });
-  await step('a very long title at the biggest size scrolls inside its box and the buttons stay on the screen', async () => {
+  await step('a very long title at the biggest size wraps and shrinks to fit: no scroll bar, and the buttons stay on the screen', async () => {
     const alert = await openAlertPage({ playwright, executablePath, width: 1366, height: 768 });
     const p = alert.page;
     const { DEFAULT_ALERT_APPEARANCE: base } = require('../src/core');
@@ -1029,6 +1029,10 @@ async function setTime(page, hour, minute, ampm) {
       appearance: look, snoozeMinutes: 5, guardMs: 0,
     }]);
     const viewport = p.viewportSize();
+    const fit = await p.$eval('.alert-name', (el) => ({ over: el.scrollHeight - el.clientHeight, size: parseFloat(el.style.fontSize), overflow: getComputedStyle(el).overflowY }));
+    assert.ok(fit.over <= 2, `the whole title is visible (${fit.over}px hidden)`);
+    assert.ok(fit.size < 200 && fit.size >= 24, `the letters were made smaller (${fit.size}px)`);
+    assert.equal(fit.overflow, 'hidden', 'no scroll bar');
     const boxes = await p.$$eval('.alert-actions button', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }));
     assert.ok(boxes.length >= 1);
     for (const b of boxes) assert.ok(b.top >= 0 && b.bottom <= viewport.height, `button inside the screen (${Math.round(b.bottom)} of ${viewport.height})`);

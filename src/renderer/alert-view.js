@@ -22,6 +22,17 @@
     set('--a-items-justify', a.alignment === 'left' ? 'flex-start' : 'center');
   }
 
+  // A long title wraps onto several lines. If it is still too tall for its box, make the letters smaller (never below 24px)
+  // until it fits, so the title never needs a scroll bar and the buttons always stay on the screen.
+  function fitTitle(el, base) {
+    el.style.fontSize = `${base}px`;
+    let size = base;
+    while (el.scrollHeight > el.clientHeight + 2 && size > 24) {
+      size = Math.max(24, Math.floor(size * 0.92));
+      el.style.fontSize = `${size}px`;
+    }
+  }
+
   // state: { item, remaining, appearance, snoozeMinutes, guardActive }
   // handlers (optional): { dismiss, snooze, done, open } - called with no arguments
   function render(root, state, handlers) {
@@ -80,6 +91,10 @@
     stage.append(...parts);
     frame.appendChild(stage);
     clear(root).appendChild(frame);
+    const refit = () => fitTitle(name, a.name.size);
+    refit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+    if (window.ResizeObserver) new ResizeObserver(refit).observe(frame);
     return { stage, frame };
   }
 
