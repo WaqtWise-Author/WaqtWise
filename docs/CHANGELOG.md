@@ -3,6 +3,21 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.1.0
+
+New
+- **Routines** (menu -> Routines): things that repeat several times a day inside a time window, for example "drink water every 2 hours 30 minutes from 8:00 AM to 8:00 PM". Each routine has its own start and end time (a window may run past midnight), a repeat distance given in hours and minutes (at least 5 minutes), the days of the week it applies to, and its own way of reminding: a notification, a full-screen alert, or both. The page shows today's times for each routine to tick off; a routine can be paused. A time missed while the computer was off is skipped. Routines are a list of their own, separate from tasks: they are not in the five zones or the statistics (a statistics card for them may come later). They are saved with the data and travel with export, import and backups (`routines` in the file, see `docs/DATA_FORMAT.md`).
+- **One note at random for routines**: write several notes separated by `;` and the full-screen alert shows a different one each time it rings, none repeating until all were shown (same as for tasks).
+- Clicking a routine notification opens the Routines page. Notifications still have no buttons; Snooze, Mark as Done and Open routines are on the full-screen alert.
+
+Fixed
+- A long task name on the full-screen alert wraps onto the next line neatly and shrinks only if it still does not fit; the alert no longer shows a scroll bar.
+
+Documents and website
+- The Routines section in the user guide (English and Arabic), a Routines screenshot, and the data format.
+- The website home page has the logo large in the middle of the top, and as the first picture among the screenshots.
+- The **Run tests**, **Screen check** and **Publish website** workflows now also start by themselves on every push (the website only when the site or the documents change on `main`); **Build Windows installer** and **Release** stay manual.
+
 ## 1.0.0
 
 The first public release. The work before it was numbered 0.x while the app was private; this section lists what changed since the last private version.

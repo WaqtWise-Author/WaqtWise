@@ -33,7 +33,7 @@ SmartScreen ميزة في ويندوز تحذّر من البرامج التي �
 1. افتح **PowerShell** في المجلد الذي فيه المثبّت (Shift + زر أيمن في المجلد ← *Open PowerShell window here*).
 2. نفّذ (غيّر الاسم ليطابق ملفك):
    ```
-   Get-FileHash .\WaqtWise-Setup-1.0.0.exe -Algorithm SHA256
+   Get-FileHash .\WaqtWise-Setup-1.1.0.exe -Algorithm SHA256
    ```
 3. يجب أن تكون القيمة الطويلة في عمود **Hash** **مطابقة تمامًا** لما في صفحة الإصدارات. وإن اختلفت فلا تشغّل الملف ونزّله مجددًا.
 

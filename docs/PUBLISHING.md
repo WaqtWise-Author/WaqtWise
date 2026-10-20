@@ -41,7 +41,7 @@ started by hand.
 ## 4. First release
 
 1. Raise `version` in `package.json` if needed and add the section in `docs/CHANGELOG.md`.
-2. **Actions → Release → Run workflow** with the version (e.g. `1.0.0`). It builds the installer and creates a
+2. **Actions → Release → Run workflow** with the version (e.g. `1.1.0`). It builds the installer and creates a
    **draft** release with the installer, `SHA256SUMS.txt` and release notes.
 3. Open the draft, read the notes, test the installer once more, then **Publish release**.
 4. The website's *Download* button always points at the newest published release.
