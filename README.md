@@ -8,6 +8,7 @@ A free day planner for Windows that divides your day into five zones by the pray
 
 <p align="center">
   <a href="../../releases/latest"><b>⬇ Download for Windows</b></a> ·
+  <a href="https://waqtwise-author.github.io/WaqtWise/">Website</a> ·
   <a href="docs/USER_GUIDE.md">User guide</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="docs/WINDOWS_WARNING.md">"Windows protected your PC"?</a>

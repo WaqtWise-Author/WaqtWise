@@ -8,6 +8,7 @@
 مخطِّط يومي مجاني لويندوز يقسّم يومك إلى خمس مناطق بحسب مواقيت الصلاة.
 
 [**⬇ تنزيل لويندوز**](../../releases/latest) ·
+[الموقع](https://waqtwise-author.github.io/WaqtWise/) ·
 [دليل المستخدم](docs/USER_GUIDE.ar.md) ·
 [English](README.md) ·
 [تحذير «Windows protected your PC»؟](docs/WINDOWS_WARNING.ar.md)

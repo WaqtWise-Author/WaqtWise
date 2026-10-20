@@ -29,7 +29,7 @@ test('license: GPL-3.0-or-later everywhere it is stated', () => {
 
 test('every public document exists and no private e-mail address is in the repository docs', () => {
   for (const f of MARKDOWN) assert.ok(exists(f), `${f} exists`);
-  for (const f of MARKDOWN) assert.ok(!/@corneredge/i.test(read(f)), `${f} has no private address`);
+  for (const f of MARKDOWN) assert.ok(!/[\w.+-]+@(?!users\.noreply\.github\.com)[\w-]+(\.[\w-]+)+/.test(read(f)), `${f} has no e-mail address`);
   for (const f of ['.github/ISSUE_TEMPLATE/bug_report.yml', '.github/ISSUE_TEMPLATE/feature_request.yml', '.github/ISSUE_TEMPLATE/config.yml']) assert.ok(exists(f), f);
 });
 

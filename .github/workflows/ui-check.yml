@@ -11,6 +11,9 @@ concurrency:
   group: ui-check-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   ui:
     runs-on: ubuntu-latest
