@@ -396,6 +396,7 @@
     if (WW.state.view === 'daily') await WW.refreshDay();
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
+    else if (WW.state.view === 'routines') await WW.showRoutines();
   };
 
   // ---- Banner: the data could not be saved -----------------------------------------------------------------------
@@ -514,6 +515,7 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': T('Close menu'), onclick: closeDrawer }, WW.icon('close', 18, 2))),
       item('calendar', T('Daily View'), () => WW.showDaily(), WW.state.view === 'daily'),
       item('check', T('Free To-Do list') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
+      item('bell', T('Routines'), () => WW.showRoutines(), WW.state.view === 'routines'),
       item('chart', T('Statistics'), () => WW.showStats({ range: 'week' }), WW.state.view === 'stats'),
       item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'),
       h('div', { class: 'drawer-sep' }),
@@ -623,6 +625,7 @@
     if (WW.state.view === 'settings') WW.renderSettings();
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
+    else if (WW.state.view === 'routines') await WW.showRoutines();
     else await WW.showDay(WW.state.todayKey);
     return boot;
   }
@@ -801,6 +804,7 @@
       window.api.on('show-daily', () => {
         if (!anyDialogOpen() && WW.state.settings && WW.state.settings.welcomeShown) { WW.state.view = 'daily'; WW.state.dayKey = WW.state.todayKey || WW.state.dayKey; WW.refreshDay(); }
       });
+      window.api.on('show-routines', () => { if (!anyDialogOpen()) WW.showRoutines(); });
       window.api.on('open-task', ({ taskId, dateKey }) => {
         if (taskId && dateKey) WW.openTaskDetails({ taskId, dateKey });
         else WW.showDay(WW.state.todayKey);

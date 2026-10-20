@@ -22,6 +22,7 @@ const {
 const { PlannerService, checkRequest } = require('./service');
 const { FileStore } = require('./store');
 const { ReminderEngine } = require('../core/reminder-engine');
+const { RoutineEngine } = require('../core/routine-engine');
 const { formatTime12 } = require('../core/time');
 const { createElectronNotifier, findActionUrlInArgv, APP_ID, PROTOCOL } = require('./toast');
 const { createTray } = require('./tray');
@@ -37,6 +38,7 @@ const WATCHDOG_MS = 60000;
 let mainWindow = null;
 let service = null;
 let engine = null;
+let routineEngine = null;
 let notify = null;
 let trayController = null;
 let alertManager = null;
@@ -261,12 +263,13 @@ function startTray() {
 
 // ---- Notification clicks and links ---------------------------------------------------------------------------------------
 
-// action: { type: 'open' | 'missed' } from a click on a notification (or a waqtwise:// link): show the main
+// action: { type: 'open' | 'missed' | 'routines' } from a click on a notification (or a waqtwise:// link): show the main
 // window. { type: 'open-task', taskId, dateKey } comes from the "Open task" button of the full-screen alert.
 function handleAction(action) {
   if (!action) return;
   showWindow();
   if (action.type === 'open') sendToWindow('show-daily', {});
+  if (action.type === 'open-routines' || action.type === 'routines') sendToWindow('show-routines', {});
   if (action.type === 'open-task' && action.taskId && action.dateKey) {
     sendToWindow('open-task', { taskId: action.taskId, dateKey: action.dateKey });
   }
@@ -282,7 +285,7 @@ function startAlerts() {
     pagePath: path.join(__dirname, '..', 'renderer', 'alert.html'),
     getConfig: () => service.getAlertConfig(),
     onAbandoned: (left) => {
-      const real = left.filter((i) => i.taskId !== '__sample__');
+      const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine'); // a routine time that was not answered is just skipped
       if (real.length === 0) return;
       service.addMissed(real.map((i) => ({ ...i, start: new Date(i.startMs), alreadyStarted: true })));
       sendToWindow('missed', real.map((i) => ({
@@ -301,6 +304,13 @@ function handleAlertAction(sender, { type, itemId }) {
   alertManager.remove(itemId); // closes the screens when it was the last one
 
   const sample = item.taskId === '__sample__'; // the preview from Settings does nothing for real
+  if (item.kind === 'routine') {
+    const target = { routineId: item.routineId, dateKey: item.dateKey, slot: item.slot };
+    if (type === 'snooze') routineEngine.handleAction({ type: 'snooze', ...target, fullScreen: true });
+    else if (type === 'done') routineEngine.handleAction({ type: 'done', ...target });
+    else if (type === 'open') handleAction({ type: 'open-routines' });
+    return;
+  }
   if (type === 'snooze' && !sample) {
     engine.handleAction({ type: 'snooze', taskId: item.taskId, dateKey: item.dateKey, fullScreen: true });
   } else if (type === 'done' && !sample) {
@@ -338,11 +348,24 @@ function startEngine() {
     onError: (error) => log('Reminder engine:', error),
   });
   engine.start();
+
+  routineEngine = new RoutineEngine({
+    getRoutines: () => service.getRoutineList(),
+    getSettings: () => service.getReminderSettings(),
+    notify,
+    showAlert: (items) => alertManager.show(service.buildRoutineAlertItems(items)),
+    markDone: (id, key, slot, done) => service.markRoutineDone(id, key, slot, done),
+    initialState: service.getRoutineState(),
+    saveState: (state) => service.saveRoutineState(state),
+    onError: (error) => log('Routine engine:', error),
+  });
+  routineEngine.start();
 }
 
 // After wake from sleep, unlock, or a clock / time zone change: recalculate and check at once.
 function onSystemChange() {
   if (engine) engine.onSystemChange();
+  if (routineEngine) routineEngine.onSystemChange();
   sendToWindow('data-changed');
 }
 
@@ -487,6 +510,7 @@ function start() {
         onDataChanged: () => {
           sendToWindow('data-changed');
           if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer
+          if (routineEngine) routineEngine.reschedule();
         },
         onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); if (trayController) trayController.setActions(trayActions()); },
       });
@@ -530,6 +554,7 @@ function start() {
     quitting = true;
     if (watchdog) clearInterval(watchdog);
     if (engine) engine.stop();
+    if (routineEngine) routineEngine.stop();
     if (alertManager) alertManager.closeAll();
   });
   app.on('will-quit', () => {

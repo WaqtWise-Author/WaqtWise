@@ -1,9 +1,15 @@
 name: Screen check
 
 # Clicks through the real screens (English and Arabic) in a headless browser.
-# Runs by hand only (Actions -> Screen check -> Run workflow); it never changes the installer build.
+# Runs on every push and pull request, and by hand. It never changes the installer build.
 on:
+  push:
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ui-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ui:

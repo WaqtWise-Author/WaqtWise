@@ -1,7 +1,15 @@
 name: Publish website
 
-# Manual only. Before the first run: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+# Runs when the website, the guides or the page builder change on the main branch, and by hand.
+# Before the first run: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/**'
+      - 'tools/build-site.py'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:

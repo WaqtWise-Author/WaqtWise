@@ -116,6 +116,9 @@ class SettingsMethods {
     for (const free of this.data.freeTasks || []) {
       if (free.categoryId === id) free.categoryId = null;
     }
+    for (const routine of this.data.routines || []) {
+      if (routine.categoryId === id) routine.categoryId = null;
+    }
     this.changed();
     return this.categoriesForView();
   }

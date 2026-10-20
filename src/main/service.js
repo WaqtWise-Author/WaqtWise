@@ -223,6 +223,7 @@ const MIXINS = [
   require('./planner/data-transfer').DataTransferMethods,
   require('./planner/history').HistoryMethods,
   require('./planner/free-tasks').FreeTaskMethods,
+  require('./planner/routines').RoutineMethods,
 ];
 for (const mixin of MIXINS) {
   for (const name of Object.getOwnPropertyNames(mixin.prototype)) {
@@ -235,7 +236,8 @@ const PUBLIC_METHODS = [
   'bootstrap', 'getDay', 'getStats', 'getUpcoming', 'getMissed', 'dismissMissed', 'clearMissed', 'newTaskDefaults', 'getTaskForEdit', 'previewForm', 'saveTask',
   'getReferenceChoices', 'getDeleteImpact', 'getAlertPreset', 'deleteTask', 'setDone', 'duplicateTask', 'getSettings', 'saveSettings', 'addCategory', 'updateCategory',
   'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
-  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getTaskDetails', 'getSaveStatus', 'retrySave',
+  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone', 'getRoutineLeftToday',
+  'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 
 // A light check of what the window sends, before it reaches the service: ids must be text and dates must be real dates.

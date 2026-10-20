@@ -32,6 +32,7 @@ test('Links can only open the window', () => {
   assert.equal(buildActionUrl('open'), 'waqtwise://open');
   assert.deepEqual(parseActionUrl('waqtwise://open'), { type: 'open' });
   assert.deepEqual(parseActionUrl('waqtwise://missed'), { type: 'missed' });
+  assert.deepEqual(parseActionUrl('waqtwise://routines'), { type: 'routines' });
   // anything after the name is ignored: a link can never carry a task or a date
   assert.deepEqual(parseActionUrl('waqtwise://open/?task=x&date=2026-10-04'), { type: 'open' });
 });
@@ -79,6 +80,8 @@ test('Zone-start and missed toasts have no buttons', () => {
   assert.ok(!zoneXml.includes('<actions>'));
   assert.ok(zoneXml.includes('launch="waqtwise://open"'));
 
+  assert.match(buildToastXml({ kind: 'routine', title: 'Drink water', lines: ['Routine time · 10:30 AM'], actions: [] }), /launch="waqtwise:\/\/routines"/);
+  assert.ok(!/<action /.test(buildToastXml({ kind: 'routine', title: 'x', lines: [], actions: [] })), 'a routine notification has no buttons');
   const missedXml = buildToastXml({ kind: 'missed', title: 'You missed 2 reminders', lines: ['9:00 AM · A'], actions: [] });
   assert.ok(missedXml.includes('launch="waqtwise://missed"'));
 });

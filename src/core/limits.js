@@ -10,6 +10,7 @@ module.exports = {
   MAX_COUNT: 9999, // "ends after N occurrences"
   MAX_TASKS: 20000, // tasks in one data file
   MAX_FREE_TASKS: 5000, // tasks in the free to-do list
+  MAX_ROUTINES: 300, // routines in the routines list
   MAX_TITLE_LENGTH: 200, // a free task's title
   MAX_NOTES_LENGTH: 20000, // a free task's notes
   MAX_DATES_PER_TASK: 3660, // dates in one task's exceptions, additions or single-day changes (about 10 years)

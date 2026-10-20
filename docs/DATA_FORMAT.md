@@ -70,6 +70,19 @@ In the task form, with the full-screen alert on, **Show one note at random** is 
 
 `{ through: 'YYYY-MM-DD', days: { 'YYYY-MM-DD': [[taskId, dateKey, title, categoryId, minutes, done, startMs, zone, completedMs], ...] } }` keeps the numbers of finished days, so the past stays fixed when tasks are edited or deleted. It is part of the export file. On import, a file that has it **replaces** the saved statistics on this computer (they belong to the imported tasks); an older file without it leaves them as they are. `completedMs` (the moment the task was ticked, or `null`) is the 9th item; rows saved by older versions have 8 items and the app then reads the tick time from the task. Damaged days are skipped.
 
+## Routine
+
+A routine repeats several times a day inside a time window (for example "every 2 hours 30 minutes, 08:00 to 20:00"). It lives in `routines`, apart from the tasks: it has no zone and no statistics. A file without `routines` loads with an empty list.
+
+```json
+{ "id": "…", "title": "Drink water", "notes": "", "categoryId": null,
+  "from": "08:00", "to": "20:00", "everyMinutes": 150, "weekdays": [0, 1, 2, 3, 4, 5, 6],
+  "alerts": { "notification": true, "fullScreen": false }, "randomNotes": false, "enabled": true,
+  "completions": { "2026-10-19": [480, 630] }, "createdAt": "2026-10-13T08:00:00.000Z" }
+```
+
+`from` and `to` are 24-hour clock times (if `to` is earlier than `from` the window runs past midnight); the times are `from`, `from + everyMinutes`, … up to and including `to`. `weekdays` are the days the window starts on (0 = Sunday). `randomNotes`: the full-screen alert shows one of the notes (separated by `;`) each time. `completions` lists, for each date, the times already ticked as minutes after midnight (kept for 60 days). `routineState` (what already rang, snoozed reminders) is only in `data.json`, not in the export file.
+
 ## Free task
 
 The Free To-Do list holds tasks that have no time yet. It has no reminders, no zone and no statistics. When a free task is scheduled it becomes a normal task and leaves the list. A file without `freeTasks` (made by an older version) loads with an empty list.

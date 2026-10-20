@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icon-256.png" width="110" alt="WaqtWise logo">
+  <img src="docs/images/logo.png" width="240" alt="WaqtWise logo">
 </p>
 
 <h1 align="center">WaqtWise</h1>
@@ -33,6 +33,7 @@ Add a task and it lands in the right zone by itself, so you always see how much 
 - **Repeats**: daily, weekly, monthly (first Friday, last working day, ...), yearly; change one, the following, or all.
 - **Reminders and hard-to-miss full-screen alerts** with snooze, "open task" and "mark as done", and one random note each time.
 - **Free To-Do list** for things with no time yet; schedule them when you decide.
+- **Routines** for things that repeat several times a day (every 2 hours 30 minutes between 8 AM and 8 PM, on the days you choose), with a notification, a full-screen alert, or both.
 - **Statistics**: completion, streaks, done on time, lateness, heat map, by zone and category.
 - **Any country and city** (about 30,000 cities, 209 countries), 12 calculation methods, manual minute adjustments, Hijri date.
 - **English and Arabic** (full right-to-left), light and dark themes.

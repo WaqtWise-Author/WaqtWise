@@ -545,7 +545,7 @@ async function setTime(page, hour, minute, ampm) {
   await step('side menu: Daily View, Statistics, Settings, Export data, Import data; Esc closes it', async () => {
     await page.click('#menu-btn');
     const items = await page.$$eval('#drawer .drawer-item', (els) => els.map((e) => e.textContent.trim()));
-    assert.deepEqual(items, ['Daily View', 'Free To-Do list', 'Statistics', 'Settings', 'Export data…', 'Import data…']);
+    assert.deepEqual(items, ['Daily View', 'Free To-Do list', 'Routines', 'Statistics', 'Settings', 'Export data…', 'Import data…']);
     await shot(page, 'drawer');
     await page.keyboard.press('Escape');
     assert.equal(await page.isHidden('#drawer'), true);
@@ -599,6 +599,62 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#drawer .drawer-item:has-text("Daily View")');
     await page.waitForSelector('.day-chip');
     assert.equal(await taskRow(page, 'Fix the red bike').count(), 1);
+  });
+  console.log('Routines');
+  await step('Routines: empty at first, add one that repeats every 2 hours 30 minutes with both kinds of reminder', async () => {
+    await page.click('#menu-btn');
+    await page.click('#drawer .drawer-item:has-text("Routines")');
+    await page.waitForSelector('#routine-empty');
+    assert.equal(await page.textContent('.day-title'), 'Routines');
+    await page.click('#routine-add');
+    await page.waitForSelector('#rf-title');
+    await page.fill('#rf-title', 'Drink water');
+    await page.fill('#rf-from', '08:00');
+    await page.fill('#rf-to', '20:00');
+    await page.fill('#rf-hours', '2');
+    await page.fill('#rf-minutes', '30');
+    assert.match(await page.textContent('#rf-preview'), /5 times a day: 8:00 AM, 10:30 AM, 1:00 PM, 3:30 PM, 6:00 PM/);
+    await page.click('#rf-days button:has-text("Fri")');
+    await page.click('#rf-days button:has-text("Fri")'); // off and on again
+    await page.check('#rf-fullscreen');
+    await shot(page, 'routine-form');
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForSelector('.routine-card:has-text("Drink water")');
+    const card = await page.textContent('.routine-card');
+    assert.match(card, /Every 2h 30m, 8:00 AM – 8:00 PM/);
+    assert.match(card, /Notification \+ Full-screen alert/);
+    assert.match(card, /Every day/);
+    assert.equal(await page.locator('.routine-time').count(), 5);
+    await shot(page, 'routines');
+  });
+  await step('Routines: tick a time, pause, resume, edit, delete', async () => {
+    await page.click('.routine-time >> nth=0');
+    await page.waitForSelector('.routine-time.on');
+    assert.match(await page.textContent('.routine-today-label'), /Today: 1 of 5 done/);
+    await page.click('.routine-card .btn:text-is("Pause")');
+    await page.waitForSelector('.routine-card.paused');
+    assert.equal(await page.locator('.routine-time').count(), 0);
+    await page.click('.routine-card .btn:text-is("Resume")');
+    await page.waitForSelector('.routine-time');
+    await page.click('.routine-card .btn:text-is("Edit")');
+    await page.waitForSelector('#rf-title');
+    assert.equal(await page.inputValue('#rf-hours'), '2');
+    assert.equal(await page.inputValue('#rf-minutes'), '30');
+    await page.uncheck('#rf-notification');
+    await page.uncheck('#rf-fullscreen');
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForSelector('.errors:not([hidden])');
+    assert.match(await page.textContent('.errors'), /notification, a full-screen alert, or both/);
+    await page.check('#rf-notification');
+    await page.fill('#rf-title', 'Drink more water');
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForSelector('.routine-card:has-text("Drink more water")');
+    await page.click('.routine-card .btn.danger');
+    await page.click('.dialog-footer .btn.danger');
+    await page.waitForSelector('#routine-empty');
+    await page.click('#menu-btn');
+    await page.click('#drawer .drawer-item:has-text("Daily View")');
+    await page.waitForSelector('.day-chip');
   });
   await step('clicking a task shows its details; Edit task leads to the form', async () => {
     await taskRow(page, 'Fix the red bike').click();
@@ -983,6 +1039,19 @@ async function setTime(page, hour, minute, ampm) {
     await p.keyboard.press('Escape');
     assert.deepEqual((await p.evaluate(() => window.__actions)).pop(), ['dismiss', 'a1'], 'Escape = Got it');
     assert.deepEqual(realErrors(alert.errors), []);
+    await alert.browser.close();
+  });
+  await step('a routine time on the full-screen page: its own label, no end time, duration, zone or priority', async () => {
+    const alert = await openAlertPage({ playwright, executablePath });
+    const p = alert.page;
+    const base = require('../src/core').DEFAULT_ALERT_APPEARANCE;
+    const item = { id: 'r1', kind: 'routine', taskId: 'routine:r', routineId: 'r', slot: 630, dateKey: '2026-10-04', title: 'Drink water', notes: 'A full glass', startLabel: '10:30 AM',
+      endLabel: '', durationLabel: '', zoneName: '', zoneIndex: 0, categoryName: 'Health', categoryColor: '#ef4444', priority: '', snoozed: false };
+    await p.evaluate(([st]) => window.__render(st), [{ items: [item], appearance: base, snoozeMinutes: 5, guardMs: 0 }]);
+    const text = await p.textContent('body');
+    for (const part of ['Routine time', 'Drink water', 'A full glass', '10:30 AM', 'Health', 'Open routines', 'Snooze 5 min']) assert.ok(text.includes(part), `shows "${part}"`);
+    for (const part of ['Starts now', 'Open task', 'priority', '–']) assert.ok(!text.includes(part), `does not show "${part}"`);
+    assert.equal(await p.locator('.chip').count(), 2, 'only the time and the category');
     await alert.browser.close();
   });
   await step('the alert rings once per arrival, on one screen only, repeats if asked, and stops when a button is pressed', async () => {

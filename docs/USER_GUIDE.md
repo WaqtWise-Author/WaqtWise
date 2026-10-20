@@ -143,6 +143,26 @@ For things you want to remember but have no time for yet. Open the menu and choo
 
 ![Free To-Do list](images/free-list.webp)
 
+### Routines
+
+For things that repeat **several times a day**, such as drinking water, stretching or a short break. Open the menu
+and choose **Routines**, then **Add routine**.
+
+- Choose the window with **From** and **To** (for example 8:00 AM to 8:00 PM; a window may run past midnight).
+- Choose **Repeat every** with separate boxes for hours and minutes (at least 5 minutes). The first time is the
+  start time, and the next ones follow at that distance while they are inside the window. A line under the boxes
+  lists the times that will ring.
+- Choose **On these days**: any days of the week you like.
+- Choose how it reminds you: a **notification**, a **full-screen alert**, or **both**. The switches in
+  Settings → Reminders still apply. Snooze and Mark as Done work on the full-screen alert as usual.
+- Tick **Show one note at random** to have the full-screen alert show a different note each time it rings: write several notes separated by `;`, and none repeats until all have been shown. (A notification never shows notes.)
+- The page shows today's times for each routine; tick a time when you have done it. **Pause** stops a routine without
+  deleting it. A time that passes while the computer is off or asleep is simply skipped.
+
+Routines are kept apart from your tasks: they do not appear in the five zones or in the statistics. They are saved with your data and travel with export, import and backups.
+
+![Routines](images/routines.webp)
+
 ## 8. Reminders and full-screen alerts
 
 **Reminders (notifications).** New tasks have a reminder switched on. With no times added, it reminds you

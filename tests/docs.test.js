@@ -124,12 +124,19 @@ test('the guide pages of the website are up to date with the Markdown (run: pyth
   for (const f of ['index.html', 'ar.html']) assert.ok(!/release notes|what's new|الجديد/i.test(read(`site/${f}`)), `${f} has no release notes`);
 });
 
-test('workflows for the website and the release are manual and safe', () => {
+test('workflows: release is manual and safe, the others may run on push', () => {
   const pages = read('.github/workflows/pages.yml');
   const release = read('.github/workflows/release.yml');
-  for (const w of [pages, release]) {
-    assert.match(w, /on:\s*\n\s+workflow_dispatch/, 'started by hand only');
-    assert.ok(!/^\s+(push|pull_request|schedule):/m.test(w));
+  assert.match(release, /on:\s*\n\s+workflow_dispatch/, 'the release is started by hand only');
+  assert.ok(!/^\s+(push|pull_request|schedule):/m.test(release), 'a release never starts by itself');
+  for (const f of ['build', 'lockfile']) {
+    const w = read(`.github/workflows/${f}.yml`);
+    assert.ok(!/^\s+(push|pull_request|schedule):/m.test(w), `${f} stays manual`);
+  }
+  for (const f of ['test', 'ui-check', 'pages']) {
+    const w = read(`.github/workflows/${f}.yml`);
+    assert.match(w, /^\s+push:/m, `${f} runs on push`);
+    assert.match(w, /workflow_dispatch/, `${f} can still be started by hand`);
   }
   assert.ok(pages.includes('path: site') && pages.includes('deploy-pages'));
   assert.ok(release.includes('--draft'), 'a release is created as a draft first');

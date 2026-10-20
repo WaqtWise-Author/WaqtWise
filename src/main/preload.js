@@ -5,7 +5,7 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['data-changed', 'missed', 'open-task', 'show-daily'];
+const EVENTS = ['data-changed', 'missed', 'open-task', 'show-daily', 'show-routines'];
 
 contextBridge.exposeInMainWorld('api', {
   call: (method, ...args) => ipcRenderer.invoke('svc', method, args),

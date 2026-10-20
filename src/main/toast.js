@@ -14,7 +14,7 @@
 
 const PROTOCOL = 'waqtwise';
 const APP_ID = 'com.waqtwise.app'; // call app.setAppUserModelId(APP_ID) at startup
-const ACTION_TYPES = ['open', 'missed']; // both only show the window
+const ACTION_TYPES = ['open', 'missed', 'routines']; // all only show the window
 
 function escapeXml(value) {
   return String(value)
@@ -52,7 +52,7 @@ function findActionUrlInArgv(argv) {
 
 function buildToastXml(payload) {
   const lines = Array.isArray(payload.lines) ? payload.lines : [];
-  const launch = payload.kind === 'missed' ? buildActionUrl('missed') : buildActionUrl('open');
+  const launch = payload.kind === 'missed' ? buildActionUrl('missed') : payload.kind === 'routine' ? buildActionUrl('routines') : buildActionUrl('open');
 
   let xml = `<toast launch="${escapeXml(launch)}" activationType="protocol">`;
   xml += '<visual><binding template="ToastGeneric">';

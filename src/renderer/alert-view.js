@@ -50,7 +50,7 @@
       textTransform: a.name.uppercase ? 'uppercase' : 'none',
     });
 
-    const parts = [h('div', { class: 'alert-label', text: item.snoozed ? T('Snoozed reminder') : T('Starts now') }), name];
+    const parts = [h('div', { class: 'alert-label', text: item.snoozed ? T('Snoozed reminder') : item.kind === 'routine' ? T('Routine time') : T('Starts now') }), name];
 
     if (a.notes.show && item.notes && item.notes.trim() !== '') {
       const notes = h('div', { class: 'alert-notes', text: item.notes });
@@ -64,13 +64,13 @@
     }
 
     const chips = [];
-    if (a.show.time) chips.push(h('span', { class: 'chip' }, h('b', { text: item.startLabel }), `– ${item.endLabel}`));
-    if (a.show.duration) chips.push(h('span', { class: 'chip', text: item.durationLabel }));
+    if (a.show.time) chips.push(h('span', { class: 'chip' }, h('b', { text: item.startLabel }), item.endLabel ? `– ${item.endLabel}` : ''));
+    if (a.show.duration && item.durationLabel) chips.push(h('span', { class: 'chip', text: item.durationLabel }));
     if (a.show.zone && item.zoneName) chips.push(h('span', { class: 'chip', text: T('Zone: {zone}', { zone: T(item.zoneName) }) }));
     if (a.show.category && item.categoryName) {
       chips.push(h('span', { class: 'chip' }, h('span', { class: 'dot', style: { background: item.categoryColor || a.textColor } }), item.categoryName));
     }
-    if (a.show.priority) chips.push(h('span', { class: 'chip', text: T('{priority} priority', { priority: T(item.priority) }) }));
+    if (a.show.priority && item.priority) chips.push(h('span', { class: 'chip', text: T('{priority} priority', { priority: T(item.priority) }) }));
     if (chips.length) parts.push(h('div', { class: 'alert-info' }, chips));
 
     const act = (key) => () => { if (handlers && handlers[key] && !state.guardActive) handlers[key](); };
@@ -81,7 +81,7 @@
     parts.push(h('div', { class: 'alert-actions' },
       button(T('Got it'), 'dismiss', true),
       shown.snooze ? button(TP(state.snoozeMinutes, 'Snooze {n} minute', 'Snooze {n} minutes'), 'snooze', false) : null,
-      shown.open ? button(T('Open task'), 'open', false) : null,
+      shown.open ? button(item.kind === 'routine' ? T('Open routines') : T('Open task'), 'open', false) : null,
       shown.done ? button(T('Mark as Done'), 'done', false) : null));
 
     if (state.remaining > 0) {

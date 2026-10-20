@@ -3,21 +3,23 @@
 // The saved data and the export/import file format.
 //
 // Saved data (data.json in the user's profile folder):
-//   { version, settings, categories, tasks, freeTasks, noteRotation, reminderState, missedReminders }
+//   { version, settings, categories, tasks, freeTasks, routines, routineState, noteRotation, reminderState, missedReminders }
 // (noteRotation: which of a task's several notes was shown last; it is NOT part of the export file.)
 // (missedReminders: reminders that came due while the computer was off or asleep and were not handled yet;
 //  they are shown on the bell and are NOT part of the export file.)
 //
 // Export file (documented in docs/DATA_FORMAT.md):
-//   { app: 'waqtwise', formatVersion: 1, exportedAt, settings, categories, tasks, freeTasks, statsHistory }
+//   { app: 'waqtwise', formatVersion: 1, exportedAt, settings, categories, tasks, freeTasks, routines, statsHistory }
 //
 // Derived values (zones, end times, durations, occurrences, prayer times) are never saved.
 
 const { t } = require('./i18n');
 const { DEFAULT_SETTINGS, sanitizeSettings } = require('./settings');
 const { validateTask, validateStart, validateDuration, validateReminders, PRIORITIES } = require('./tasks');
-const { MAX_TASKS, MAX_FREE_TASKS, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH, MAX_DATES_PER_TASK } = require('./limits');
+const { MAX_TASKS, MAX_FREE_TASKS, MAX_ROUTINES, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH, MAX_DATES_PER_TASK } = require('./limits');
 const { normalizeFreeTask } = require('./free-tasks');
+const { normalizeRoutine } = require('./routines');
+const { emptyRoutineState, normalizeRoutineState } = require('./routine-engine');
 const { normalizeNoteRotation } = require('./random-notes');
 const { normalizeRule } = require('./recurrence');
 const { emptyState, normalizeState } = require('./reminder-engine');
@@ -50,6 +52,8 @@ function emptyData() {
     categories: defaultCategories(),
     tasks: [],
     freeTasks: [],
+    routines: [],
+    routineState: emptyRoutineState(),
     noteRotation: {},
     reminderState: emptyState(),
     missedReminders: [],
@@ -239,6 +243,30 @@ function normalizeData(raw) {
     freeTasks.push(task);
   }
 
+  const routines = [];
+  const routineIds = new Set();
+  let rawRoutines = Array.isArray(source.routines) ? source.routines : [];
+  if (rawRoutines.length > MAX_ROUTINES) {
+    warnings.push(t('Only the first {n} routines were loaded', { n: MAX_ROUTINES }));
+    rawRoutines = rawRoutines.slice(0, MAX_ROUTINES);
+  }
+  for (const rawItem of rawRoutines) {
+    const { routine, error } = normalizeRoutine(rawItem);
+    const label = isPlainObject(rawItem) && rawItem.title ? `"${rawItem.title}"` : t('A routine');
+    if (error) {
+      warnings.push(t('{label} was skipped: {error}', { label, error }));
+      continue;
+    }
+    if (routineIds.has(routine.id) || ids.has(routine.id) || freeIds.has(routine.id)) {
+      warnings.push(t('{label} was skipped because its id is used twice', { label }));
+      continue;
+    }
+    routineIds.add(routine.id);
+    if (routine.categoryId !== null && !categoryIds.has(routine.categoryId)) routine.categoryId = null;
+    routines.push(routine);
+  }
+  const routineState = normalizeRoutineState(source.routineState).state;
+
   const restored = normalizeState(source.reminderState);
   const reminderState = restored.state;
   if (restored.dropped > 0) warnings.push(t('Some saved reminder information was damaged and was reset'));
@@ -256,7 +284,7 @@ function normalizeData(raw) {
     .slice(-50);
 
   return {
-    data: { version: DATA_VERSION, settings, categories, tasks, freeTasks, noteRotation: normalizeNoteRotation(source.noteRotation, new Set(tasks.map((x) => x.id))), reminderState, missedReminders, statsHistory: normalizeStatsHistory(source.statsHistory) },
+    data: { version: DATA_VERSION, settings, categories, tasks, freeTasks, routines, routineState, noteRotation: normalizeNoteRotation(source.noteRotation, new Set([...tasks.map((x) => x.id), ...routines.map((x) => `routine:${x.id}`)])), reminderState, missedReminders, statsHistory: normalizeStatsHistory(source.statsHistory) },
     warnings,
   };
 }
@@ -270,6 +298,7 @@ function buildExport(data, now = new Date()) {
     categories: data.categories,
     tasks: data.tasks,
     freeTasks: data.freeTasks || [],
+    routines: data.routines || [],
     statsHistory: data.statsHistory || { through: null, days: {} },
   };
 }

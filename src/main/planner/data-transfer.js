@@ -25,7 +25,7 @@ class DataTransferMethods {
     // A backup file must not switch on "start with Windows" by itself: that stays as this computer has it.
     data.settings = { ...data.settings, startWithWindows: this.data.settings.startWithWindows };
     // A file with saved statistics replaces the ones on this computer (they belong to the imported tasks); an older file keeps them.
-    this.data = { ...data, reminderState: this.data.reminderState, statsHistory: hasHistory ? data.statsHistory : this.history() };
+    this.data = { ...data, reminderState: this.data.reminderState, routineState: this.data.routineState, statsHistory: hasHistory ? data.statsHistory : this.history() };
     this.providerCache = null;
     this.applyLanguage();
     try {
@@ -49,7 +49,7 @@ class DataTransferMethods {
     this.freezePast();
     const { data, warnings } = this.store.readBackup(id);
     this.store.backupNow('before-restore');
-    this.data = { ...data, reminderState: this.data.reminderState, statsHistory: this.history() };
+    this.data = { ...data, reminderState: this.data.reminderState, routineState: this.data.routineState, statsHistory: this.history() };
     this.providerCache = null;
     this.applyLanguage();
     try {

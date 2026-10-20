@@ -21,16 +21,20 @@ This is a to-do list for the person who owns the GitHub repository. It is not ne
 6. Turn on **two-factor authentication** for your GitHub account (SignPath requires MFA for everyone with access).
 7. Optional but recommended: **Settings → Branches**, protect `main`.
 
-## 2. Check that everything builds (Actions tab → run by hand)
+## 2. Check that everything builds (Actions tab)
 
-- [ ] **Run tests**, **UI check**, **Build Windows installer** are green.
+**Run tests**, **Screen check** and **Publish website** also start by themselves on every push (the website only
+when `site/`, `docs/` or the page builder change on `main`). **Build Windows installer** and **Release** are always
+started by hand.
+
+- [ ] **Run tests**, **Screen check**, **Build Windows installer** are green.
 - [ ] Download the installer from the build and test it on your Windows PC (checks 40, 41 and 42 in
       `ACCEPTANCE_CHECKLIST.md`, and the new check 43 for the website).
 
 ## 3. Publish the website (GitHub Pages)
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. **Actions → Publish website → Run workflow.**
+2. **Actions → Publish website → Run workflow** (the first time; after that it runs by itself when the site changes).
 3. The site is at `https://<your-user>.github.io/<repo>/`. Links to the downloads are worked out from that
    address automatically. If you use another domain, edit `site/config.js`.
 

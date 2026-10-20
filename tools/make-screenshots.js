@@ -181,6 +181,21 @@ async function openMenu(page, label) {
     await app.browser.close();
   }
 
+  // ---- Routines ----------------------------------------------------------------------------------------------
+  {
+    const service = createService({ now: at(DAY, '13:10') });
+    const routine = (form) => service.saveRoutine({ form: { notes: '', categoryId: null, weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, ...form } });
+    const water = routine({ title: 'Drink a glass of water', from: '08:00', to: '20:00', hours: 2, minutes: 30, categoryId: 'cat-health' });
+    routine({ title: 'Stand up and stretch', from: '09:00', to: '17:00', hours: 1, minutes: 0, weekdays: [1, 2, 3, 4, 5, 6], fullScreen: true, categoryId: 'cat-work' });
+    service.setRoutineSlotDone({ id: water.id, dateKey: DAY, slot: 480, done: true });
+    service.setRoutineSlotDone({ id: water.id, dateKey: DAY, slot: 630, done: true });
+    const app = await openApp({ playwright, service, executablePath, width: 1280, height: 900 });
+    await openMenu(app.page, 'Routines');
+    await app.page.waitForSelector('.routine-card');
+    await shot(app.page, 'routines');
+    await app.browser.close();
+  }
+
   // ---- Statistics ------------------------------------------------------------------------------------------
   {
     const service = createService({ now: at(DAY, '20:30') });
