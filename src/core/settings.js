@@ -59,6 +59,7 @@ const STATS_CHARTS = [
   { id: 'lateness', title: 'Most late tasks', about: 'Which tasks are done late, and by how much on average' },
   { id: 'lateby', title: 'Lateness by zone and category', about: 'Average delay in each zone and category' },
   { id: 'latetrend', title: 'Lateness over time', about: 'Average delay in each day, week or month' },
+  { id: 'routines', title: 'Routines', about: 'How steadily you keep each routine, with its streak' },
 ];
 const STATS_CHART_IDS = STATS_CHARTS.map((c) => c.id);
 

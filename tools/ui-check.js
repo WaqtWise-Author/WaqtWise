@@ -1279,17 +1279,17 @@ async function setTime(page, hour, minute, ampm) {
     await mp.click('#menu-btn');
     await mp.click('.drawer-item:has-text("Statistics")');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 9);
+    assert.equal((await sections()).length, 10);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
 
     await mp.click('#stats-manage');
     await mp.waitForSelector('.manage-row');
-    assert.equal((await mp.$$('.manage-row')).length, 14);
+    assert.equal((await mp.$$('.manage-row')).length, 15);
     await mp.click('button[aria-label="Remove Needs attention"]');
     await mp.click('button[aria-label="Remove By zone"]');
     await mp.click('button[aria-label="Remove Current streak"]');
     await mp.waitForFunction(() => document.querySelectorAll('.stats-card.kpi').length === 4);
-    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend']);
+    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
     assert.equal((await sections()).includes('Needs attention'), false);
     assert.equal((await sections()).includes('By zone'), false);
     assert.match(await mp.textContent('.manage-title >> nth=1'), /Available to add \(3\)/);
@@ -1297,8 +1297,8 @@ async function setTime(page, hour, minute, ampm) {
 
     await mp.click('button[aria-label="Move Completion trend up"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:nth-child(2)').getAttribute('aria-label') === 'Completion trend');
-    assert.deepEqual(await sections(), ['Done versus planned', 'Completion trend', 'Calendar heat map', 'By category', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time']);
-    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend']);
+    assert.deepEqual(await sections(), ['Done versus planned', 'Completion trend', 'Calendar heat map', 'By category', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time', 'Routines']);
+    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
     await mp.click('button[aria-label="Add By zone"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:last-child').getAttribute('aria-label') === 'By zone');
 
@@ -1315,14 +1315,46 @@ async function setTime(page, hour, minute, ampm) {
 
     // Removing everything leaves a hint, and the reset button brings it all back.
     await mp.click('#stats-manage');
-    for (const id of ['Done vs planned', 'Completion rate', 'Tasks done', 'Planned time', 'Calendar heat map', 'Completion trend', 'By category', 'By zone', 'Done on time', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time']) {
+    for (const id of ['Done vs planned', 'Completion rate', 'Tasks done', 'Planned time', 'Calendar heat map', 'Completion trend', 'By category', 'By zone', 'Done on time', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time', 'Routines']) {
       await mp.click(`button[aria-label="Remove ${id}"]`);
     }
     await mp.waitForSelector('#stats-nothing');
     await mp.click('#manage-reset');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 9);
+    assert.equal((await sections()).length, 10);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
+    assert.deepEqual(realErrors(m.errors), []);
+    await m.browser.close();
+  });
+
+  await step('Routines: the menu counts the times left today, the form has "Stay quiet during prayer", and Statistics has a Routines card', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '15:20') });
+    svc.saveRoutine({ form: { title: 'Drink water', from: '08:00', to: '20:00', hours: 2, minutes: 30, weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, quietMinutes: 15 } });
+    svc.setRoutineSlotDone({ id: svc.getRoutines()[0].id, dateKey: '2026-10-10', slot: 480, done: true });
+    const m = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 1000 });
+    const mp = m.page;
+    await mp.click('#menu-btn');
+    assert.match(await mp.textContent('.drawer-item:has-text("Routines")'), /Routines \(2\)/, '3:30 PM and 6:00 PM are left');
+    await mp.click('.drawer-item:has-text("Routines")');
+    await mp.waitForSelector('.routine-card');
+    assert.match(await mp.textContent('.routine-card'), /Quiet during prayer/);
+    await mp.click('.routine-card .btn:text-is("Edit")');
+    await mp.waitForSelector('#rf-quiet');
+    assert.equal(await mp.inputValue('#rf-quiet'), '15');
+    await mp.selectOption('#rf-quiet', '30');
+    await mp.click('.dialog-footer .btn.primary');
+    await mp.waitForSelector('.dialog', { state: 'detached' });
+    assert.equal(svc.getRoutineForEdit({ id: svc.getRoutines()[0].id }).quietMinutes, 30);
+    await mp.click('#menu-btn');
+    await mp.click('.drawer-item:has-text("Statistics")');
+    await mp.waitForSelector('.routines-card');
+    const text = await mp.textContent('.routines-card');
+    assert.match(text, /Drink water/);
+    assert.match(text, /1 of 3 times done/);
+    assert.match(await mp.textContent('#routines-sub'), /33% of routine times done \(1 of 3\)/);
+    assert.ok((await mp.$$('.routine-spark i')).length >= 1);
+    await shot(mp, 'stats-routines');
     assert.deepEqual(realErrors(m.errors), []);
     await m.browser.close();
   });

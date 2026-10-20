@@ -64,8 +64,8 @@ test('ticking a time as done is remembered per day and only for real times', () 
   assert.equal(occurrencesOn(done, DAY).filter((o) => o.done).length, 1);
   assert.equal(setSlotDone(done, DAY, 631, true), done, 'not one of the times: unchanged');
   assert.deepEqual(setSlotDone(done, DAY, 630, false, at(DAY, '12:00')).completions, {});
-  const old = normalizeRoutine({ ...raw(), completions: { '2026-01-01': [480], [DAY]: [480] } }, at(DAY, '12:00')).routine;
-  assert.deepEqual(Object.keys(old.completions), [DAY], 'ticks older than 60 days are forgotten');
+  const old = normalizeRoutine({ ...raw(), completions: { '2025-01-01': [480], '2026-01-01': [480], [DAY]: [480] } }, at(DAY, '12:00')).routine;
+  assert.deepEqual(Object.keys(old.completions), ['2026-01-01', DAY], 'ticks are kept for 400 days, older ones are forgotten');
 });
 
 // ---- the engine -------------------------------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ test('service: add, edit, pause, tick, delete a routine', () => {
   assert.equal(r.nextLabel, '10:30 AM');
   assert.equal(s.getRoutineLeftToday(), 5);
 
-  assert.deepEqual(s.getRoutineForEdit({ id }), { title: 'Stretch', notes: '', categoryId: null, from: '09:00', to: '17:00', hours: 1, minutes: 30, weekdays: [0, 1, 2, 3, 4], notification: true, fullScreen: false, randomNotes: false, enabled: true });
+  assert.deepEqual(s.getRoutineForEdit({ id }), { title: 'Stretch', notes: '', categoryId: null, from: '09:00', to: '17:00', hours: 1, minutes: 30, weekdays: [0, 1, 2, 3, 4], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, enabled: true });
   s.setRoutineSlotDone({ id, dateKey: DAY, slot: 540, done: true });
   assert.equal(s.getRoutines()[0].doneToday, 1);
   s.saveRoutine({ id, form: form({ title: 'Stretch more', fullScreen: true }) });
@@ -271,4 +271,104 @@ test('the note memory of a routine survives loading the data', () => {
   s.buildRoutineAlertItems([{ id: 'o', routineId: id, slot: 540, dateKey: DAY, title: 'x', notes: 'one;two', randomNotes: true, at: at(DAY, '09:00') }]);
   const again = normalizeData(JSON.parse(JSON.stringify(s.data))).data;
   assert.ok(again.noteRotation[`routine:${id}`]);
+});
+
+// ---- quiet while praying ----------------------------------------------------------------------------------------------
+
+const { ringTime, ringsInWindow, computeRoutineStats } = require('../src/core');
+const prayers = (key) => ({ fajr: at(key, '05:05'), dhuhr: at(key, '11:48'), asr: at(key, '15:14'), maghrib: at(key, '18:00'), isha: at(key, '19:20') });
+
+test('quiet while praying: a time just after the call to prayer rings when the quiet period ends', () => {
+  const r = make({ from: '12:00', to: '13:00', everyMinutes: 30, quietAfterPrayerMinutes: 20 }); // 12:00, 12:30, 13:00; Dhuhr 11:48 + 20 = 12:08
+  assert.equal(r.quietAfterPrayerMinutes, 20);
+  assert.equal(ringTime(r, at(DAY, '12:00'), prayers).getTime(), at(DAY, '12:08').getTime(), 'inside the quiet period: moved to its end');
+  assert.equal(ringTime(r, at(DAY, '12:30'), prayers).getTime(), at(DAY, '12:30').getTime(), 'outside: unchanged');
+  assert.equal(ringTime(r, at(DAY, '11:48'), prayers).getTime(), at(DAY, '12:08').getTime(), 'the moment of the call itself is inside');
+  assert.equal(ringTime(r, at(DAY, '12:08'), prayers).getTime(), at(DAY, '12:08').getTime(), 'the end is outside');
+  assert.equal(ringTime({ ...r, quietAfterPrayerMinutes: 0 }, at(DAY, '12:00'), prayers).getTime(), at(DAY, '12:00').getTime(), 'off');
+  assert.equal(ringTime(r, at(DAY, '12:00'), null).getTime(), at(DAY, '12:00').getTime(), 'without prayer times nothing moves');
+  assert.equal(normalizeRoutine(raw({ quietAfterPrayerMinutes: 90 })).routine.quietAfterPrayerMinutes, 0, 'more than an hour is not accepted');
+  assert.equal(normalizeRoutine(raw({ quietAfterPrayerMinutes: 20.5 })).routine.quietAfterPrayerMinutes, 0);
+});
+
+test('quiet while praying: a held time is not in the window until it rings', () => {
+  const r = make({ from: '12:00', to: '12:30', everyMinutes: 60, quietAfterPrayerMinutes: 20 });
+  const w = (a, b) => ringsInWindow([r], at(DAY, a).getTime(), at(DAY, b).getTime(), prayers);
+  assert.equal(w('11:59', '12:05').length, 0, 'held back');
+  assert.equal(w('12:05', '12:10').length, 1, 'rings at 12:08');
+  assert.equal(w('12:05', '12:10')[0].ringAt.getTime(), at(DAY, '12:08').getTime());
+});
+
+test('quiet while praying: the engine rings at the end of the quiet period, once', () => {
+  const w = world([make({ from: '12:00', to: '12:30', everyMinutes: 60, quietAfterPrayerMinutes: 20 })]);
+  w.engine = new RoutineEngine({ getRoutines: () => w.routines, getSettings: () => w.settings, getProvider: () => prayers, notify: (p) => w.toasts.push([w.clock, p]), saveState: () => {}, now: () => w.clock, setTimeout: () => 1, clearTimeout: () => {} });
+  w.clock = at(DAY, '11:59');
+  w.run(at(DAY, '11:59'), at(DAY, '12:30'));
+  assert.equal(w.toasts.length, 1);
+  assert.equal(w.toasts[0][0].getTime(), at(DAY, '12:08').getTime());
+  assert.match(w.toasts[0][1].lines[0], /12:08 PM/);
+});
+
+test('quiet while praying: saved and shown by the service', () => {
+  const s = service();
+  const id = s.saveRoutine({ form: form({ quietMinutes: 15 }) }).id;
+  assert.equal(s.getRoutineForEdit({ id }).quietMinutes, 15);
+  assert.equal(s.getRoutines()[0].quietMinutes, 15);
+  assert.equal(parseImport(JSON.parse(JSON.stringify(buildExport(s.data)))).data.routines[0].quietAfterPrayerMinutes, 15);
+});
+
+// ---- statistics ---------------------------------------------------------------------------------------------------------
+
+test('routine statistics: share done, streak, weakest time, last days', () => {
+  const now = at('2026-10-10', '21:00'); // a Saturday evening: every time of the day has passed
+  let r = normalizeRoutine({ ...raw({ from: '09:00', to: '11:00', everyMinutes: 60 }), createdAt: at('2026-10-04', '08:00').toISOString() }, now).routine;
+  const tick = (key, slots) => { for (const slot of slots) r = setSlotDone(r, key, slot, true, now); };
+  // 9:00 = 540, 10:00 = 600, 11:00 = 660
+  tick('2026-10-04', [540, 600, 660]);
+  tick('2026-10-05', [540, 600, 660]);
+  tick('2026-10-06', [540, 600]); // missed 11:00
+  tick('2026-10-07', [540, 600, 660]);
+  tick('2026-10-08', [540, 600, 660]);
+  tick('2026-10-09', [540, 600, 660]);
+  tick('2026-10-10', [540, 600, 660]);
+  const stats = computeRoutineStats([r], { fromKey: '2026-10-04', toKey: '2026-10-10' }, now);
+  const x = stats.items[0];
+  assert.equal(x.planned, 21);
+  assert.equal(x.done, 20);
+  assert.equal(x.pct, 95);
+  assert.equal(x.streak, 4, 'today and the three days before the missed one');
+  assert.equal(x.days.length, 7);
+  assert.deepEqual(x.weakest, { label: '11:00 AM', pct: 86, done: 6, planned: 7 });
+  assert.deepEqual(stats.total, { planned: 21, done: 20, pct: 95 });
+  // the range is cut to the days the routine existed and to today
+  assert.equal(computeRoutineStats([r], { fromKey: '2026-09-01', toKey: '2026-12-31' }, now).items[0].planned, 21);
+  // times that have not come yet do not count, and today never breaks the streak while times are still to come
+  const noon = at('2026-10-10', '10:30');
+  const early = computeRoutineStats([setSlotDone(setSlotDone(setSlotDone(r, '2026-10-10', 540, false, now), '2026-10-10', 600, false, now), '2026-10-10', 660, false, now)], { fromKey: '2026-10-10', toKey: '2026-10-10' }, noon).items[0];
+  assert.equal(early.planned, 2);
+  assert.equal(early.done, 0);
+  assert.equal(early.streak, 3, 'today is still open, so the three full days before the miss still count');
+});
+
+test('routine statistics: paused routines and empty lists', () => {
+  assert.deepEqual(computeRoutineStats([], { fromKey: '2026-10-01', toKey: '2026-10-04' }, at(DAY, '12:00')), { items: [], total: { planned: 0, done: 0, pct: null } });
+  const paused = make({ enabled: false });
+  const stats = computeRoutineStats([paused], { fromKey: '2026-10-01', toKey: DAY }, at(DAY, '23:00'));
+  assert.equal(stats.items[0].planned, 0);
+  assert.equal(stats.items[0].pct, null);
+});
+
+test('the Statistics screen data carries the routines card, which can be chosen in Manage', () => {
+  const s = service();
+  s.saveRoutine({ form: form() });
+  const data = s.getStats({ range: 'week' });
+  assert.equal(data.routineStats.items.length, 1);
+  assert.ok(require('../src/core').STATS_CHARTS.some((c) => c.id === 'routines'));
+  assert.ok(s.getSettings().statsCharts.includes('routines'));
+});
+
+test('the number of routine times still to come today', () => {
+  const s = service(); // 10:00 on a Sunday
+  s.saveRoutine({ form: form() }); // 9:00 10:30 12:00 13:30 15:00 16:30 on Sunday
+  assert.equal(s.getRoutineLeftToday(), 5);
 });

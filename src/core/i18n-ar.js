@@ -8,6 +8,20 @@
   else root.WWI18nAr = factory(root.WWI18n);
 })(typeof self !== 'undefined' ? self : this, function (i18n) {
   const dictionary = {
+  "A time that falls just after the call to prayer rings when the quiet period ends instead.": "الموعد الذي يقع بعد الأذان مباشرة يرنّ عند انتهاء فترة الهدوء بدلًا من ذلك.",
+  "How steadily you keep each routine": "مدى انتظامك في كل روتين",
+  "How steadily you keep each routine, with its streak": "مدى انتظامك في كل روتين، مع سلسلة الأيام",
+  "Most often missed: {at} ({pct}% done)": "الأكثر فواتًا: {at} (أُنجز {pct}%)",
+  "No routine times have come up in this range yet.": "لم يحن أي موعد روتين في هذه الفترة بعد.",
+  "No routines yet. Add one from the Routines page.": "لا توجد روتينات بعد. أضف واحدًا من صفحة الروتينات.",
+  "No, ring at the exact time": "لا، يرنّ في موعده بالضبط",
+  "Quiet during prayer": "هدوء وقت الصلاة",
+  "Stay quiet during prayer": "الهدوء وقت الصلاة",
+  "The last days: a darker square means more times done": "آخر الأيام: كلما اشتد لون المربع زادت المواعيد المنجزة",
+  "{done} of {total} times done": "أُنجز {done} من {total} موعدًا",
+  "{pct}% of routine times done ({done} of {total})": "أُنجز {pct}% من مواعيد الروتينات ({done} من {total})",
+  "Streak: {n} days": ["سلسلة: يوم واحد", "سلسلة: يومان", "سلسلة: {n} أيام", "سلسلة: {n} يومًا"],
+  "Yes, until {n} minutes after the call to prayer": ["نعم، حتى دقيقة بعد الأذان", "نعم، حتى دقيقتين بعد الأذان", "نعم، حتى {n} دقائق بعد الأذان", "نعم، حتى {n} دقيقة بعد الأذان"],
   "One note at random works on the full-screen alert: write several notes separated by ; and each time it rings it shows a different one.": "الملاحظة العشوائية تعمل على التنبيه بملء الشاشة: اكتب عدة ملاحظات تفصل بينها ؛ وفي كل مرة يرنّ يعرض واحدة مختلفة.",
   ", …, ": "، …، ",
   "A routine": "روتين",

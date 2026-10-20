@@ -7,7 +7,7 @@ const { t, tp, getLanguage, weekdayShort, weekdayLong, monthLong } = require('..
 const core = require('../../core');
 
 const {
-  localCategoryName, occurrencesForPlanningDay, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
+  localCategoryName, occurrencesForPlanningDay, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
 } = core;
 
 // The first non-empty line of a note, cut short for a task row.
@@ -228,7 +228,7 @@ class DayViewMethods {
   // The Statistics screen. query: { range: 'day'|'week'|'month'|'year'|'custom', anchorKey, fromKey, toKey }.
   getStats(query) {
     this.freezePast();
-    return computeStats({
+    const stats = computeStats({
       frozen: this.history(),
       provider: this.provider(),
       tasks: this.data.tasks,
@@ -239,6 +239,9 @@ class DayViewMethods {
       weekStart: this.weekStart(),
       lateAfterMinutes: this.settings.lateAfterMinutes,
     });
+    // The routines card (kept apart from the task numbers): the same range, worked out from the routines' own ticks.
+    stats.routineStats = computeRoutineStats(this.data.routines || [], { fromKey: stats.rangeStartKey, toKey: stats.rangeEndKey }, this.now());
+    return stats;
   }
 
   // Next reminders, for the bell.

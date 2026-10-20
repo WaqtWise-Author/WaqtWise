@@ -787,3 +787,7 @@ html[dir="rtl"] .task-notes { text-align: right; }
 .routine-time.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .routine-time.late { border-style: dashed; }
 .check-line { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-weight: 400; }
+
+.routine-stat + .routine-stat { margin-top: 14px; }
+.routine-spark { display: flex; gap: 3px; margin-top: 6px; }
+.routine-spark i { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); display: block; }

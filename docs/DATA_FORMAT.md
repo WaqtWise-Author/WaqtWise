@@ -77,11 +77,11 @@ A routine repeats several times a day inside a time window (for example "every 2
 ```json
 { "id": "…", "title": "Drink water", "notes": "", "categoryId": null,
   "from": "08:00", "to": "20:00", "everyMinutes": 150, "weekdays": [0, 1, 2, 3, 4, 5, 6],
-  "alerts": { "notification": true, "fullScreen": false }, "randomNotes": false, "enabled": true,
+  "alerts": { "notification": true, "fullScreen": false }, "randomNotes": false, "quietAfterPrayerMinutes": 0, "enabled": true,
   "completions": { "2026-10-19": [480, 630] }, "createdAt": "2026-10-13T08:00:00.000Z" }
 ```
 
-`from` and `to` are 24-hour clock times (if `to` is earlier than `from` the window runs past midnight); the times are `from`, `from + everyMinutes`, … up to and including `to`. `weekdays` are the days the window starts on (0 = Sunday). `randomNotes`: the full-screen alert shows one of the notes (separated by `;`) each time. `completions` lists, for each date, the times already ticked as minutes after midnight (kept for 60 days). `routineState` (what already rang, snoozed reminders) is only in `data.json`, not in the export file.
+`from` and `to` are 24-hour clock times (if `to` is earlier than `from` the window runs past midnight); the times are `from`, `from + everyMinutes`, … up to and including `to`. `weekdays` are the days the window starts on (0 = Sunday). `quietAfterPrayerMinutes` (0 to 60, 0 = off): a time that falls from a prayer's call until that many minutes later rings when that period ends. `randomNotes`: the full-screen alert shows one of the notes (separated by `;`) each time. `completions` lists, for each date, the times already ticked as minutes after midnight (kept for 400 days). `routineState` (what already rang, snoozed reminders) is only in `data.json`, not in the export file.
 
 ## Free task
 

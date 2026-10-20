@@ -8,6 +8,9 @@ Before a release: raise the number, add a section here, then build ("Build Windo
 New
 - **Routines** (menu -> Routines): things that repeat several times a day inside a time window, for example "drink water every 2 hours 30 minutes from 8:00 AM to 8:00 PM". Each routine has its own start and end time (a window may run past midnight), a repeat distance given in hours and minutes (at least 5 minutes), the days of the week it applies to, and its own way of reminding: a notification, a full-screen alert, or both. The page shows today's times for each routine to tick off; a routine can be paused. A time missed while the computer was off is skipped. Routines are a list of their own, separate from tasks: they are not in the five zones or the statistics (a statistics card for them may come later). They are saved with the data and travel with export, import and backups (`routines` in the file, see `docs/DATA_FORMAT.md`).
 - **One note at random for routines**: write several notes separated by `;` and the full-screen alert shows a different one each time it rings, none repeating until all were shown (same as for tasks).
+- **Statistics card for routines** (Statistics -> Manage -> *Routines*, on by default for new installs): for each routine the share of its times done in the chosen range, the current streak, the last days as small squares, and the time you miss most often. Only times that have passed count, on the days the routine applies, since the routine was made. Ticks are now kept for 400 days (were 60).
+- **Routine times left today** are shown next to *Routines* in the menu.
+- **Stay quiet during prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.
 - Clicking a routine notification opens the Routines page. Notifications still have no buttons; Snooze, Mark as Done and Open routines are on the full-screen alert.
 
 Fixed

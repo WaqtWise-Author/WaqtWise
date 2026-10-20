@@ -11,6 +11,7 @@
 //     weekdays: [0..6],                  // the days the window STARTS on (0 = Sunday)
 //     alerts: { notification, fullScreen },
 //     randomNotes,                       // full-screen alert: show one of the notes (separated by ;) each time
+//     quietAfterPrayerMinutes,           // 0 = off; otherwise a time that falls from a prayer's call until N minutes later rings when that period ends
 //     enabled,                           // false = paused
 //     completions: { '2026-10-19': [480, 630] },  // minutes after midnight (of the start day) already ticked
 //     createdAt }
@@ -21,7 +22,9 @@ const { isValidKey, addDaysToKey, weekdayOfKey, splitKey, dateKey, formatTime12,
 
 const MIN_EVERY_MINUTES = 5;
 const MAX_EVERY_MINUTES = 24 * 60;
-const KEEP_COMPLETION_DAYS = 60;
+const KEEP_COMPLETION_DAYS = 400;
+const MAX_QUIET_MINUTES = 60;
+const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 function isPlainObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -112,6 +115,7 @@ function normalizeRoutine(raw, now = new Date()) {
       everyMinutes: every,
       weekdays,
       alerts: { notification, fullScreen },
+      quietAfterPrayerMinutes: Number.isInteger(raw.quietAfterPrayerMinutes) && raw.quietAfterPrayerMinutes >= 0 && raw.quietAfterPrayerMinutes <= MAX_QUIET_MINUTES ? raw.quietAfterPrayerMinutes : 0,
       randomNotes: raw.randomNotes === true, // the full-screen alert shows one of the notes (separated by ;) at random
       enabled: raw.enabled !== false,
       completions: normalizeCompletions(raw.completions, now),
@@ -151,6 +155,50 @@ function occurrencesInWindow(routines, fromMs, toMs) {
   return result.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
 }
 
+// ---- Quiet while praying ---------------------------------------------------------------------------------------
+
+// The prayer times (Date objects) around a moment, from the planner's prayer provider (a function of a date key).
+function prayerMomentsAround(provider, at) {
+  const moments = [];
+  if (typeof provider !== 'function') return moments;
+  const day = dateKey(at);
+  for (const key of [addDaysToKey(day, -1), day, addDaysToKey(day, 1)]) {
+    let times = null;
+    try {
+      times = provider(key);
+    } catch (error) {
+      times = null;
+    }
+    if (!times) continue;
+    for (const name of PRAYER_NAMES) if (times[name] instanceof Date) moments.push(times[name].getTime());
+  }
+  return moments;
+}
+
+// When a routine time really rings: at its own time, or, if it falls in the quiet period after a prayer's call
+// (the routine's own choice), when that period ends. Returns a Date.
+function ringTime(routine, at, provider) {
+  const quiet = (routine.quietAfterPrayerMinutes || 0) * 60000;
+  if (!quiet) return at;
+  const ms = at.getTime();
+  for (const p of prayerMomentsAround(provider, at)) if (ms >= p && ms < p + quiet) return new Date(p + quiet);
+  return at;
+}
+
+// Like occurrencesInWindow, but by the moment each time rings (see ringTime): [{ ...occurrence, ringAt }].
+// A time moved past `toMs` is not in the result yet (it is held until its new moment).
+function ringsInWindow(routines, fromMs, toMs, provider) {
+  const byId = new Map(routines.map((r) => [r.id, r]));
+  const lookback = MAX_QUIET_MINUTES * 60000;
+  const result = [];
+  for (const o of occurrencesInWindow(routines, fromMs - lookback, toMs)) {
+    const ringAt = ringTime(byId.get(o.routineId), o.at, provider);
+    const ms = ringAt.getTime();
+    if (ms > fromMs && ms <= toMs) result.push({ ...o, ringAt });
+  }
+  return result.sort((a, b) => a.ringAt - b.ringAt || (a.id < b.id ? -1 : 1));
+}
+
 // A new routine record with one time ticked (or un-ticked). The time must really be one of the routine's times.
 function setSlotDone(routine, key, slot, done, now = new Date()) {
   if (!isValidKey(key) || !routineSlots(routine).includes(slot)) return routine;
@@ -181,6 +229,10 @@ module.exports = {
   normalizeRoutine,
   occurrencesOn,
   occurrencesInWindow,
+  ringTime,
+  ringsInWindow,
+  MAX_QUIET_MINUTES,
+  KEEP_COMPLETION_DAYS,
   setSlotDone,
   describeRoutine,
 };

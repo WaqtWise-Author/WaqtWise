@@ -31,6 +31,7 @@
     ['lateness', T('Most late tasks'), T('Which tasks are done late, and by how much on average')],
     ['lateby', T('Lateness by zone and category'), T('Average delay in each zone and category')],
     ['latetrend', T('Lateness over time'), T('Average delay in each day, week or month')],
+    ['routines', T('Routines'), T('How steadily you keep each routine, with its streak')],
   ];
   const CHARTS = { map: (f) => CHARTS_DEF().map(f), find: (f) => CHARTS_DEF().find(f) };
   const local = { query: { range: 'week' }, showAllLate: false };
@@ -329,6 +330,29 @@
           h('div', {}, h('div', { class: 'bl-name', text: i % stride === 0 ? it.label : '' }), h('div', { class: 'bl-ratio', text: '' }))))));
   }
 
+  // ---- routines -----------------------------------------------------------------------------------------
+
+  function routinesCard(data) {
+    const r = data.routineStats || { items: [], total: { planned: 0, done: 0, pct: null } };
+    const shown = r.items.filter((x) => x.enabled);
+    const body = !r.items.length
+      ? h('div', { class: 'stats-none', id: 'routines-none', text: T('No routines yet. Add one from the Routines page.') })
+      : r.total.planned === 0
+        ? h('div', { class: 'stats-none', id: 'routines-empty', text: T('No routine times have come up in this range yet.') })
+        : h('div', { class: 'bars-list routine-stats' }, shown.map((x) =>
+          h('div', { class: 'routine-stat', 'data-id': x.id },
+            h('div', { class: 'row-top' }, h('span', { class: 'zone-label', text: x.title }), h('span', { text: x.pct === null ? '–' : `${x.pct}%` })),
+            h('div', { class: 'meter' }, h('div', { style: { width: `${x.pct || 0}%`, background: 'var(--accent)' } })),
+            h('div', { class: 'row-note', text: T('{done} of {total} times done', { done: x.done, total: x.planned }) + (x.streak > 0 ? ` · ${TP(x.streak, 'Streak: {n} day', 'Streak: {n} days')}` : '') }),
+            x.days.length ? h('div', { class: 'routine-spark', role: 'img', 'aria-label': T('The last days: a darker square means more times done') }, x.days.map((d) =>
+              h('i', { title: `${d.key}: ${d.done}/${d.planned}`, style: { opacity: String(0.18 + 0.82 * ((d.pct || 0) / 100)) } }))) : null,
+            x.weakest ? h('div', { class: 'row-note', text: T('Most often missed: {at} ({pct}% done)', { at: x.weakest.label, pct: x.weakest.pct }) }) : null)));
+    return h('section', { class: 'stats-card routines-card', 'aria-label': T('Routines') },
+      h('h2', { text: T('Routines') }),
+      h('div', { class: 'sub', id: 'routines-sub', text: r.total.pct === null ? T('How steadily you keep each routine') : T('{pct}% of routine times done ({done} of {total})', { pct: r.total.pct, done: r.total.done, total: r.total.planned }) }),
+      body);
+  }
+
   function formatMinutes(m) {
     if (m === null || m === undefined) return '–';
     if (m === 0) return T('On time');
@@ -343,7 +367,7 @@
     const root = clear(document.getElementById('view'));
     const chosen = WW.state.settings.statsCharts;
     const kpiIds = chosen.filter((id) => id.startsWith('kpi-'));
-    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard };
+    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard, routines: routinesCard };
     const cards = chosen.filter((id) => builders[id]);
     root.append(
       header(data),

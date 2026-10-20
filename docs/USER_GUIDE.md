@@ -155,11 +155,12 @@ and choose **Routines**, then **Add routine**.
 - Choose **On these days**: any days of the week you like.
 - Choose how it reminds you: a **notification**, a **full-screen alert**, or **both**. The switches in
   Settings → Reminders still apply. Snooze and Mark as Done work on the full-screen alert as usual.
+- **Stay quiet during prayer**: if a time falls from the call to prayer until the number of minutes you choose after it, it rings when that quiet period ends instead (a time that falls outside prayer rings at its own time).
 - Tick **Show one note at random** to have the full-screen alert show a different note each time it rings: write several notes separated by `;`, and none repeats until all have been shown. (A notification never shows notes.)
 - The page shows today's times for each routine; tick a time when you have done it. **Pause** stops a routine without
   deleting it. A time that passes while the computer is off or asleep is simply skipped.
 
-Routines are kept apart from your tasks: they do not appear in the five zones or in the statistics. They are saved with your data and travel with export, import and backups.
+The menu shows how many routine times are still to come today next to **Routines**. Routines are kept apart from your tasks: they do not appear in the five zones, but **Statistics** has a **Routines** card (it counts only times that have passed, on the days the routine applies, since the routine was made; add it with **Manage** if you updated from an older version). They are saved with your data and travel with export, import and backups.
 
 ![Routines](images/routines.webp)
 
@@ -215,6 +216,7 @@ The charts (use **Manage** to show, hide or reorder them):
 | Most late tasks | Which tasks are done late and by how much on average |
 | Lateness by zone and category | Average delay in each |
 | Lateness over time | Average delay per day, week or month |
+| Routines | For each routine: the share of its times done, the current streak, the last days as small squares, and the time you miss most often |
 
 Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
 A task counts as **late** if you tick it more than a chosen time after its start (Settings → Application →

@@ -34,6 +34,7 @@ class RoutineMethods {
         categoryColor: category ? category.color : '',
         summary: describeRoutine(r),
         timesPerDay: routineSlots(r).length,
+        quietMinutes: r.quietAfterPrayerMinutes || 0,
         dateKey: today,
         onToday: times.length > 0,
         times,
@@ -47,7 +48,7 @@ class RoutineMethods {
   newRoutineDefaults() {
     return {
       title: '', notes: '', categoryId: null, from: '08:00', to: '20:00', hours: 2, minutes: 0,
-      weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, randomNotes: false, enabled: true,
+      weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, enabled: true,
     };
   }
 
@@ -56,7 +57,7 @@ class RoutineMethods {
     return {
       title: r.title, notes: r.notes, categoryId: r.categoryId, from: r.from, to: r.to,
       hours: Math.floor(r.everyMinutes / 60), minutes: r.everyMinutes % 60,
-      weekdays: r.weekdays.slice(), notification: r.alerts.notification, fullScreen: r.alerts.fullScreen, randomNotes: r.randomNotes === true, enabled: r.enabled,
+      weekdays: r.weekdays.slice(), notification: r.alerts.notification, fullScreen: r.alerts.fullScreen, randomNotes: r.randomNotes === true, quietMinutes: r.quietAfterPrayerMinutes || 0, enabled: r.enabled,
     };
   }
 
@@ -76,6 +77,7 @@ class RoutineMethods {
       weekdays: source.weekdays,
       alerts: { notification: source.notification === true, fullScreen: source.fullScreen === true },
       randomNotes: source.randomNotes === true,
+      quietAfterPrayerMinutes: Number.isInteger(source.quietMinutes) ? source.quietMinutes : 0,
       enabled: source.enabled !== false,
     };
   }

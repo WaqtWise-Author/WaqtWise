@@ -503,6 +503,11 @@
   async function openDrawer() {
     closePopovers();
     if (WW.refreshFreeCount) await WW.refreshFreeCount();
+    try {
+      WW.state.routineLeft = await WW.call('getRoutineLeftToday'); // the routine times still to come today
+    } catch (error) {
+      WW.state.routineLeft = 0;
+    }
     const drawer = document.getElementById('drawer');
     const item = (icon, label, fn, active) => h('button', {
       class: `drawer-item ${active ? 'active' : ''}`, type: 'button',
@@ -515,7 +520,7 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': T('Close menu'), onclick: closeDrawer }, WW.icon('close', 18, 2))),
       item('calendar', T('Daily View'), () => WW.showDaily(), WW.state.view === 'daily'),
       item('check', T('Free To-Do list') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
-      item('bell', T('Routines'), () => WW.showRoutines(), WW.state.view === 'routines'),
+      item('bell', T('Routines') + (WW.state.routineLeft ? ` (${WW.state.routineLeft})` : ''), () => WW.showRoutines(), WW.state.view === 'routines'),
       item('chart', T('Statistics'), () => WW.showStats({ range: 'week' }), WW.state.view === 'stats'),
       item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'),
       h('div', { class: 'drawer-sep' }),

@@ -8,7 +8,7 @@
 // finds every routine time inside it. Each routine chooses what happens: a notification, a full-screen alert, or both.
 // A time that is missed because the computer was off is simply skipped: a routine is a regular nudge, not a deadline.
 
-const { occurrencesInWindow, occurrencesOn } = require('./routines');
+const { ringsInWindow, occurrencesOn } = require('./routines');
 const { t } = require('./i18n');
 const { formatTime12 } = require('./time');
 
@@ -88,6 +88,11 @@ class RoutineEngine {
     return this.deps.getSettings ? this.deps.getSettings() : {};
   }
 
+  // The prayer times (a function of a date key); routines that stay quiet while praying need it.
+  provider() {
+    return this.deps.getProvider ? this.deps.getProvider() : null;
+  }
+
   start() {
     this.tick();
     this.timer = (this.deps.setInterval || setInterval)(() => this.tick(), this.options.tickMs);
@@ -134,8 +139,8 @@ class RoutineEngine {
     const wants = (r) => (r.alerts.notification && s.notificationsEnabled !== false) || (r.alerts.fullScreen && s.fullScreenAlerts !== false);
     const usable = routines.filter(wants);
     let next = null;
-    for (const o of occurrencesInWindow(usable, nowMs, nowMs + DAY_MS)) {
-      if (!o.done && !this.state.delivered[o.id]) { next = o.at.getTime(); break; }
+    for (const o of ringsInWindow(usable, nowMs, nowMs + DAY_MS, this.provider())) {
+      if (!o.done && !this.state.delivered[o.id]) { next = o.ringAt.getTime(); break; }
     }
     for (const sn of this.state.snoozed) if (sn.until > nowMs && (next === null || sn.until < next)) next = sn.until;
     return next;
@@ -173,13 +178,13 @@ class RoutineEngine {
     const alerts = [];
     const windowStart = Math.max(this.state.lastTickAt, now - o.lookbackMs);
 
-    for (const occ of occurrencesInWindow(routines, windowStart, now)) {
+    for (const occ of ringsInWindow(routines, windowStart, now, this.provider())) {
       if (this.state.delivered[occ.id]) continue;
       this.state.delivered[occ.id] = now;
       changed = true;
       if (occ.done) continue;
       const routine = byId.get(occ.routineId);
-      const late = now - occ.at.getTime();
+      const late = now - occ.ringAt.getTime();
       const item = this.itemFor(routine, occ, false);
       if (routine.alerts.notification && toastsOn && late <= o.graceMs) toasts.push(item);
       if (routine.alerts.fullScreen && alertsOn && late <= o.alertGraceMs) alerts.push(item);
@@ -232,7 +237,7 @@ class RoutineEngine {
       notes: routine.notes,
       randomNotes: routine.randomNotes === true && routine.alerts.fullScreen,
       categoryId: routine.categoryId,
-      at: occ.at,
+      at: occ.ringAt || occ.at,
       snoozed,
     };
   }

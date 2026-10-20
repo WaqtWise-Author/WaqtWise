@@ -16,6 +16,7 @@ module.exports = {
   ...require('./free-tasks'),
   ...require('./routines'),
   ...require('./routine-engine'),
+  ...require('./routine-stats'),
   ...require('./random-notes'),
   ...require('./data'),
   ...require('./prayer-adapter'),

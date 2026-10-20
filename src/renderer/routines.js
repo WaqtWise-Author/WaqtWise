@@ -31,6 +31,8 @@
     const to = h('input', { type: 'time', id: 'rf-to', value: f.to, required: 'true', 'aria-label': T('To') });
     const hours = h('input', { type: 'number', class: 'num', id: 'rf-hours', min: '0', max: '24', value: String(f.hours), 'aria-label': T('Hours') });
     const minutes = h('input', { type: 'number', class: 'num', id: 'rf-minutes', min: '0', max: '59', value: String(f.minutes), 'aria-label': T('Minutes') });
+    const quiet = h('select', { id: 'rf-quiet', onchange: (e) => { f.quietMinutes = Number(e.target.value); } },
+      [0, 10, 15, 20, 30, 45, 60].map((m) => h('option', { value: m, selected: f.quietMinutes === m, text: m === 0 ? T('No, ring at the exact time') : TP(m, 'Yes, until {n} minute after the call to prayer', 'Yes, until {n} minutes after the call to prayer') })));
     const notes = h('textarea', { id: 'rf-notes', value: f.notes, 'aria-label': T('Notes'), oninput: (e) => { f.notes = e.target.value; } });
     const preview = h('p', { class: 'hint', id: 'rf-preview' });
 
@@ -81,6 +83,8 @@
         check('rf-randomnotes', T('Show one note at random'), 'randomNotes'),
         h('p', { class: 'hint', text: T('Choose one or both. The switches in Settings → Reminders still apply.') }),
         h('p', { class: 'hint', text: T('One note at random works on the full-screen alert: write several notes separated by ; and each time it rings it shows a different one.') })),
+      h('div', { class: 'field' }, h('label', { for: 'rf-quiet', text: T('Stay quiet during prayer') }), quiet,
+        h('p', { class: 'hint', text: T('A time that falls just after the call to prayer rings when the quiet period ends instead.') })),
       h('div', { class: 'field' }, h('label', { for: 'rf-category', text: T('Category') }), category),
       h('div', { class: 'field' }, h('label', { for: 'rf-notes', text: T('Notes') }), notes));
     update();
@@ -130,6 +134,7 @@
     if (item.categoryName) meta.push(h('span', { class: 'tag pill' }, h('span', { class: 'dot', style: { background: item.categoryColor } }), item.categoryName));
     meta.push(h('span', { class: 'tag', text: item.weekdays.length === 7 ? T('Every day') : item.weekdays.map((i) => i18n.weekdayShort(i)).join(T(', ')) }));
     meta.push(h('span', { class: 'tag', text: alertsText(item) || T('No reminder') }));
+    if (item.quietMinutes) meta.push(h('span', { class: 'tag', text: T('Quiet during prayer') }));
     if (!item.enabled) meta.push(h('span', { class: 'tag pill', text: T('Paused') }));
 
     const times = item.times.map((x) => h('button', {
