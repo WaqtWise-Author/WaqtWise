@@ -184,7 +184,7 @@ test('service: add, edit, pause, tick, delete a routine', () => {
   assert.equal(r.nextLabel, '10:30 AM');
   assert.equal(s.getRoutineLeftToday(), 5);
 
-  assert.deepEqual(s.getRoutineForEdit({ id }), { title: 'Stretch', notes: '', categoryId: null, from: '09:00', to: '17:00', hours: 1, minutes: 30, weekdays: [0, 1, 2, 3, 4], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, enabled: true });
+  assert.deepEqual(s.getRoutineForEdit({ id }), { title: 'Stretch', notes: '', categoryId: null, from: '09:00', to: '17:00', hours: 1, minutes: 30, weekdays: [0, 1, 2, 3, 4], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, notifyBefore: 0, skipTasks: [], enabled: true });
   s.setRoutineSlotDone({ id, dateKey: DAY, slot: 540, done: true });
   assert.equal(s.getRoutines()[0].doneToday, 1);
   s.saveRoutine({ id, form: form({ title: 'Stretch more', fullScreen: true }) });
@@ -371,4 +371,105 @@ test('the number of routine times still to come today', () => {
   const s = service(); // 10:00 on a Sunday
   s.saveRoutine({ form: form() }); // 9:00 10:30 12:00 13:30 15:00 16:30 on Sunday
   assert.equal(s.getRoutineLeftToday(), 5);
+});
+
+// ---- notification lead time, silence during tasks, no ticking the future ------------------------------------------------
+
+const { createTask, taskRunningAt, notifyTime } = require('../src/core');
+const fixedStart = (time) => ({ mode: 'fixed', time });
+const meeting = (extra = {}) => createTask({ id: 'meet', title: 'Meeting', start: fixedStart('10:00'), durationMinutes: 60, date: DAY, ...extra });
+
+test('the notification can come a few minutes before the time; the full-screen alert stays exact', () => {
+  const r = make({ from: '12:00', to: '12:30', everyMinutes: 60, notifyBeforeMinutes: 10, alerts: { notification: true, fullScreen: true } });
+  assert.equal(normalizeRoutine({ ...raw(), notifyBeforeMinutes: 121 }).routine.notifyBeforeMinutes, 0, 'more than 120 is not accepted');
+  assert.equal(normalizeRoutine({ ...raw(), notifyBeforeMinutes: 1.5 }).routine.notifyBeforeMinutes, 0);
+  assert.equal(notifyTime(r, at(DAY, '12:00'), null).getTime(), at(DAY, '11:50').getTime());
+  const w = world([make({ from: '12:00', to: '13:00', everyMinutes: 60, notifyBeforeMinutes: 10, alerts: { notification: true, fullScreen: true } })]);
+  w.run(at(DAY, '11:30'), at(DAY, '13:05'));
+  assert.deepEqual(w.toasts.map(([c]) => c.getTime()), [at(DAY, '11:50').getTime(), at(DAY, '12:50').getTime()], 'notifications 10 minutes early');
+  assert.match(w.toasts[0][1].lines[0], /Starts in 10 min · 12:00 PM/);
+  assert.deepEqual(w.alerts.map(([c]) => c.getTime()), [at(DAY, '12:00').getTime(), at(DAY, '13:00').getTime()], 'alerts exactly on time');
+  assert.equal(w.errors.length, 0);
+});
+
+test('a notification ticked as done before it comes is not shown', () => {
+  let r = make({ from: '12:00', to: '12:30', everyMinutes: 60, notifyBeforeMinutes: 10 });
+  r = setSlotDone(r, DAY, 720, true, at(DAY, '11:00'));
+  const w = world([r]);
+  w.run(at(DAY, '11:30'), at(DAY, '12:10'));
+  assert.equal(w.toasts.length, 0);
+});
+
+test('the lead time never goes back into a quiet period after a prayer', () => {
+  // the call is at 11:48 and the quiet period lasts 20 minutes (until 12:08); the time is 12:10 with a 15 minute lead
+  const r = make({ from: '12:10', to: '12:40', everyMinutes: 60, quietAfterPrayerMinutes: 20, notifyBeforeMinutes: 15 });
+  assert.equal(notifyTime(r, at(DAY, '12:10'), prayers).getTime(), at(DAY, '12:08').getTime());
+});
+
+test('a task that is running: found only while it runs, and not when it is done', () => {
+  const m = meeting();
+  const tasks = [m, createTask({ id: 'other', title: 'Other', start: fixedStart('10:00'), durationMinutes: 60, date: DAY })];
+  const running = (time, ids = ['meet'], list = tasks) => taskRunningAt(constantProvider, list, ids, at(DAY, time).getTime());
+  assert.equal(running('09:59'), false);
+  assert.equal(running('10:00'), true);
+  assert.equal(running('10:59'), true);
+  assert.equal(running('11:00'), false, 'the end moment is free again');
+  assert.equal(running('10:30', []), false, 'no task chosen');
+  assert.equal(running('10:30', ['gone']), false, 'a deleted task is ignored');
+  const { setCompletion } = require('../src/core');
+  assert.equal(running('10:30', ['meet'], [setCompletion(m, DAY, true), tasks[1]]), false, 'ticked as done: no longer running');
+});
+
+test('the engine stays silent while a chosen task runs, then rings again', () => {
+  const routine = make({ from: '09:00', to: '12:00', everyMinutes: 60, skipDuringTasks: ['meet'], alerts: { notification: true, fullScreen: true } });
+  const w = world([routine]);
+  w.engine = new RoutineEngine({ getRoutines: () => w.routines, getTasks: () => [meeting()], getProvider: () => constantProvider, getSettings: () => w.settings, notify: (p) => w.toasts.push([w.clock, p]), showAlert: (i) => w.alerts.push([w.clock, i]), saveState: () => {}, now: () => w.clock, setTimeout: () => 1, clearTimeout: () => {} });
+  w.clock = at(DAY, '08:59');
+  w.run(at(DAY, '08:59'), at(DAY, '12:05'));
+  const rung = w.toasts.map(([c]) => c.getTime());
+  assert.deepEqual(rung, [at(DAY, '09:00').getTime(), at(DAY, '11:00').getTime(), at(DAY, '12:00').getTime()], '10:00 fell inside the meeting');
+  assert.equal(w.alerts.length, 3);
+});
+
+test('service: the silent tasks and the lead time are saved, shown and exported', () => {
+  const s = service();
+  const { taskId } = s.saveTask({ mode: 'create', form: { title: 'Meeting', date: DAY, start: { mode: 'fixed', time: '10:00' }, durationMinutes: 60, reminders: { enabled: false, offsets: [], fullScreen: false } } });
+  const id = s.saveRoutine({ form: form({ notifyBefore: 10, skipTasks: [taskId, 'not-a-task'] }) }).id;
+  assert.deepEqual(s.getRoutineForEdit({ id }).skipTasks, [taskId], 'unknown tasks are dropped');
+  assert.equal(s.getRoutineForEdit({ id }).notifyBefore, 10);
+  const card = s.getRoutines()[0];
+  assert.deepEqual(card.skipTitles, ['Meeting']);
+  assert.equal(card.notifyBefore, 10);
+  const back = parseImport(JSON.parse(JSON.stringify(buildExport(s.data)))).data.routines[0];
+  assert.equal(back.notifyBeforeMinutes, 10);
+  assert.deepEqual(back.skipDuringTasks, [taskId]);
+  assert.equal(s.getRoutineForEdit({ id: s.saveRoutine({ form: form({ notifyBefore: 500 }) }).id }).notifyBefore, 0, 'more than 120 is not kept');
+});
+
+test('a routine time that has not come yet cannot be ticked, but a past one can, and un-ticking always works', () => {
+  const s = service(); // 10:00 on Sunday; times 9:00 10:30 12:00 ...
+  const id = s.saveRoutine({ form: form() }).id;
+  assert.throws(() => s.setRoutineSlotDone({ id, dateKey: DAY, slot: 630, done: true }), /has not come yet/);
+  assert.throws(() => s.setRoutineSlotDone({ id, dateKey: '2026-10-05', slot: 540, done: true }), /has not come yet/, 'tomorrow');
+  s.setRoutineSlotDone({ id, dateKey: DAY, slot: 540, done: true });
+  assert.equal(s.getRoutines()[0].times[0].done, true);
+  s.setRoutineSlotDone({ id, dateKey: DAY, slot: 540, done: false });
+  assert.equal(s.getRoutines()[0].times[0].done, false);
+  assert.equal(s.getRoutines()[0].times[1].past, false, 'the screen can grey out times to come');
+});
+
+test('a task on a later day cannot be ticked; today and past days can; the day view says which are in the future', () => {
+  const s = service();
+  const mk = (date) => s.saveTask({ mode: 'create', form: { title: `T${date}`, date, start: { mode: 'fixed', time: '15:00' }, durationMinutes: 30, reminders: { enabled: false, offsets: [], fullScreen: false } } }).taskId;
+  const today = mk(DAY);
+  const tomorrow = mk('2026-10-05');
+  const past = mk('2026-10-03');
+  assert.throws(() => s.setDone({ taskId: tomorrow, dateKey: '2026-10-05', done: true }), /has not come yet/);
+  s.setDone({ taskId: today, dateKey: DAY, done: true }); // later today, but today
+  s.setDone({ taskId: past, dateKey: '2026-10-03', done: true });
+  const flat = (key) => s.getDay(key).zones.flatMap((z) => z.tasks);
+  assert.equal(flat('2026-10-05')[0].future, true);
+  assert.equal(flat(DAY)[0].future, false);
+  assert.equal(s.getTaskDetails({ taskId: tomorrow, dateKey: '2026-10-05' }).future, true);
+  assert.doesNotThrow(() => s.setDone({ taskId: tomorrow, dateKey: '2026-10-05', done: false }), 'taking a tick back is always allowed');
 });

@@ -106,7 +106,7 @@
     if (show.fullScreen && t.hasFullScreen) tags.push(h('span', { class: 'tag', text: T('Full-screen alert') }));
 
     const check = h('button', {
-      class: `check ${t.done ? 'on' : ''}`, type: 'button',
+      class: `check ${t.done ? 'on' : ''}`, type: 'button', disabled: Boolean(t.future && !t.done), title: t.future && !t.done ? T('This task is on a day that has not come yet') : null,
       'aria-label': T(t.done ? 'Mark "{title}" as not done' : 'Mark "{title}" as done', { title: t.title }), 'aria-pressed': String(t.done),
       onclick: async (event) => {
         event.stopPropagation();

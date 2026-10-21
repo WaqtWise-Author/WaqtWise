@@ -8,9 +8,9 @@
 // finds every routine time inside it. Each routine chooses what happens: a notification, a full-screen alert, or both.
 // A time that is missed because the computer was off is simply skipped: a routine is a regular nudge, not a deadline.
 
-const { ringsInWindow, occurrencesOn } = require('./routines');
+const { ringsInWindow, occurrencesOn, taskRunningAt } = require('./routines');
 const { t } = require('./i18n');
-const { formatTime12 } = require('./time');
+const { formatTime12, formatDuration } = require('./time');
 
 const MS_PER_MINUTE = 60000;
 const DAY_MS = 24 * 60 * MS_PER_MINUTE;
@@ -54,7 +54,9 @@ function normalizeRoutineState(raw) {
 }
 
 function formatRoutineNotification(item, settings) {
-  const line = t('Routine time · {at}', { at: formatTime12(item.at) });
+  const line = item.leadMinutes > 0
+    ? t('Starts in {time} · {at}', { time: item.leadMinutes < 60 ? t('{n} min', { n: item.leadMinutes }) : formatDuration(item.leadMinutes), at: formatTime12(item.at) })
+    : t('Routine time · {at}', { at: formatTime12(item.at) });
   const lines = item.snoozed ? [t('Snoozed reminder'), line] : [line];
   return {
     kind: 'routine',
@@ -86,6 +88,17 @@ class RoutineEngine {
 
   settings() {
     return this.deps.getSettings ? this.deps.getSettings() : {};
+  }
+
+  // Is one of the tasks the routine should stay silent for running at this moment?
+  busy(routine, ms) {
+    const ids = routine && routine.skipDuringTasks;
+    if (!ids || ids.length === 0 || !this.deps.getTasks) return false;
+    const s = this.settings();
+    const options = {};
+    if (s.workingDays) options.workingDays = s.workingDays;
+    if ([6, 0, 1].includes(s.weekStart)) options.weekStartsOn = s.weekStart;
+    return taskRunningAt(this.provider(), this.deps.getTasks(), ids, ms, options);
   }
 
   // The prayer times (a function of a date key); routines that stay quiet while praying need it.
@@ -139,8 +152,12 @@ class RoutineEngine {
     const wants = (r) => (r.alerts.notification && s.notificationsEnabled !== false) || (r.alerts.fullScreen && s.fullScreenAlerts !== false);
     const usable = routines.filter(wants);
     let next = null;
-    for (const o of ringsInWindow(usable, nowMs, nowMs + DAY_MS, this.provider())) {
-      if (!o.done && !this.state.delivered[o.id]) { next = o.ringAt.getTime(); break; }
+    const consider = (ms) => { if (next === null || ms < next) next = ms; };
+    for (const o of ringsInWindow(usable.filter((r) => r.alerts.fullScreen && s.fullScreenAlerts !== false), nowMs, nowMs + DAY_MS, this.provider())) {
+      if (!o.done && !this.state.delivered[o.id]) { consider(o.ringAt.getTime()); break; }
+    }
+    for (const o of ringsInWindow(usable.filter((r) => r.alerts.notification && s.notificationsEnabled !== false), nowMs, nowMs + DAY_MS, this.provider(), 'notifyAt')) {
+      if (!o.done && !this.state.delivered[`${o.id}#n`]) { consider(o.notifyAt.getTime()); break; }
     }
     for (const sn of this.state.snoozed) if (sn.until > nowMs && (next === null || sn.until < next)) next = sn.until;
     return next;
@@ -178,16 +195,26 @@ class RoutineEngine {
     const alerts = [];
     const windowStart = Math.max(this.state.lastTickAt, now - o.lookbackMs);
 
+    // Notifications come at their own moment (the lead time before the routine time) ...
+    for (const occ of ringsInWindow(routines, windowStart, now, this.provider(), 'notifyAt')) {
+      const routine = byId.get(occ.routineId);
+      if (!routine.alerts.notification) continue;
+      const key = `${occ.id}#n`;
+      if (this.state.delivered[key]) continue;
+      this.state.delivered[key] = now;
+      changed = true;
+      if (occ.done || this.busy(routine, occ.notifyAt.getTime())) continue;
+      if (toastsOn && now - occ.notifyAt.getTime() <= o.graceMs) toasts.push(this.itemFor(routine, occ, false));
+    }
+    // ... full-screen alerts at the exact time of the routine.
     for (const occ of ringsInWindow(routines, windowStart, now, this.provider())) {
+      const routine = byId.get(occ.routineId);
+      if (!routine.alerts.fullScreen) continue;
       if (this.state.delivered[occ.id]) continue;
       this.state.delivered[occ.id] = now;
       changed = true;
-      if (occ.done) continue;
-      const routine = byId.get(occ.routineId);
-      const late = now - occ.ringAt.getTime();
-      const item = this.itemFor(routine, occ, false);
-      if (routine.alerts.notification && toastsOn && late <= o.graceMs) toasts.push(item);
-      if (routine.alerts.fullScreen && alertsOn && late <= o.alertGraceMs) alerts.push(item);
+      if (occ.done || this.busy(routine, occ.ringAt.getTime())) continue;
+      if (alertsOn && now - occ.ringAt.getTime() <= o.alertGraceMs) alerts.push(this.itemFor(routine, occ, false));
     }
 
     const waiting = [];
@@ -195,7 +222,7 @@ class RoutineEngine {
       if (sn.until > now) { waiting.push(sn); continue; }
       changed = true;
       const routine = byId.get(sn.routineId);
-      if (!routine || !routine.enabled) continue;
+      if (!routine || !routine.enabled || this.busy(routine, sn.until)) continue;
       const occ = occurrencesOn(routine, sn.dateKey).find((x) => x.slot === sn.slot);
       if (!occ || occ.done) continue;
       const late = now - sn.until;
@@ -238,6 +265,7 @@ class RoutineEngine {
       randomNotes: routine.randomNotes === true && routine.alerts.fullScreen,
       categoryId: routine.categoryId,
       at: occ.ringAt || occ.at,
+      leadMinutes: !snoozed && occ.notifyAt && occ.ringAt ? Math.round((occ.ringAt - occ.notifyAt) / MS_PER_MINUTE) : 0,
       snoozed,
     };
   }

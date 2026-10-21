@@ -33,6 +33,17 @@
     const minutes = h('input', { type: 'number', class: 'num', id: 'rf-minutes', min: '0', max: '59', value: String(f.minutes), 'aria-label': T('Minutes') });
     const quiet = h('select', { id: 'rf-quiet', onchange: (e) => { f.quietMinutes = Number(e.target.value); } },
       [0, 10, 15, 20, 30, 45, 60].map((m) => h('option', { value: m, selected: f.quietMinutes === m, text: m === 0 ? T('No, ring at the exact time') : TP(m, 'Yes, until {n} minute after the call to prayer', 'Yes, until {n} minutes after the call to prayer') })));
+    const before = h('input', { type: 'number', class: 'num', id: 'rf-before', min: '0', max: '120', value: String(f.notifyBefore), 'aria-label': T('Minutes') });
+    const choices = (await call('getReferenceChoices', { taskId: null })) || [];
+    const skipList = h('div', { class: 'skip-list', id: 'rf-skip' });
+    const drawSkip = () => {
+      clear(skipList);
+      if (!choices.length) { skipList.append(h('p', { class: 'hint', text: T('There are no tasks yet.') })); return; }
+      skipList.append(...choices.map((c) => h('label', { class: 'check-line' },
+        h('input', { type: 'checkbox', checked: f.skipTasks.includes(c.taskId), 'data-task': c.taskId,
+          onchange: (e) => { f.skipTasks = e.target.checked ? [...f.skipTasks, c.taskId] : f.skipTasks.filter((x) => x !== c.taskId); } }), ' ', c.title)));
+    };
+    drawSkip();
     const notes = h('textarea', { id: 'rf-notes', value: f.notes, 'aria-label': T('Notes'), oninput: (e) => { f.notes = e.target.value; } });
     const preview = h('p', { class: 'hint', id: 'rf-preview' });
 
@@ -83,6 +94,11 @@
         check('rf-randomnotes', T('Show one note at random'), 'randomNotes'),
         h('p', { class: 'hint', text: T('Choose one or both. The switches in Settings → Reminders still apply.') }),
         h('p', { class: 'hint', text: T('One note at random works on the full-screen alert: write several notes separated by ; and each time it rings it shows a different one.') })),
+      h('div', { class: 'field' }, h('label', { for: 'rf-before', text: T('Notification comes before the time by') }),
+        h('div', { class: 'row', style: { alignItems: 'center' } }, before, h('span', { text: T('minutes') })),
+        h('p', { class: 'hint', text: T('0 means at the exact time. The full-screen alert always comes at the exact time.') })),
+      h('div', { class: 'field' }, h('label', { text: T('Stay silent while these tasks are running') }), skipList,
+        h('p', { class: 'hint', text: T('A time that falls while one of the chosen tasks is running does not ring. A task that is already ticked as done does not count.') })),
       h('div', { class: 'field' }, h('label', { for: 'rf-quiet', text: T('Stay quiet during prayer') }), quiet,
         h('p', { class: 'hint', text: T('A time that falls just after the call to prayer rings when the quiet period ends instead.') })),
       h('div', { class: 'field' }, h('label', { for: 'rf-category', text: T('Category') }), category),
@@ -97,6 +113,7 @@
       f.to = to.value;
       f.hours = Math.max(0, Math.floor(Number(hours.value) || 0));
       f.minutes = Math.max(0, Math.floor(Number(minutes.value) || 0));
+      f.notifyBefore = Math.max(0, Math.floor(Number(before.value) || 0));
       if (f.title.trim() === '') { errors.hidden = false; errors.textContent = T('Please enter a title'); return; }
       save.disabled = true;
       try {
@@ -124,7 +141,7 @@
 
   function alertsText(item) {
     const parts = [];
-    if (item.alerts.notification) parts.push(T('Notification'));
+    if (item.alerts.notification) parts.push(item.notifyBefore ? TP(item.notifyBefore, 'Notification {n} minute before', 'Notification {n} minutes before') : T('Notification'));
     if (item.alerts.fullScreen) parts.push(T('Full-screen alert'));
     return parts.join(' + ');
   }
@@ -135,11 +152,13 @@
     meta.push(h('span', { class: 'tag', text: item.weekdays.length === 7 ? T('Every day') : item.weekdays.map((i) => i18n.weekdayShort(i)).join(T(', ')) }));
     meta.push(h('span', { class: 'tag', text: alertsText(item) || T('No reminder') }));
     if (item.quietMinutes) meta.push(h('span', { class: 'tag', text: T('Quiet during prayer') }));
+    if (item.skipTitles && item.skipTitles.length) meta.push(h('span', { class: 'tag', title: item.skipTitles.join(T(', ')), text: T('Silent during: {names}', { names: item.skipTitles.join(T(', ')) }) }));
     if (!item.enabled) meta.push(h('span', { class: 'tag pill', text: T('Paused') }));
 
     const times = item.times.map((x) => h('button', {
       type: 'button', class: `routine-time ${x.done ? 'on' : ''} ${x.past && !x.done ? 'late' : ''}`, 'aria-pressed': String(x.done),
-      'aria-label': `${x.label} – ${x.done ? T('Done') : T('Not done')}`, title: x.done ? T('Mark as not done') : T('Mark as Done'),
+      disabled: !x.past && !x.done,
+      'aria-label': `${x.label} – ${x.done ? T('Done') : T('Not done')}`, title: x.done ? T('Mark as not done') : x.past ? T('Mark as Done') : T('This time has not come yet'),
       onclick: async () => {
         if (await call('setRoutineSlotDone', { id: item.id, dateKey: item.dateKey, slot: x.slot, done: !x.done })) {
           if (!x.done && WW.state.settings) WW.sounds.play(WW.state.settings.doneSound, WW.state.settings.doneSoundVolume);

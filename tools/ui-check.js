@@ -617,12 +617,16 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#rf-days button:has-text("Fri")');
     await page.click('#rf-days button:has-text("Fri")'); // off and on again
     await page.check('#rf-fullscreen');
+    await page.fill('#rf-before', '10');
+    assert.ok((await page.locator('#rf-skip input[type=checkbox]').count()) >= 1, 'the tasks to stay silent for are listed');
+    await page.check('#rf-skip input[type=checkbox] >> nth=0');
     await shot(page, 'routine-form');
     await page.click('.dialog-footer .btn.primary');
     await page.waitForSelector('.routine-card:has-text("Drink water")');
     const card = await page.textContent('.routine-card');
     assert.match(card, /Every 2h 30m, 8:00 AM – 8:00 PM/);
-    assert.match(card, /Notification \+ Full-screen alert/);
+    assert.match(card, /Notification 10 minutes before \+ Full-screen alert/);
+    assert.match(card, /Silent during: /);
     assert.match(card, /Every day/);
     assert.equal(await page.locator('.routine-time').count(), 5);
     await shot(page, 'routines');
@@ -640,6 +644,8 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForSelector('#rf-title');
     assert.equal(await page.inputValue('#rf-hours'), '2');
     assert.equal(await page.inputValue('#rf-minutes'), '30');
+    assert.equal(await page.inputValue('#rf-before'), '10');
+    assert.equal(await page.locator('#rf-skip input:checked').count(), 1, 'the chosen task is still chosen');
     await page.uncheck('#rf-notification');
     await page.uncheck('#rf-fullscreen');
     await page.click('.dialog-footer .btn.primary');

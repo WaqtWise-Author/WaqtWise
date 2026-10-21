@@ -11,6 +11,8 @@
 //     weekdays: [0..6],                  // the days the window STARTS on (0 = Sunday)
 //     alerts: { notification, fullScreen },
 //     randomNotes,                       // full-screen alert: show one of the notes (separated by ;) each time
+//     notifyBeforeMinutes,               // 0..120: the notification comes this many minutes before each time (the full-screen alert stays on the exact time)
+//     skipDuringTasks: [taskId, ...],    // the routine stays silent while one of these tasks is running (up to 20)
 //     quietAfterPrayerMinutes,           // 0 = off; otherwise a time that falls from a prayer's call until N minutes later rings when that period ends
 //     enabled,                           // false = paused
 //     completions: { '2026-10-19': [480, 630] },  // minutes after midnight (of the start day) already ticked
@@ -18,12 +20,15 @@
 
 const { t } = require('./i18n');
 const { MAX_TITLE_LENGTH, MAX_NOTES_LENGTH, MAX_ROUTINES } = require('./limits');
+const { getOccurrences } = require('./tasks');
 const { isValidKey, addDaysToKey, weekdayOfKey, splitKey, dateKey, formatTime12, formatDuration } = require('./time');
 
 const MIN_EVERY_MINUTES = 5;
 const MAX_EVERY_MINUTES = 24 * 60;
 const KEEP_COMPLETION_DAYS = 400;
 const MAX_QUIET_MINUTES = 60;
+const MAX_NOTIFY_BEFORE_MINUTES = 120;
+const MAX_SKIP_TASKS = 20;
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 function isPlainObject(v) {
@@ -115,6 +120,10 @@ function normalizeRoutine(raw, now = new Date()) {
       everyMinutes: every,
       weekdays,
       alerts: { notification, fullScreen },
+      notifyBeforeMinutes: Number.isInteger(raw.notifyBeforeMinutes) && raw.notifyBeforeMinutes >= 0 && raw.notifyBeforeMinutes <= MAX_NOTIFY_BEFORE_MINUTES ? raw.notifyBeforeMinutes : 0,
+      skipDuringTasks: Array.isArray(raw.skipDuringTasks)
+        ? Array.from(new Set(raw.skipDuringTasks.filter((x) => typeof x === 'string' && x !== ''))).slice(0, MAX_SKIP_TASKS)
+        : [],
       quietAfterPrayerMinutes: Number.isInteger(raw.quietAfterPrayerMinutes) && raw.quietAfterPrayerMinutes >= 0 && raw.quietAfterPrayerMinutes <= MAX_QUIET_MINUTES ? raw.quietAfterPrayerMinutes : 0,
       randomNotes: raw.randomNotes === true, // the full-screen alert shows one of the notes (separated by ;) at random
       enabled: raw.enabled !== false,
@@ -185,18 +194,50 @@ function ringTime(routine, at, provider) {
   return at;
 }
 
-// Like occurrencesInWindow, but by the moment each time rings (see ringTime): [{ ...occurrence, ringAt }].
-// A time moved past `toMs` is not in the result yet (it is held until its new moment).
-function ringsInWindow(routines, fromMs, toMs, provider) {
+// When the notification of a time comes: `notifyBeforeMinutes` before the time, but never earlier than the end of a
+// quiet period after a prayer and never later than the time's own ring (see ringTime). Returns a Date.
+function notifyTime(routine, at, provider) {
+  const ringAt = ringTime(routine, at, provider);
+  const lead = (routine.notifyBeforeMinutes || 0) * 60000;
+  if (!lead) return ringAt;
+  const early = ringTime(routine, new Date(at.getTime() - lead), provider);
+  return early.getTime() > ringAt.getTime() ? ringAt : early;
+}
+
+// Like occurrencesInWindow, but by the moment each time rings: [{ ...occurrence, ringAt, notifyAt }].
+// ringAt is when the full-screen alert comes (see ringTime), notifyAt when the notification comes (see notifyTime).
+// `by` says which of the two must fall in (fromMs, toMs]. A time moved past `toMs` is not in the result yet.
+function ringsInWindow(routines, fromMs, toMs, provider, by = 'ringAt') {
   const byId = new Map(routines.map((r) => [r.id, r]));
-  const lookback = MAX_QUIET_MINUTES * 60000;
+  const back = MAX_QUIET_MINUTES * 60000;
+  const ahead = by === 'notifyAt' ? MAX_NOTIFY_BEFORE_MINUTES * 60000 : 0;
   const result = [];
-  for (const o of occurrencesInWindow(routines, fromMs - lookback, toMs)) {
-    const ringAt = ringTime(byId.get(o.routineId), o.at, provider);
-    const ms = ringAt.getTime();
-    if (ms > fromMs && ms <= toMs) result.push({ ...o, ringAt });
+  for (const o of occurrencesInWindow(routines, fromMs - back, toMs + ahead)) {
+    const routine = byId.get(o.routineId);
+    const ringAt = ringTime(routine, o.at, provider);
+    const notifyAt = notifyTime(routine, o.at, provider);
+    const ms = (by === 'notifyAt' ? notifyAt : ringAt).getTime();
+    if (ms > fromMs && ms <= toMs) result.push({ ...o, ringAt, notifyAt });
   }
-  return result.sort((a, b) => a.ringAt - b.ringAt || (a.id < b.id ? -1 : 1));
+  return result.sort((a, b) => a[by] - b[by] || (a.id < b.id ? -1 : 1));
+}
+
+// Is one of the given tasks running at this moment? (A task that is already ticked as done is not "running".)
+// `tasks` are the planner's tasks, `options` the recurrence options (working days, first day of the week).
+function taskRunningAt(provider, tasks, ids, ms, options = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return false;
+  const wanted = new Set(ids);
+  const list = tasks.filter((task) => wanted.has(task.id));
+  if (list.length === 0) return false;
+  const context = { ...options, tasks };
+  const day = dateKey(new Date(ms));
+  for (const task of list) {
+    const lookback = Math.max(2, Math.ceil((Number(task.durationMinutes) || 0) / 1440) + 1);
+    for (const o of getOccurrences(provider, task, addDaysToKey(day, -lookback), addDaysToKey(day, 1), context)) {
+      if (!o.done && o.start.getTime() <= ms && ms < o.end.getTime()) return true;
+    }
+  }
+  return false;
 }
 
 // A new routine record with one time ticked (or un-ticked). The time must really be one of the routine's times.
@@ -230,8 +271,12 @@ module.exports = {
   occurrencesOn,
   occurrencesInWindow,
   ringTime,
+  notifyTime,
   ringsInWindow,
+  taskRunningAt,
   MAX_QUIET_MINUTES,
+  MAX_NOTIFY_BEFORE_MINUTES,
+  MAX_SKIP_TASKS,
   KEEP_COMPLETION_DAYS,
   setSlotDone,
   describeRoutine,

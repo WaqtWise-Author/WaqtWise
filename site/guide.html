@@ -152,7 +152,7 @@ if it is 1 a.m., you are still in the previous day's last zone, and the app show
 - <strong>Reminders</strong> and the <strong>Full-screen alert</strong> (see <a href="#8-reminders-and-full-screen-alerts">section 8</a>).</p>
 <p><strong>Changing a repeating task.</strong> The app asks whether the change applies to this occurrence only, this and the
 following ones, or all of them. Deleting works the same way. You can also skip one date without touching the rest.</p>
-<p><strong>Marking done.</strong> Click the circle on the task row. The app remembers when you ticked it; it is used for the
+<p><strong>Marking done.</strong> Click the circle on the task row. A task on a day that has not come yet (tomorrow or later) cannot be ticked: its circle is greyed out. Tasks later today can be ticked. The app remembers when you ticked it; it is used for the
 "done on time" statistics. Completed occurrences get no reminders.</p>
 <p><strong>Tasks that follow other tasks.</strong> If you delete a task that others follow, the app warns you; the followers keep
 the times they have now as fixed times. Marking a task done does not move the tasks after it.</p>
@@ -177,6 +177,8 @@ and choose <strong>Routines</strong>, then <strong>Add routine</strong>.</p>
 <li>Choose <strong>On these days</strong>: any days of the week you like.</li>
 <li>Choose how it reminds you: a <strong>notification</strong>, a <strong>full-screen alert</strong>, or <strong>both</strong>. The switches in
   Settings → Reminders still apply. Snooze and Mark as Done work on the full-screen alert as usual.</li>
+<li><strong>Notification comes before the time by</strong>: a number of minutes (0 = at the exact time, up to 120). Only the notification comes early; the full-screen alert always comes at the exact time.</li>
+<li><strong>Stay silent while these tasks are running</strong>: choose one or more of your tasks. A time that falls while one of them is running (from its start until its end) does not ring. A task that is already ticked as done is not counted as running.</li>
 <li><strong>Stay quiet during prayer</strong>: if a time falls from the call to prayer until the number of minutes you choose after it, it rings when that quiet period ends instead (a time that falls outside prayer rings at its own time).</li>
 <li>Tick <strong>Show one note at random</strong> to have the full-screen alert show a different note each time it rings: write several notes separated by <code>;</code>, and none repeats until all have been shown. (A notification never shows notes.)</li>
 <li>The page shows today's times for each routine; tick a time when you have done it. <strong>Pause</strong> stops a routine without

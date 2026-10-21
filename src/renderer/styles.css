@@ -791,3 +791,7 @@ html[dir="rtl"] .task-notes { text-align: right; }
 .routine-stat + .routine-stat { margin-top: 14px; }
 .routine-spark { display: flex; gap: 3px; margin-top: 6px; }
 .routine-spark i { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); display: block; }
+.check:disabled, .routine-time:disabled { opacity: 0.45; cursor: not-allowed; }
+.check:disabled:hover { border-color: var(--border); }
+.routine-time:disabled:hover { background: var(--surface); }
+.skip-list { max-height: 160px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; }

@@ -8,7 +8,7 @@ const core = require('../../core');
 const { copy } = require('./util');
 
 const {
-  normalizeFreeTask, MAX_FREE_TASKS, deriveZone, buildOccurrence, describeRule, normalizeRule, placementNote, reminderOffsets, formatTime12, formatDuration, dateKey, isValidKey, localCategoryName,
+  normalizeFreeTask, MAX_FREE_TASKS, currentPlanningDayKey, deriveZone, buildOccurrence, describeRule, normalizeRule, placementNote, reminderOffsets, formatTime12, formatDuration, dateKey, isValidKey, localCategoryName,
 } = core;
 
 class FreeTaskMethods {
@@ -137,6 +137,7 @@ class FreeTaskMethods {
       isRecurring: Boolean(task.recurrence),
       repeatSummary: task.recurrence ? describeRule(normalizeRule(task.recurrence)) : '',
       done: o.done,
+      future: deriveZone(this.provider(), o.start).planningDayKey > currentPlanningDayKey(this.provider(), this.now()),
       remindersOn: Boolean(o.reminders && o.reminders.enabled),
       reminderOffsets: o.reminders && o.reminders.enabled ? reminderOffsets(o.reminders, this.settings) : [],
       fullScreen: Boolean(o.reminders && o.reminders.fullScreen),

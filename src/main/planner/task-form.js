@@ -7,7 +7,7 @@ const { t, weekdayShort } = require('../../core/i18n');
 const core = require('../../core');
 
 const {
-  createTask, validateStart, validateRule, normalizeRule, describeRule, previewDates, buildOccurrence, resolveStart, computeEnd, placementNote, setCompletion, editTask, deleteOccurrences, dependencyProblem, findDependents, followsTransitively, freezeDependents, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, isValidKey,
+  createTask, validateStart, validateRule, normalizeRule, describeRule, previewDates, buildOccurrence, resolveStart, computeEnd, placementNote, setCompletion, deriveZone, currentPlanningDayKey, editTask, deleteOccurrences, dependencyProblem, findDependents, followsTransitively, freezeDependents, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, isValidKey,
 } = core;
 const EDIT_FIELDS = ['title', 'start', 'durationMinutes', 'notes', 'priority', 'categoryId', 'reminders'];
 const { copy, same } = require('./util');
@@ -262,9 +262,18 @@ class TaskFormMethods {
       }));
   }
 
+  // True when the occurrence belongs to a Planning Day after the current one.
+  isFutureOccurrence(task, key) {
+    const provider = this.provider();
+    const o = buildOccurrence(provider, task, key, false, this.recurrenceOptions());
+    return deriveZone(provider, o.start).planningDayKey > currentPlanningDayKey(provider, this.now());
+  }
+
   setDone({ taskId, dateKey: key, done }) {
     this.freezePast();
     const task = this.findTask(taskId);
+    // A task whose day has not come yet cannot be ticked as done (it can still be un-ticked).
+    if (done && this.isFutureOccurrence(task, key)) throw new Error(t('This task is on a day that has not come yet, so it cannot be marked as done.'));
     const updated = setCompletion(task, key, Boolean(done), this.now());
     this.data.tasks = this.data.tasks.map((t) => (t.id === taskId ? updated : t));
     this.refreshFrozenOccurrence(taskId, key);

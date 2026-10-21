@@ -55,6 +55,7 @@ class DayViewMethods {
       hasReminders: reminderOffsets(o.reminders, this.settings).length > 0,
       hasFullScreen: Boolean(o.reminders && o.reminders.fullScreen),
       done: o.done,
+      future: planningKey > currentPlanningDayKey(this.provider(), nowDate),
       overlaps: Boolean(o.overlaps),
       conflictWith: conflictTitles || [],
       inProgress: !o.done && o.start.getTime() <= nowDate.getTime() && nowDate.getTime() < o.end.getTime(),

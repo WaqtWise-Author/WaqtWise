@@ -8,7 +8,7 @@ const path = require('path');
 
 const { PlannerService, PUBLIC_METHODS } = require('../src/main/service');
 const { FileStore, MemoryStore } = require('../src/main/store');
-const { emptyData, defaultCategories, normalizeData, parseImport, buildExport } = require('../src/core');
+const { emptyData, defaultCategories, normalizeData, parseImport, buildExport, setCompletion } = require('../src/core');
 const { at, constantProvider } = require('./helpers');
 
 const DAY = '2026-10-04';
@@ -652,7 +652,8 @@ test('The week strip lists Sunday to Saturday with today marked and each day\'s 
   const { service } = makeService();
   const { taskId } = service.saveTask({ mode: 'create', form: form({ title: 'A', date: '2026-10-06' }) });
   service.saveTask({ mode: 'create', form: form({ title: 'B', date: '2026-10-06', start: fixed('09:00') }) });
-  service.setDone({ taskId, dateKey: '2026-10-06', done: true });
+  assert.throws(() => service.setDone({ taskId, dateKey: '2026-10-06', done: true }), /has not come yet/, 'a task on a later day cannot be ticked');
+  service.data.tasks = service.data.tasks.map((x) => (x.id === taskId ? setCompletion(x, '2026-10-06', true) : x));
   const { week } = service.getDay('2026-10-07');
   assert.deepEqual(week.days.map((d) => d.weekday), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   assert.deepEqual(week.days.map((d) => d.day), [4, 5, 6, 7, 8, 9, 10]);

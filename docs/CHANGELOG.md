@@ -11,6 +11,9 @@ New
 - **Statistics card for routines** (Statistics -> Manage -> *Routines*, on by default for new installs): for each routine the share of its times done in the chosen range, the current streak, the last days as small squares, and the time you miss most often. Only times that have passed count, on the days the routine applies, since the routine was made. Ticks are now kept for 400 days (were 60).
 - **Routine times left today** are shown next to *Routines* in the menu.
 - **Stay quiet during prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.
+- **Notification a few minutes early** (per routine): the notification can come 0 to 120 minutes before each time (exact minutes, no hours). The full-screen alert stays on the exact time.
+- **Silent while chosen tasks run** (per routine): choose tasks; a routine time that falls while one of them is running does not ring (a task already ticked as done does not count).
+- **No ticking the future**: a task on a day that has not come yet (tomorrow or later) can no longer be marked done (its circle is greyed out and the app refuses); a routine time that has not come yet cannot be ticked either. Taking a tick back always works.
 - Clicking a routine notification opens the Routines page. Notifications still have no buttons; Snooze, Mark as Done and Open routines are on the full-screen alert.
 
 Fixed

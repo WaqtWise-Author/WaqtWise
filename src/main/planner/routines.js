@@ -35,6 +35,8 @@ class RoutineMethods {
         summary: describeRoutine(r),
         timesPerDay: routineSlots(r).length,
         quietMinutes: r.quietAfterPrayerMinutes || 0,
+        notifyBefore: r.notifyBeforeMinutes || 0,
+        skipTitles: this.skipTaskTitles(r),
         dateKey: today,
         onToday: times.length > 0,
         times,
@@ -44,11 +46,17 @@ class RoutineMethods {
     });
   }
 
+  // The titles of the tasks a routine stays silent for (tasks that no longer exist are left out).
+  skipTaskTitles(r) {
+    const wanted = new Set(r.skipDuringTasks || []);
+    return this.data.tasks.filter((task) => wanted.has(task.id)).map((task) => task.title);
+  }
+
   // The form's starting values for a new routine.
   newRoutineDefaults() {
     return {
       title: '', notes: '', categoryId: null, from: '08:00', to: '20:00', hours: 2, minutes: 0,
-      weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, enabled: true,
+      weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, notifyBefore: 0, skipTasks: [], enabled: true,
     };
   }
 
@@ -57,7 +65,8 @@ class RoutineMethods {
     return {
       title: r.title, notes: r.notes, categoryId: r.categoryId, from: r.from, to: r.to,
       hours: Math.floor(r.everyMinutes / 60), minutes: r.everyMinutes % 60,
-      weekdays: r.weekdays.slice(), notification: r.alerts.notification, fullScreen: r.alerts.fullScreen, randomNotes: r.randomNotes === true, quietMinutes: r.quietAfterPrayerMinutes || 0, enabled: r.enabled,
+      weekdays: r.weekdays.slice(), notification: r.alerts.notification, fullScreen: r.alerts.fullScreen, randomNotes: r.randomNotes === true, quietMinutes: r.quietAfterPrayerMinutes || 0,
+      notifyBefore: r.notifyBeforeMinutes || 0, skipTasks: (r.skipDuringTasks || []).filter((id) => this.data.tasks.some((task) => task.id === id)), enabled: r.enabled,
     };
   }
 
@@ -78,6 +87,8 @@ class RoutineMethods {
       alerts: { notification: source.notification === true, fullScreen: source.fullScreen === true },
       randomNotes: source.randomNotes === true,
       quietAfterPrayerMinutes: Number.isInteger(source.quietMinutes) ? source.quietMinutes : 0,
+      notifyBeforeMinutes: Number.isInteger(source.notifyBefore) ? source.notifyBefore : 0,
+      skipDuringTasks: Array.isArray(source.skipTasks) ? source.skipTasks : [],
       enabled: source.enabled !== false,
     };
   }
@@ -90,6 +101,7 @@ class RoutineMethods {
     const base = old ? { id: old.id, completions: old.completions, createdAt: old.createdAt } : { id: this.newId(), completions: {} };
     const { routine, error } = normalizeRoutine(this.routineFromForm(form, base), this.now());
     if (error) throw new Error(error);
+    routine.skipDuringTasks = routine.skipDuringTasks.filter((tid) => this.data.tasks.some((task) => task.id === tid));
     if (routine.categoryId !== null && !this.categoryOf(routine.categoryId)) routine.categoryId = null;
     if (!routine.alerts.notification && !routine.alerts.fullScreen && routine.enabled) {
       throw new Error(t('Choose how this routine should remind you: a notification, a full-screen alert, or both'));
@@ -118,6 +130,11 @@ class RoutineMethods {
 
   setRoutineSlotDone({ id, dateKey: key, slot, done }) {
     const old = this.findRoutine(id);
+    // A time that has not come yet cannot be ticked (it can still be un-ticked).
+    if (done) {
+      const o = occurrencesOn(old, key).find((x) => x.slot === slot);
+      if (o && o.at.getTime() > this.now().getTime()) throw new Error(t('This time has not come yet, so it cannot be marked as done.'));
+    }
     this.data.routines = this.data.routines.map((x) => (x.id === id ? setSlotDone(old, key, slot, Boolean(done), this.now()) : x));
     this.changed();
     return { ok: true };

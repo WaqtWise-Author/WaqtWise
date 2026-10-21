@@ -124,7 +124,7 @@ Click **+ New task**. Fill in:
 **Changing a repeating task.** The app asks whether the change applies to this occurrence only, this and the
 following ones, or all of them. Deleting works the same way. You can also skip one date without touching the rest.
 
-**Marking done.** Click the circle on the task row. The app remembers when you ticked it; it is used for the
+**Marking done.** Click the circle on the task row. A task on a day that has not come yet (tomorrow or later) cannot be ticked: its circle is greyed out. Tasks later today can be ticked. The app remembers when you ticked it; it is used for the
 "done on time" statistics. Completed occurrences get no reminders.
 
 **Tasks that follow other tasks.** If you delete a task that others follow, the app warns you; the followers keep
@@ -155,6 +155,8 @@ and choose **Routines**, then **Add routine**.
 - Choose **On these days**: any days of the week you like.
 - Choose how it reminds you: a **notification**, a **full-screen alert**, or **both**. The switches in
   Settings → Reminders still apply. Snooze and Mark as Done work on the full-screen alert as usual.
+- **Notification comes before the time by**: a number of minutes (0 = at the exact time, up to 120). Only the notification comes early; the full-screen alert always comes at the exact time.
+- **Stay silent while these tasks are running**: choose one or more of your tasks. A time that falls while one of them is running (from its start until its end) does not ring. A task that is already ticked as done is not counted as running.
 - **Stay quiet during prayer**: if a time falls from the call to prayer until the number of minutes you choose after it, it rings when that quiet period ends instead (a time that falls outside prayer rings at its own time).
 - Tick **Show one note at random** to have the full-screen alert show a different note each time it rings: write several notes separated by `;`, and none repeats until all have been shown. (A notification never shows notes.)
 - The page shows today's times for each routine; tick a time when you have done it. **Pause** stops a routine without

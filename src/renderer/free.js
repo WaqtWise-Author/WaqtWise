@@ -235,7 +235,7 @@
         WW.toast(T('Task duplicated'));
         after();
       }) }),
-      h('button', { class: 'btn', type: 'button', id: 'details-done', text: d.done ? T('Mark as not done') : T('Mark as Done'), onclick: () => guard(async () => {
+      h('button', { class: 'btn', type: 'button', id: 'details-done', disabled: Boolean(d.future && !d.done), text: d.done ? T('Mark as not done') : T('Mark as Done'), onclick: () => guard(async () => {
         await WW.call('setDone', { taskId, dateKey, done: !d.done });
         if (!d.done && WW.state.settings) WW.sounds.play(WW.state.settings.doneSound, WW.state.settings.doneSoundVolume);
         after();

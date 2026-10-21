@@ -353,6 +353,7 @@ function startEngine() {
     getRoutines: () => service.getRoutineList(),
     getSettings: () => service.getReminderSettings(),
     getProvider: () => service.provider(),
+    getTasks: () => service.getTasks(),
     notify,
     showAlert: (items) => alertManager.show(service.buildRoutineAlertItems(items)),
     markDone: (id, key, slot, done) => service.markRoutineDone(id, key, slot, done),
