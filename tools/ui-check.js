@@ -17,7 +17,7 @@ const fontsMissing = !fs.existsSync(require('path').join(__dirname, '..', 'src',
 const realErrors = (list) => list.filter((e) => !(fontsMissing && /ERR_FILE_NOT_FOUND/.test(e)));
 
 let passed = 0;
-// Clicking a task shows its details; "Edit task" leads on to the edit form.
+// Clicking a task shows its details; "Edit Task" leads on to the edit form.
 async function openEdit(page, row) {
   await row.click();
   await page.waitForSelector('#details-edit');
@@ -106,7 +106,7 @@ async function setTime(page, hour, minute, ampm) {
     const add = (title, time, minutes, categoryId) => svc.saveTask({ mode: 'create', form: {
       title, start: { mode: 'fixed', time }, durationMinutes: minutes, date: '2026-10-10', recurrence: null,
       reminders: { enabled: false, offsets: [] }, priority: 'Medium', categoryId: categoryId || null, notes: '' } }).taskId;
-    const done = [add('Morning walk', '06:30', 30), add('Read Quran', '07:00', 20), add('Team call', '12:30', 45)];
+    const done = [add('Morning walk', '06:30', 30), add('Read Quran', '07:00', 20), add('Team Call', '12:30', 45)];
     add('Send the report', '14:00', 30); add('Gym', '16:00', 60); add('Study SQL', '20:00', 90);
     done.forEach((taskId) => svc.setDone({ taskId, dateKey: '2026-10-10', done: true }));
     const app = await openApp({ playwright, service: svc, executablePath, width: 1100, height: 700 });
@@ -189,7 +189,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.match(await study.textContent(), /8:00 AM/);
     assert.match(await study.textContent(), /1h 30m/);
     assert.doesNotMatch(await study.textContent(), /Repeats|Reminder/, 'repeat and reminder tags are not shown on rows');
-    assert.match(await study.textContent(), /Not done/);
+    assert.match(await study.textContent(), /Not Done/);
     assert.match(await taskRow(page, 'Night reading').textContent(), /next day/);
     assert.match(await page.locator('.zone.z2 .continues').first().textContent(), /Continues from/);
     assert.equal((await page.$$('.task .tag.warn')).length, 2, 'two overlapping tasks are flagged');
@@ -211,13 +211,13 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal((await page.$$('.zone.current')).length, 0);
     // The 2 AM task belongs to Oct 4, so Oct 5 does not show it
     assert.ok(!(await page.textContent('#view')).includes('Night reading'));
-    await page.click('button[aria-label="Previous week"]');
+    await page.click('button[aria-label="Previous Week"]');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('September 28'));
-    await page.click('button[aria-label="Next week"]');
+    await page.click('button[aria-label="Next Week"]');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
     await page.click('button:text-is("Today")');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 4'));
-    await page.fill('input[aria-label="Jump to date"]', '2026-10-09');
+    await page.fill('input[aria-label="Jump to Date"]', '2026-10-09');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 9'));
     assert.deepEqual(await rowTexts(page, 4), ['Gym'], 'the Friday repeat appears');
     await page.click('button:text-is("Today")');
@@ -229,9 +229,9 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#add-btn');
     await page.fill('#f-title', 'Dentist');
     await setTime(page, 3, 30, 'PM');
-    await page.fill('input[aria-label="Duration hours"]', '1');
-    await page.fill('input[aria-label="Duration minutes"]', '15');
-    await page.waitForFunction(() => document.querySelector('.readout[aria-label="End time"]').textContent === '4:45 PM');
+    await page.fill('input[aria-label="Duration Hours"]', '1');
+    await page.fill('input[aria-label="Duration Minutes"]', '15');
+    await page.waitForFunction(() => document.querySelector('.readout[aria-label="End Time"]').textContent === '4:45 PM');
     assert.equal(await page.textContent('.readout.zone-readout'), 'Asr → Maghrib');
     await shot(page, 'form-fixed');
     await page.click('.dialog-footer .btn.primary');
@@ -246,7 +246,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.fill('#f-title', 'Before Maghrib walk');
     await page.click('button:text-is("Relative to Prayer")');
     await page.selectOption('select[aria-label="Prayer"]', 'maghrib');
-    await page.selectOption('select[aria-label="Before or after"]', 'before');
+    await page.selectOption('select[aria-label="Before or After"]', 'before');
     await page.fill('input[aria-label="Minutes"]', '45');
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '5:15 PM');
     assert.equal(await page.textContent('.readout.zone-readout'), 'Asr → Maghrib');
@@ -270,8 +270,8 @@ async function setTime(page, hour, minute, ampm) {
   await step('validation: empty title and zero duration show friendly messages and nothing is saved', async () => {
     const before = service.data.tasks.length;
     await page.click('#add-btn');
-    await page.fill('input[aria-label="Duration minutes"]', '0');
-    await page.fill('input[aria-label="Duration hours"]', '0');
+    await page.fill('input[aria-label="Duration Minutes"]', '0');
+    await page.fill('input[aria-label="Duration Hours"]', '0');
     await page.click('.dialog-footer .btn.primary');
     await page.waitForSelector('.errors:not([hidden])');
     const text = await page.textContent('.errors');
@@ -285,8 +285,8 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#add-btn');
     await page.fill('#f-title', 'Class');
     await page.click('button:text-is("Repeats")');
-    await page.selectOption('select[aria-label="Repeat unit"]', 'weekly');
-    await page.fill('input[aria-label="Repeat every"]', '2');
+    await page.selectOption('select[aria-label="Repeat Unit"]', 'weekly');
+    await page.fill('input[aria-label="Repeat Every"]', '2');
     await page.click('.daytoggle button:text-is("Mon")');
     await page.click('.daytoggle button:text-is("Wed")');
     await page.waitForFunction(() => /Every 2 weeks on/.test(document.querySelector('.summary').textContent));
@@ -301,13 +301,13 @@ async function setTime(page, hour, minute, ampm) {
   await step('reminders: add and remove custom times; default hint when empty', async () => {
     await page.click('#add-btn');
     assert.match(await page.textContent('.hint >> text=/No custom times/'), /default reminder \(10 min before\)/);
-    await page.fill('input[aria-label="Reminder amount"]', '1');
-    await page.selectOption('select[aria-label="Reminder unit"]', '60');
-    await page.click('button:text-is("Add reminder")');
-    await page.click('button:text-is("At start time")');
-    assert.deepEqual(await page.$$eval('.chip > span', (els) => els.map((e) => e.textContent)), ['1 hour before', 'At start time']);
+    await page.fill('input[aria-label="Reminder Amount"]', '1');
+    await page.selectOption('select[aria-label="Reminder Unit"]', '60');
+    await page.click('button:text-is("Add Reminder")');
+    await page.click('button:text-is("At Start Time")');
+    assert.deepEqual(await page.$$eval('.chip > span', (els) => els.map((e) => e.textContent)), ['1 hour before', 'At Start Time']);
     await page.click('button[aria-label="Remove 1 hour before"]');
-    assert.deepEqual(await page.$$eval('.chip > span', (els) => els.map((e) => e.textContent)), ['At start time']);
+    assert.deepEqual(await page.$$eval('.chip > span', (els) => els.map((e) => e.textContent)), ['At Start Time']);
     await page.uncheck('#f-reminder');
     assert.equal((await page.$$('.chip')).length, 0);
     await page.keyboard.press('Escape');
@@ -321,7 +321,7 @@ async function setTime(page, hour, minute, ampm) {
     await shot(page, 'form-fullscreen-switch');
     await page.click('.dialog-footer .btn.primary');
     await page.waitForSelector('.dialog', { state: 'detached' });
-    assert.doesNotMatch(await taskRow(page, 'Alarm task').textContent(), /Full-screen alert/, 'not shown on the row');
+    assert.doesNotMatch(await taskRow(page, 'Alarm task').textContent(), /Full-Screen Alert/, 'not shown on the row');
     assert.equal(service.data.tasks.find((t) => t.title === 'Alarm task').reminders.fullScreen, true);
   });
 
@@ -330,17 +330,17 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#add-btn');
     await page.fill('#f-title', 'Warm-up');
     await page.click('button:text-is("Relative to Task")');
-    await page.selectOption('select[aria-label="Task to follow"]', { label: 'Study SQL (8:00 AM, 1h 30m, repeats)' });
+    await page.selectOption('select[aria-label="Task to Follow"]', { label: 'Study SQL (8:00 AM, 1h 30m, repeats)' });
     await page.fill('input[aria-label="Minutes"]', '15');
     const startText = () => page.$$eval('.readout', (els) => els[0].textContent);
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '9:45 AM');
     assert.equal(await page.textContent('.readout.zone-readout'), 'Fajr → Dhuhr');
-    await page.selectOption('select[aria-label="Start or end of that task"]', 'start');
+    await page.selectOption('select[aria-label="Start or End of That Task"]', 'start');
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '8:15 AM');
-    await page.selectOption('select[aria-label="Before or after"]', 'before');
+    await page.selectOption('select[aria-label="Before or After"]', 'before');
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '7:45 AM');
-    await page.selectOption('select[aria-label="Start or end of that task"]', 'end');
-    await page.selectOption('select[aria-label="Before or after"]', 'after');
+    await page.selectOption('select[aria-label="Start or End of That Task"]', 'end');
+    await page.selectOption('select[aria-label="Before or After"]', 'after');
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '9:45 AM');
     assert.equal(await startText(), '9:45 AM');
     assert.equal(await page.isHidden('.note.start-warning'), true, 'no warning when the other task is on that day');
@@ -355,7 +355,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#add-btn');
     await page.fill('#f-title', 'Gym buddy');
     await page.click('button:text-is("Relative to Task")');
-    await page.selectOption('select[aria-label="Task to follow"]', { label: 'Gym (6:30 PM, 1h 0m, repeats)' });
+    await page.selectOption('select[aria-label="Task to Follow"]', { label: 'Gym (6:30 PM, 1h 0m, repeats)' });
     await page.waitForSelector('.note.start-warning:not([hidden])');
     assert.match(await page.textContent('.note.start-warning'), /not on this day/);
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '9:00 AM');
@@ -371,10 +371,10 @@ async function setTime(page, hour, minute, ampm) {
   await step('a task cannot be offered itself, and a missing choice is reported', async () => {
     await openEdit(page, taskRow(page, 'Warm-up'));
     await page.waitForSelector('.dialog');
-    const options = await page.$$eval('select[aria-label="Task to follow"] option', (els) => els.map((e) => e.textContent));
+    const options = await page.$$eval('select[aria-label="Task to Follow"] option', (els) => els.map((e) => e.textContent));
     assert.ok(options.some((o) => o.startsWith('Study SQL')));
     assert.ok(!options.some((o) => o.startsWith('Warm-up')), 'not itself');
-    await page.selectOption('select[aria-label="Task to follow"]', '');
+    await page.selectOption('select[aria-label="Task to Follow"]', '');
     await page.click('.dialog-footer .btn.primary');
     await page.waitForSelector('.errors:not([hidden])');
     assert.match(await page.textContent('.errors'), /Choose the task/);
@@ -391,7 +391,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#add-btn');
     await page.fill('#f-title', 'Walk');
     await page.click('button:text-is("Relative to Task")');
-    await page.selectOption('select[aria-label="Task to follow"]', { label: 'Breakfast (6:00 AM, 30m)' });
+    await page.selectOption('select[aria-label="Task to Follow"]', { label: 'Breakfast (6:00 AM, 30m)' });
     await page.fill('input[aria-label="Minutes"]', '10');
     await page.waitForFunction(() => document.querySelectorAll('.readout')[0].textContent === '6:40 AM');
     await page.click('.dialog-footer .btn.primary');
@@ -466,7 +466,7 @@ async function setTime(page, hour, minute, ampm) {
   await step('changing the repeat pattern disables "This occurrence only"', async () => {
     await openEdit(page, taskRow(page, 'Class').first());
     await page.waitForSelector('.dialog');
-    await page.fill('input[aria-label="Repeat every"]', '3');
+    await page.fill('input[aria-label="Repeat Every"]', '3');
     await page.click('.dialog-footer .btn.primary');
     await page.waitForSelector('text=Save which occurrences');
     assert.equal(await page.isDisabled('input[name="scope"] >> nth=0'), true);
@@ -545,7 +545,7 @@ async function setTime(page, hour, minute, ampm) {
   await step('side menu: Daily View, Statistics, Settings, Export data, Import data; Esc closes it', async () => {
     await page.click('#menu-btn');
     const items = await page.$$eval('#drawer .drawer-item', (els) => els.map((e) => e.textContent.trim()));
-    assert.deepEqual(items, ['Daily View', 'Free To-Do list', 'Routines', 'Statistics', 'Settings', 'Export data…', 'Import data…']);
+    assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Statistics', 'Settings', 'Export Data…', 'Import Data…']);
     await shot(page, 'drawer');
     await page.keyboard.press('Escape');
     assert.equal(await page.isHidden('#drawer'), true);
@@ -553,9 +553,9 @@ async function setTime(page, hour, minute, ampm) {
   console.log('Free To-Do list and task details');
   await step('the Free To-Do list: empty at first, quick add with Enter, add with details', async () => {
     await page.click('#menu-btn');
-    await page.click('#drawer .drawer-item:has-text("Free To-Do list")');
+    await page.click('#drawer .drawer-item:has-text("Free To-Do List")');
     await page.waitForSelector('#free-empty');
-    assert.equal(await page.textContent('.day-title'), 'Free To-Do list');
+    assert.equal(await page.textContent('.day-title'), 'Free To-Do List');
     await page.fill('#free-quick', 'Buy paint');
     await page.press('#free-quick', 'Enter');
     await page.waitForSelector('.free-row:has-text("Buy paint")');
@@ -625,21 +625,21 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForSelector('.routine-card:has-text("Drink water")');
     const card = await page.textContent('.routine-card');
     assert.match(card, /Every 2h 30m, 8:00 AM – 8:00 PM/);
-    assert.match(card, /Notification 10 minutes before \+ Full-screen alert/);
-    assert.match(card, /Silent during: /);
-    assert.match(card, /Every day/);
+    assert.match(card, /Notification 10 minutes before \+ Full-Screen Alert/);
+    assert.match(card, /Silent During/);
+    assert.match(card, /Every Day/);
     assert.equal(await page.locator('.routine-time').count(), 5);
     await shot(page, 'routines');
   });
   await step('Routines: tick a time, pause, resume, edit, delete', async () => {
-    await page.click('.routine-time >> nth=0');
-    await page.waitForSelector('.routine-time.on');
-    assert.match(await page.textContent('.routine-today-label'), /Today: 1 of 5 done/);
+    await page.click('.rt-dot.missed >> nth=0');
+    await page.waitForSelector('.rt-dot.done');
+    assert.match(await page.textContent(".routine-today-label"), /Today: 1 of 5 Done/);
     await page.click('.routine-card .btn:text-is("Pause")');
     await page.waitForSelector('.routine-card.paused');
     assert.equal(await page.locator('.routine-time').count(), 0);
     await page.click('.routine-card .btn:text-is("Resume")');
-    await page.waitForSelector('.routine-time');
+    await page.waitForSelector('.rt-dot');
     await page.click('.routine-card .btn:text-is("Edit")');
     await page.waitForSelector('#rf-title');
     assert.equal(await page.inputValue('#rf-hours'), '2');
@@ -680,7 +680,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.keyboard.press('Escape');
     await page.waitForSelector('.dialog', { state: 'detached' });
     await page.click('#menu-btn');
-    await page.click('#drawer .drawer-item:has-text("Free To-Do list")');
+    await page.click('#drawer .drawer-item:has-text("Free To-Do List")');
     await page.waitForSelector('#free-empty');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Daily View")');
@@ -701,7 +701,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.keyboard.press('Escape');
     await page.waitForSelector('.dialog', { state: 'detached' });
   });
-  await step('the form offers "Show one note at random" only when the full-screen alert is on, and keeps it', async () => {
+  await step('the form offers "Show One Note at Random" only when the full-screen alert is on, and keeps it', async () => {
     await page.click('#add-btn');
     await page.waitForSelector('#f-title');
     await page.fill('#f-title', 'Random notes task');
@@ -715,7 +715,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForSelector('.dialog', { state: 'detached' });
     await taskRow(page, 'Random notes task').click();
     await page.waitForSelector('#details-edit');
-    assert.match(await page.textContent('.dialog'), /One note at random/);
+    assert.match(await page.textContent('.dialog'), /One Note at Random/);
     await page.click('#details-edit');
     await page.waitForSelector('#f-random-notes');
     assert.equal(await page.isChecked('#f-random-notes'), true);
@@ -749,19 +749,19 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForSelector('.settings-section');
   });
   await step('first day of the week: the day cards start from the chosen day', async () => {
-    assert.equal(await page.inputValue('select[aria-label="First day of the week"]'), '0');
-    await page.selectOption('select[aria-label="First day of the week"]', '6');
+    assert.equal(await page.inputValue('select[aria-label="First Day of the Week"]'), '0');
+    await page.selectOption('select[aria-label="First Day of the Week"]', '6');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Daily View")');
     await page.waitForSelector('.day-chip');
     assert.deepEqual(await page.$$eval('.day-chip .day-chip-wd', (els) => els.map((e) => e.textContent)), ['SAT', 'TODAY', 'MON', 'TUE', 'WED', 'THU', 'FRI']);
-    await page.click('button[aria-label="Next week"]');
+    await page.click('button[aria-label="Next Week"]');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 11'));
     assert.equal(await page.locator('.day-chip.on .day-chip-wd').textContent(), 'SUN');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Settings")');
     await page.waitForSelector('.settings-section');
-    await page.selectOption('select[aria-label="First day of the week"]', '0');
+    await page.selectOption('select[aria-label="First Day of the Week"]', '0');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Daily View")');
     await page.waitForSelector('.day-chip');
@@ -783,24 +783,24 @@ async function setTime(page, hour, minute, ampm) {
   console.log('Settings');
   await step('every section is there', async () => {
     const titles = await page.$$eval('.settings-section h2', (els) => els.map((e) => e.textContent));
-    assert.deepEqual(titles, ['اللغة / Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Daily View', 'Full-screen reminder', 'Sounds', 'Categories', 'Data']);
+    assert.deepEqual(titles, ['اللغة / Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Daily View', 'Full-Screen Reminder', 'Sounds', 'Categories', 'Data']);
     await shot(page, 'settings');
   });
   await step('a custom city can be typed in (name, latitude, longitude, time zone) and the list can be used again', async () => {
     await page.selectOption('select[aria-label="City"]', '__custom__');
     await page.waitForSelector('.custom-city');
-    await page.fill('input[aria-label="City name"]', 'Riyadh');
+    await page.fill('input[aria-label="City Name"]', 'Riyadh');
     await page.fill('input[aria-label="Latitude"]', '24.7136');
     await page.fill('input[aria-label="Longitude"]', '46.6753');
-    await page.fill('input[aria-label="Time zone"]', 'Asia/Riyadh');
-    await page.click('.custom-city button:has-text("Save city")');
-    await page.waitForFunction(() => document.querySelector('.toast') && /City saved/.test(document.querySelector('.toast').textContent));
+    await page.fill('input[aria-label="Time Zone"]', 'Asia/Riyadh');
+    await page.click('.custom-city button:has-text("Save City")');
+    await page.waitForFunction(() => document.querySelector('.toast') && /City [Ss]aved/.test(document.querySelector('.toast').textContent));
     assert.equal(service.getSettings().useCustomCity, true);
     assert.equal(service.getSettings().customCity.timeZone, 'Asia/Riyadh');
     await shot(page, 'settings-custom-city');
     // wrong values are refused with a message
-    await page.fill('input[aria-label="Time zone"]', 'Mars/Base');
-    await page.click('.custom-city button:has-text("Save city")');
+    await page.fill('input[aria-label="Time Zone"]', 'Mars/Base');
+    await page.click('.custom-city button:has-text("Save City")');
     await page.waitForSelector('.toast.error');
     assert.equal(service.getSettings().customCity.timeZone, 'Asia/Riyadh');
     await page.waitForFunction(() => !document.querySelector('.toast.error'), null, { timeout: 15000 });
@@ -818,7 +818,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForFunction(() => document.querySelector('.city-results .city-result .city-name').textContent === 'Riyadh' && document.querySelectorAll('.city-results .city-result').length === 2);
     await shot(page, 'settings-world-city');
     await page.click('.city-results .city-result >> nth=0');
-    await page.waitForFunction(() => document.querySelector('.toast') && /City saved/.test(document.querySelector('.toast').textContent));
+    await page.waitForFunction(() => document.querySelector('.toast') && /City [Ss]aved/.test(document.querySelector('.toast').textContent));
     const saved = service.getSettings();
     assert.equal(saved.customCity.name, 'Riyadh');
     assert.equal(saved.customCity.timeZone, 'Asia/Riyadh');
@@ -839,9 +839,9 @@ async function setTime(page, hour, minute, ampm) {
   });
   await step('Restore from backup lists the saved copies and closes with Esc', async () => {
     service.store.backupNow('before-import');
-    await page.click('button:has-text("Restore from backup")');
+    await page.click('button:has-text("Restore from Backup")');
     await page.waitForSelector('.backup-row');
-    assert.match(await page.textContent('.backup-row'), /Before an import/);
+    assert.match(await page.textContent('.backup-row'), /Before an Import/);
     assert.equal(await page.isVisible('.backup-row button:has-text("Restore")'), true);
     await shot(page, 'restore-backup');
     await page.keyboard.press('Escape');
@@ -855,8 +855,8 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(service.getSettings().adjustments.asr, 5);
   });
   await step('invalid value shows an error and is not kept', async () => {
-    await page.fill('input[aria-label="Snooze minutes"]', '0');
-    await page.press('input[aria-label="Snooze minutes"]', 'Enter');
+    await page.fill('input[aria-label="Snooze Minutes"]', '0');
+    await page.press('input[aria-label="Snooze Minutes"]', 'Enter');
     await page.waitForSelector('.toast.error');
     assert.match(await page.textContent('.toast.error'), /Snooze/);
     assert.equal(service.getSettings().snoozeMinutes, 5);
@@ -876,16 +876,16 @@ async function setTime(page, hour, minute, ampm) {
       window.__played = [];
       window.WW.sounds.play = (id, volume) => { window.__played.push([id, volume]); return { stop() {} }; };
     });
-    await page.selectOption('select[aria-label="Task done sound"]', 'ding');
+    await page.selectOption('select[aria-label="Task Done sound"]', 'ding');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().doneSound, 'ding');
-    await page.fill('input[aria-label="Task done volume"]', '35');
-    await page.dispatchEvent('input[aria-label="Task done volume"]', 'change');
+    await page.fill('input[aria-label="Task Done volume"]', '35');
+    await page.dispatchEvent('input[aria-label="Task Done volume"]', 'change');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().doneSoundVolume, 35);
     await page.click('button[aria-label="Preview the task done sound"]');
     assert.deepEqual(await page.evaluate(() => window.__played), [['ding', 35]]);
-    await page.selectOption('select[aria-label="Full-screen alert sound"]', 'rising');
+    await page.selectOption('select[aria-label="Full-Screen Alert sound"]', 'rising');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertSound, 'rising');
     await page.click('label:has-text("Keep repeating until a button is pressed") input');
@@ -894,8 +894,8 @@ async function setTime(page, hour, minute, ampm) {
     await shot(page, 'settings-sounds');
   });
   await step('toggles save: sound, zone-start, start with Windows', async () => {
-    await page.click('label:has-text("Play a sound") input');
-    await page.click('label:has-text("Notify when each Zone begins") input');
+    await page.click('label:has-text("Play a Sound") input');
+    await page.click('label:has-text("Notify When Each Zone Begins") input');
     await page.click('label:has-text("Start WaqtWise when Windows starts") input');
     await page.waitForTimeout(200);
     const s = service.getSettings();
@@ -909,7 +909,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.deepEqual(service.getSettings().workingDays, [0, 1, 2, 3, 4, 5]);
   });
   await step('categories: add, rename, delete', async () => {
-    await page.fill('input[aria-label="New category name"]', 'Family');
+    await page.fill('input[aria-label="New Category Name"]', 'Family');
     await page.click('.cat-row .btn:text-is("Add")');
     await page.waitForSelector('input[aria-label="Name of Family"]');
     await page.fill('input[aria-label="Name of Family"]', 'Home');
@@ -922,12 +922,12 @@ async function setTime(page, hour, minute, ampm) {
     assert.ok(!service.data.categories.some((c) => c.name === 'Home'));
   });
   await step('export button asks the app to export', async () => {
-    await page.click('.settings-section button:text-is("Export data…")');
+    await page.click('.settings-section button:text-is("Export Data…")');
     await page.waitForTimeout(150);
     assert.deepEqual(await page.evaluate(() => window.__exports), ['export']);
   });
-  await step('the "Send a test notification" button asks the app to send one', async () => {
-    await page.click('button:text-is("Send a test notification")');
+  await step('the "Send a Test Notification" button asks the app to send one', async () => {
+    await page.click('button:text-is("Send a Test Notification")');
     await page.waitForSelector('.toast:has-text("Test notification sent")');
     assert.deepEqual(await page.evaluate(() => window.__exports), ['export', 'test-notification']);
   });
@@ -938,21 +938,21 @@ async function setTime(page, hour, minute, ampm) {
       el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
     }, value);
 
-    await setColor('Background color', '#336699');
+    await setColor('Background Color', '#336699');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertAppearance.backgroundColor, '#336699');
     assert.equal(await preview((el) => el.querySelector('.alert-stage').style.getPropertyValue('--a-bg')), '#336699');
 
-    await setColor('Text color', '#ffeecc');
-    await setColor('Task name color', '#00ff00');
-    await setSlider('Task name size', 120);
+    await setColor('Text Color', '#ffeecc');
+    await setColor('Task Name Color', '#00ff00');
+    await setSlider('Task Name Size', 120);
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertAppearance.name.size, 120);
     assert.equal(service.getSettings().alertAppearance.name.color, '#00ff00');
     assert.equal(await preview((el) => el.querySelector('.alert-name').style.fontSize), '120px');
     assert.equal(await preview((el) => el.querySelector('.alert-name').style.color), 'rgb(0, 255, 0)');
 
-    await setSlider('Notes size', 50);
+    await setSlider('Notes Size', 50);
     await page.click('label:has-text("CAPITALS") input');
     await page.click('label:has-text("Italic") >> nth=0');
     await page.selectOption('select[aria-label="Font"]', 'Georgia');
@@ -964,7 +964,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.match(await preview((el) => el.querySelector('.alert-stage').style.getPropertyValue('--a-font')), /Georgia/);
     assert.equal(await preview((el) => el.querySelector('.alert-stage').style.getPropertyValue('--a-align')), 'left');
 
-    await page.click('label:has-text("Show the notes") input');
+    await page.click('label:has-text("Show the Notes") input');
     await page.click('input[aria-label="Zone"]');
     await page.waitForTimeout(150);
     assert.equal(await preview((el) => el.querySelectorAll('.alert-notes').length), 0, 'notes hidden');
@@ -975,11 +975,11 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('input[aria-label="Snooze"]');
     await page.click('input[aria-label="Mark as Done"]');
     await page.waitForFunction(() => document.querySelectorAll('.alert-preview .alert-actions button').length === 2);
-    assert.deepEqual(await previewButtons(), ['dismiss', 'open'], 'the preview follows the choice; "Got it" stays');
+    assert.deepEqual(await previewButtons(), ['dismiss', 'open'], 'the preview follows the choice; "Got It" stays');
     assert.deepEqual(service.getSettings().alertAppearance.buttons, { snooze: false, open: true, done: false });
-    assert.equal(await page.locator('input[aria-label="Got it"]').count(), 0, 'no switch for "Got it"');
+    assert.equal(await page.locator('input[aria-label="Got It"]').count(), 0, 'no switch for "Got It"');
 
-    await page.click('button:text-is("High contrast")');
+    await page.click('button:text-is("High Contrast")');
     await page.waitForFunction(() => document.querySelector('.alert-preview .alert-stage').style.getPropertyValue('--a-bg') === '#000000');
     const hc = service.getSettings().alertAppearance;
     assert.deepEqual([hc.backgroundColor, hc.name.uppercase, hc.name.size, hc.notes.show, hc.show.zone], ['#000000', true, 96, true, true]);
@@ -988,17 +988,17 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await page.$$eval('.settings-nav-btn', (els) => els.length), await page.$$eval('.settings-section', (els) => els.length), 'the index has one button for each section');
     await page.click('.settings-nav-btn:text-is("Data")');
     await page.waitForFunction(() => document.querySelector('#settings-9').getBoundingClientRect().top < window.innerHeight - 100);
-    assert.equal(await page.textContent('label.onoff-row:has-text("Full-screen reminders") .onoff-state'), 'On');
-    await page.click('label:has-text("Full-screen reminders") input');
-    assert.equal(await page.textContent('label.onoff-row:has-text("Full-screen reminders") .onoff-state'), 'Off');
+    assert.equal(await page.textContent('label.onoff-row:has-text("Full-Screen Reminders") .onoff-state'), 'On');
+    await page.click('label:has-text("Full-Screen Reminders") input');
+    assert.equal(await page.textContent('label.onoff-row:has-text("Full-Screen Reminders") .onoff-state'), 'Off');
     await page.click('label:has-text("Switch the full-screen alert on for new tasks") input');
     await page.selectOption('select[aria-label="Screens"]', 'main');
     await page.waitForTimeout(200);
     const st = service.getSettings();
     assert.deepEqual([st.fullScreenAlerts, st.fullScreenDefaultForNewTasks, st.alertScreens], [false, true, 'main']);
-    await page.click('label:has-text("Full-screen reminders") input'); // back on
+    await page.click('label:has-text("Full-Screen Reminders") input'); // back on
 
-    await page.click('button:text-is("Preview full screen")');
+    await page.click('button:text-is("Preview Full Screen")');
     await page.waitForTimeout(150);
     assert.ok((await page.evaluate(() => window.__exports)).includes('preview-alert'));
   });
@@ -1026,7 +1026,7 @@ async function setTime(page, hour, minute, ampm) {
     const p = alert.page;
     await p.evaluate(([st]) => window.__render(st), [{ items: [item('a1', 'Team meeting'), item('a2', 'Second task')], appearance: base, snoozeMinutes: 7, guardMs: 600 }]);
     const text = await p.textContent('body');
-    for (const part of ['Starts now', 'Team meeting', 'Bring the red folder', 'Call the office first', '12:00 PM', '45m', 'Dhuhr → Asr', 'Work', 'High priority', '1 more task starting now', 'Snooze 7 min']) {
+    for (const part of ['Starts Now', 'Team meeting', 'Bring the red folder', 'Call the office first', '12:00 PM', '45m', 'Dhuhr → Asr', 'Work', 'High priority', '1 more task starting now', 'Snooze 7 min']) {
       assert.ok(text.includes(part), `shows "${part}"`);
     }
     assert.equal(await p.$$eval('.alert-actions button', (els) => els.every((b) => b.disabled)), true, 'buttons are locked at first');
@@ -1035,7 +1035,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.deepEqual(await p.evaluate(() => window.__actions), [], 'nothing was pressed through');
 
     await p.waitForFunction(() => document.querySelector('.alert-actions button').disabled === false, null, { timeout: 3000 });
-    assert.equal(await p.evaluate(() => document.activeElement.textContent), 'Got it', '"Got it" is ready');
+    assert.equal(await p.evaluate(() => document.activeElement.textContent), 'Got It', '"Got It" is ready');
     await shot(p, 'alert-ready');
     await p.click('button[data-action="snooze"]');
     await p.click('button[data-action="done"]');
@@ -1055,8 +1055,8 @@ async function setTime(page, hour, minute, ampm) {
       endLabel: '', durationLabel: '', zoneName: '', zoneIndex: 0, categoryName: 'Health', categoryColor: '#ef4444', priority: '', snoozed: false };
     await p.evaluate(([st]) => window.__render(st), [{ items: [item], appearance: base, snoozeMinutes: 5, guardMs: 0 }]);
     const text = await p.textContent('body');
-    for (const part of ['Routine time', 'Drink water', 'A full glass', '10:30 AM', 'Health', 'Open routines', 'Snooze 5 min']) assert.ok(text.includes(part), `shows "${part}"`);
-    for (const part of ['Starts now', 'Open task', 'priority', '–']) assert.ok(!text.includes(part), `does not show "${part}"`);
+    for (const part of ['Routine Time', 'Drink water', 'A full glass', '10:30 AM', 'Health', 'Open Routines', 'Snooze 5 min']) assert.ok(text.includes(part), `shows "${part}"`);
+    for (const part of ['Starts Now', 'Open Task', 'priority', '–']) assert.ok(!text.includes(part), `does not show "${part}"`);
     assert.equal(await p.locator('.chip').count(), 2, 'only the time and the category');
     await alert.browser.close();
   });
@@ -1143,13 +1143,13 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await css('.alert-label', 'color'), 'rgb(255, 0, 170)');
     const text = await p.textContent('.alert-info');
     assert.ok(text.includes('9:00 AM') && !text.includes('30m') && !text.includes('Zone') && !text.includes('Home') && !text.includes('priority'));
-    assert.match(await p.textContent('.alert-label'), /Snoozed reminder/i);
+    assert.match(await p.textContent('.alert-label'), /Snoozed Reminder/i);
     // notes switched off
     look.notes.show = false;
     await p.evaluate(([st]) => window.__render(st), [{ items: [{ id: 'y', taskId: 't', dateKey: 'd', title: 'No notes shown', notes: 'hidden', startLabel: '1:00 PM', endLabel: '2:00 PM',
       durationLabel: '1h 0m', zoneName: 'Dhuhr → Asr', zoneIndex: 2, categoryName: '', categoryColor: '', priority: 'Low', snoozed: false }], appearance: look, snoozeMinutes: 5, guardMs: 0 }]);
     assert.equal((await p.$$('.alert-notes')).length, 0);
-    // buttons: all four by default, "Got it" always stays
+    // buttons: all four by default, "Got It" always stays
     const buttonsOf = () => p.$$eval('.alert-actions button', (els) => els.map((e) => e.dataset.action));
     assert.deepEqual(await buttonsOf(), ['dismiss', 'snooze', 'open', 'done']);
     look.buttons = { snooze: false, open: true, done: false };
@@ -1196,17 +1196,17 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await barCount(), 7, 'one bar for each day of the week so far');
     assert.equal(await sp.$$eval('.trend-body .tr-dot', (els) => els.length), 7);
     assert.ok(await sp.$('.tr-compare'), 'last week is drawn as a dashed line');
-    assert.match(await sp.textContent('.trend-card .stats-legend'), /This week.*Last week/);
+    assert.match(await sp.textContent('.trend-card .stats-legend'), /This Week.*Last Week/);
     assert.equal(await sp.$$eval('.heat-day', (els) => els.length), 31, 'the month grid, with this week marked');
     assert.equal(await sp.$$eval('.heat-day.sel', (els) => els.length), 7);
-    assert.equal(await sp.isDisabled('button[aria-label="Next period"]'), true, 'cannot go past this week');
+    assert.equal(await sp.isDisabled('button[aria-label="Next Period"]'), true, 'cannot go past this week');
     await shot(sp, 'stats-week');
     // narrow window: the arrows sit side by side under the title
     await sp.setViewportSize({ width: 640, height: 800 });
     const box = async (selector) => sp.locator(selector).boundingBox();
     const title = await box('.stats-head .day-title');
-    const prev = await box('button[aria-label="Previous period"]');
-    const next = await box('button[aria-label="Next period"]');
+    const prev = await box('button[aria-label="Previous Period"]');
+    const next = await box('button[aria-label="Next Period"]');
     assert.equal(Math.round(prev.y), Math.round(next.y), 'the two arrows are on the same row');
     assert.ok(prev.y > title.y + title.height - 2, 'the arrows are under the title');
     assert.ok(next.x > prev.x + prev.width - 1, 'the next arrow is to the right of the previous one');
@@ -1259,7 +1259,7 @@ async function setTime(page, hour, minute, ampm) {
     await sp.click('.heat-day[data-key="2026-10-03"]');
     await sp.waitForFunction(() => document.querySelector('.stats-seg button.on').dataset.range === 'day');
     assert.match(await label(), /Sat, Oct 3, 2026$/);
-    await sp.click('button[aria-label="Next period"]');
+    await sp.click('button[aria-label="Next Period"]');
     await sp.waitForFunction(() => /Oct 4, 2026/.test(document.querySelector('#stats-range-label').textContent));
 
     // Needs attention lists what is overdue and opens the task.
@@ -1292,21 +1292,21 @@ async function setTime(page, hour, minute, ampm) {
     await mp.waitForSelector('.manage-row');
     assert.equal((await mp.$$('.manage-row')).length, 15);
     await mp.click('button[aria-label="Remove Needs attention"]');
-    await mp.click('button[aria-label="Remove By zone"]');
-    await mp.click('button[aria-label="Remove Current streak"]');
+    await mp.click('button[aria-label="Remove By Zone"]');
+    await mp.click('button[aria-label="Remove Current Streak"]');
     await mp.waitForFunction(() => document.querySelectorAll('.stats-card.kpi').length === 4);
     assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
     assert.equal((await sections()).includes('Needs attention'), false);
-    assert.equal((await sections()).includes('By zone'), false);
+    assert.equal((await sections()).includes('By Zone'), false);
     assert.match(await mp.textContent('.manage-title >> nth=1'), /Available to add \(3\)/);
     await shot(mp, 'stats-manage');
 
-    await mp.click('button[aria-label="Move Completion trend up"]');
-    await mp.waitForFunction(() => document.querySelector('.stats-grid > section:nth-child(2)').getAttribute('aria-label') === 'Completion trend');
-    assert.deepEqual(await sections(), ['Done versus planned', 'Completion trend', 'Calendar heat map', 'By category', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time', 'Routines']);
+    await mp.click('button[aria-label="Move Completion Trend up"]');
+    await mp.waitForFunction(() => document.querySelector('.stats-grid > section:nth-child(2)').getAttribute('aria-label') === 'Completion Trend');
+    assert.deepEqual(await sections(), ['Done Versus Planned', 'Completion Trend', 'Calendar Heat Map', 'By Category', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Routines']);
     assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
-    await mp.click('button[aria-label="Add By zone"]');
-    await mp.waitForFunction(() => document.querySelector('.stats-grid > section:last-child').getAttribute('aria-label') === 'By zone');
+    await mp.click('button[aria-label="Add By Zone"]');
+    await mp.waitForFunction(() => document.querySelector('.stats-grid > section:last-child').getAttribute('aria-label') === 'By Zone');
 
     // The choice survives opening the screen again.
     await mp.keyboard.press('Escape');
@@ -1316,12 +1316,12 @@ async function setTime(page, hour, minute, ampm) {
     await mp.click('#menu-btn');
     await mp.click('.drawer-item:has-text("Statistics")');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).includes('By zone'), true);
+    assert.equal((await sections()).includes('By Zone'), true);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 4);
 
     // Removing everything leaves a hint, and the reset button brings it all back.
     await mp.click('#stats-manage');
-    for (const id of ['Done vs planned', 'Completion rate', 'Tasks done', 'Planned time', 'Calendar heat map', 'Completion trend', 'By category', 'By zone', 'Done on time', 'Most late tasks', 'Lateness by zone and category', 'Lateness over time', 'Routines']) {
+    for (const id of ['Done vs Planned', 'Completion Rate', 'Tasks Done', 'Planned Time', 'Calendar Heat Map', 'Completion Trend', 'By Category', 'By Zone', 'Done on Time', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Routines']) {
       await mp.click(`button[aria-label="Remove ${id}"]`);
     }
     await mp.waitForSelector('#stats-nothing');
@@ -1333,7 +1333,7 @@ async function setTime(page, hour, minute, ampm) {
     await m.browser.close();
   });
 
-  await step('Routines: the menu counts the times left today, the form has "Stay quiet during prayer", and Statistics has a Routines card', async () => {
+  await step('Routines: the form has "Stay Quiet During Prayer", and Statistics has a Routines card', async () => {
     const { at } = require('./ui-harness');
     const svc = createService({ now: at('2026-10-10', '15:20') });
     svc.saveRoutine({ form: { title: 'Drink water', from: '08:00', to: '20:00', hours: 2, minutes: 30, weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, quietMinutes: 15 } });
@@ -1341,10 +1341,10 @@ async function setTime(page, hour, minute, ampm) {
     const m = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 1000 });
     const mp = m.page;
     await mp.click('#menu-btn');
-    assert.match(await mp.textContent('.drawer-item:has-text("Routines")'), /Routines \(2\)/, '3:30 PM and 6:00 PM are left');
+    assert.equal((await mp.textContent('.drawer-item:has-text("Routines")')).trim(), 'Routines', 'no counter next to Routines');
     await mp.click('.drawer-item:has-text("Routines")');
     await mp.waitForSelector('.routine-card');
-    assert.match(await mp.textContent('.routine-card'), /Quiet during prayer/);
+    assert.match(await mp.textContent('.routine-card'), /Quiet During Prayer/);
     await mp.click('.routine-card .btn:text-is("Edit")');
     await mp.waitForSelector('#rf-quiet');
     assert.equal(await mp.inputValue('#rf-quiet'), '15');
@@ -1378,21 +1378,21 @@ async function setTime(page, hour, minute, ampm) {
     const p = a.page;
     await p.click('#menu-btn');
     await p.click('button:has-text("Settings")');
-    await p.waitForSelector('input[aria-label="Late after, hours"]');
-    assert.equal(await p.inputValue('input[aria-label="Late after, hours"]'), '1');
-    assert.equal(await p.inputValue('input[aria-label="Late after, minutes"]'), '0');
+    await p.waitForSelector('input[aria-label="Late After, Hours"]');
+    assert.equal(await p.inputValue('input[aria-label="Late After, Hours"]'), '1');
+    assert.equal(await p.inputValue('input[aria-label="Late After, Minutes"]'), '0');
     const saved = async (minutes) => {
       for (let i = 0; i < 50 && svc.getSettings().lateAfterMinutes !== minutes; i++) await new Promise((r) => setTimeout(r, 100));
       assert.equal(svc.getSettings().lateAfterMinutes, minutes);
     };
-    await p.fill('input[aria-label="Late after, hours"]', '7');
-    await p.press('input[aria-label="Late after, hours"]', 'Tab');
+    await p.fill('input[aria-label="Late After, Hours"]', '7');
+    await p.press('input[aria-label="Late After, Hours"]', 'Tab');
     await saved(420);
-    await p.fill('input[aria-label="Late after, minutes"]', '30');
-    await p.press('input[aria-label="Late after, minutes"]', 'Tab');
+    await p.fill('input[aria-label="Late After, Minutes"]', '30');
+    await p.press('input[aria-label="Late After, Minutes"]', 'Tab');
     await saved(450);
-    await p.fill('input[aria-label="Late after, hours"]', '1');
-    await p.press('input[aria-label="Late after, hours"]', 'Tab');
+    await p.fill('input[aria-label="Late After, Hours"]', '1');
+    await p.press('input[aria-label="Late After, Hours"]', 'Tab');
     await saved(90); // 1 hour 30 minutes
     await shot(p, 'settings-late');
     await p.click('.back-link');
@@ -1504,7 +1504,7 @@ async function setTime(page, hour, minute, ampm) {
     // today's look
     let gymRow = await rowText('Gym');
     assert.ok(/9:00 AM/.test(gymRow) && /45m/.test(gymRow) && /Health/.test(gymRow));
-    assert.ok(!/Every day|Legs day|10 min before|Full-screen/.test(gymRow), 'the extra details are off by default');
+    assert.ok(!/Every Day|Legs day|10 min before|Full-Screen/.test(gymRow), 'the extra details are off by default');
     // switch some on
     await p.click('#menu-btn');
     await p.click('button:has-text("Settings")');
@@ -1513,18 +1513,18 @@ async function setTime(page, hour, minute, ampm) {
     assert.ok(await p.$('.daily-preview .task'), 'the preview shows a task row');
     assert.equal(await p.evaluate(() => document.querySelector('.daily-preview').inert), true, 'the preview cannot be clicked');
     const previewText = () => p.locator('.daily-preview .task').innerText();
-    assert.ok(!/Every day/.test(await previewText()));
+    assert.ok(!/Every Day/.test(await previewText()));
     for (const id of ['repeat', 'startRule', 'reminders', 'fullScreen', 'notes', 'endTime']) await p.check(`.info-item input[data-info="${id}"]`);
-    await p.waitForFunction(() => /Every day/.test(document.querySelector('.daily-preview .task').innerText));
+    await p.waitForFunction(() => /Every Day/.test(document.querySelector('.daily-preview .task').innerText));
     const all = await previewText();
-    assert.ok(/Every day/.test(all) && /after Asr/.test(all) && /Full-screen alert/.test(all) && /Open the exercises/.test(all) && /– 9:45 AM/.test(all), all);
+    assert.ok(/Every Day/.test(all) && /after Asr/.test(all) && /Full-Screen Alert/.test(all) && /Open the exercises/.test(all) && /– 9:45 AM/.test(all), all);
     for (let i = 0; i < 40 && !svc.getSettings().taskInfo.repeat; i++) await new Promise((r) => setTimeout(r, 50));
     assert.equal(svc.getSettings().taskInfo.repeat, true);
     await shot(p, 'settings-daily-view');
     await p.click('.back-link');
     await p.waitForSelector('.task');
     gymRow = await rowText('Gym');
-    assert.ok(/Every day/.test(gymRow) && /Legs day/.test(gymRow) && /10 min before/.test(gymRow) && /Full-screen alert/.test(gymRow) && /9:00 AM/.test(gymRow) && /– 9:45 AM/.test(gymRow), gymRow);
+    assert.ok(/Every Day/.test(gymRow) && /Legs day/.test(gymRow) && /10 min before/.test(gymRow) && /Full-Screen Alert/.test(gymRow) && /9:00 AM/.test(gymRow) && /– 9:45 AM/.test(gymRow), gymRow);
     assert.match(await rowText('Shower'), /Starts 15m after “Gym” ends/);
     await shot(p, 'daily-more-details');
     // name only
@@ -1630,7 +1630,7 @@ async function setTime(page, hour, minute, ampm) {
     }
     await first.page.selectOption('#welcome-city', 'Alexandria');
     await shot(first.page, 'welcome');
-    await first.page.click('button:text-is("Start planning")');
+    await first.page.click('button:text-is("Start Planning")');
     await first.page.waitForSelector('.welcome', { state: 'detached' });
     assert.equal(await first.page.evaluate(() => document.querySelector('.topbar').inert), false, 'the app is usable again');
     assert.equal(fresh.getSettings().cityName, 'Alexandria');

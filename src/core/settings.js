@@ -45,20 +45,20 @@ const { DEFAULT_TASK_INFO, validateTaskInfo } = require('./task-info');
 // Sounds made inside the app (no sound files). The names are played by src/renderer/sounds.js.
 // The charts on the Statistics screen, in their default order. Which ones are shown (and in what order) is a setting.
 const STATS_CHARTS = [
-  { id: 'kpi-rate', title: 'Completion rate', about: 'Share of counted tasks that are done' },
-  { id: 'kpi-done', title: 'Tasks done', about: 'How many tasks were done, out of how many' },
-  { id: 'kpi-streak', title: 'Current streak', about: 'Days in a row with at least 70% done' },
-  { id: 'kpi-time', title: 'Planned time', about: 'Total time of the counted tasks' },
-  { id: 'kpi-ontime', title: 'Done on time', about: 'Share of done tasks that were not late' },
-  { id: 'bars', title: 'Done vs planned', about: 'Bars of done and planned tasks' },
-  { id: 'zones', title: 'By zone', about: 'Share done in each of the 5 zones' },
-  { id: 'heat', title: 'Calendar heat map', about: 'Every day of the month or year as a colour' },
-  { id: 'trend', title: 'Completion trend', about: 'How the completion rate moves over time' },
-  { id: 'categories', title: 'By category', about: 'Share done and planned time per category' },
+  { id: 'kpi-rate', title: 'Completion Rate', about: 'Share of counted tasks that are done' },
+  { id: 'kpi-done', title: 'Tasks Done', about: 'How many tasks were done, out of how many' },
+  { id: 'kpi-streak', title: 'Current Streak', about: 'Days in a row with at least 70% done' },
+  { id: 'kpi-time', title: 'Planned Time', about: 'Total Time of the Counted Tasks' },
+  { id: 'kpi-ontime', title: 'Done on Time', about: 'Share of done tasks that were not late' },
+  { id: 'bars', title: 'Done vs Planned', about: 'Bars of Done and Planned Tasks' },
+  { id: 'zones', title: 'By Zone', about: 'Share done in each of the 5 zones' },
+  { id: 'heat', title: 'Calendar Heat Map', about: 'Every day of the month or year as a colour' },
+  { id: 'trend', title: 'Completion Trend', about: 'How the Completion Rate Moves Over Time' },
+  { id: 'categories', title: 'By Category', about: 'Share Done and Planned Time per Category' },
   { id: 'late', title: 'Needs attention', about: 'Tasks not done and already past their time' },
-  { id: 'lateness', title: 'Most late tasks', about: 'Which tasks are done late, and by how much on average' },
-  { id: 'lateby', title: 'Lateness by zone and category', about: 'Average delay in each zone and category' },
-  { id: 'latetrend', title: 'Lateness over time', about: 'Average delay in each day, week or month' },
+  { id: 'lateness', title: 'Most Late Tasks', about: 'Which tasks are done late, and by how much on average' },
+  { id: 'lateby', title: 'Lateness by Zone and Category', about: 'Average Delay in Each Zone and Category' },
+  { id: 'latetrend', title: 'Lateness Over Time', about: 'Average delay in each day, week or month' },
   { id: 'routines', title: 'Routines', about: 'How steadily you keep each routine, with its streak' },
 ];
 const STATS_CHART_IDS = STATS_CHARTS.map((c) => c.id);
@@ -86,7 +86,7 @@ const APPEARANCE_SCHEMA = {
   name: { size: intBetween(24, 160), color: isColor, bold: isBool, italic: isBool, uppercase: isBool },
   notes: { show: isBool, size: intBetween(14, 96), color: isColor, bold: isBool, italic: isBool },
   show: { time: isBool, duration: isBool, zone: isBool, category: isBool, priority: isBool },
-  buttons: { snooze: isBool, open: isBool, done: isBool }, // "Got it" is always there, so the alert can always be closed
+  buttons: { snooze: isBool, open: isBool, done: isBool }, // "Got It" is always there, so the alert can always be closed
 };
 
 const DEFAULT_ALERT_APPEARANCE = {
@@ -114,7 +114,7 @@ const ALERT_PRESETS = {
     },
   },
   highContrast: {
-    label: 'High contrast',
+    label: 'High Contrast',
     appearance: {
       ...DEFAULT_ALERT_APPEARANCE,
       backgroundColor: '#000000', textColor: '#ffffff', accentColor: '#ffff00',
@@ -123,7 +123,7 @@ const ALERT_PRESETS = {
     },
   },
   red: {
-    label: 'Red alert',
+    label: 'Red Alert',
     appearance: {
       ...DEFAULT_ALERT_APPEARANCE,
       backgroundColor: '#7f1d1d', textColor: '#fee2e2', accentColor: '#fde047',
@@ -132,7 +132,7 @@ const ALERT_PRESETS = {
     },
   },
   calm: {
-    label: 'Calm green',
+    label: 'Calm Green',
     appearance: {
       ...DEFAULT_ALERT_APPEARANCE,
       backgroundColor: '#064e3b', textColor: '#d1fae5', accentColor: '#fcd34d',

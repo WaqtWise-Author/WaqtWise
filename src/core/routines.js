@@ -222,22 +222,29 @@ function ringsInWindow(routines, fromMs, toMs, provider, by = 'ringAt') {
   return result.sort((a, b) => a[by] - b[by] || (a.id < b.id ? -1 : 1));
 }
 
-// Is one of the given tasks running at this moment? (A task that is already ticked as done is not "running".)
-// `tasks` are the planner's tasks, `options` the recurrence options (working days, first day of the week).
-function taskRunningAt(provider, tasks, ids, ms, options = {}) {
-  if (!Array.isArray(ids) || ids.length === 0) return false;
+// The stretches of time (not done yet) in which one of the given tasks runs, between two moments:
+// [{ taskId, title, startMs, endMs }], oldest first. `options` are the recurrence options (working days, first day of the week).
+function taskSpans(provider, tasks, ids, fromMs, toMs, options = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
   const wanted = new Set(ids);
   const list = tasks.filter((task) => wanted.has(task.id));
-  if (list.length === 0) return false;
   const context = { ...options, tasks };
-  const day = dateKey(new Date(ms));
+  const spans = [];
   for (const task of list) {
     const lookback = Math.max(2, Math.ceil((Number(task.durationMinutes) || 0) / 1440) + 1);
-    for (const o of getOccurrences(provider, task, addDaysToKey(day, -lookback), addDaysToKey(day, 1), context)) {
-      if (!o.done && o.start.getTime() <= ms && ms < o.end.getTime()) return true;
+    for (const o of getOccurrences(provider, task, addDaysToKey(dateKey(new Date(fromMs)), -lookback), addDaysToKey(dateKey(new Date(toMs)), 1), context)) {
+      if (o.done) continue;
+      const startMs = o.start.getTime();
+      const endMs = o.end.getTime();
+      if (endMs > fromMs && startMs < toMs) spans.push({ taskId: task.id, title: o.title, startMs, endMs });
     }
   }
-  return false;
+  return spans.sort((x, y) => x.startMs - y.startMs || x.endMs - y.endMs);
+}
+
+// Is one of the given tasks running at this moment? (A task that is already ticked as done is not "running".)
+function taskRunningAt(provider, tasks, ids, ms, options = {}) {
+  return taskSpans(provider, tasks, ids, ms, ms + 1, options).some((x) => x.startMs <= ms && ms < x.endMs);
 }
 
 // A new routine record with one time ticked (or un-ticked). The time must really be one of the routine's times.
@@ -273,6 +280,7 @@ module.exports = {
   ringTime,
   notifyTime,
   ringsInWindow,
+  taskSpans,
   taskRunningAt,
   MAX_QUIET_MINUTES,
   MAX_NOTIFY_BEFORE_MINUTES,

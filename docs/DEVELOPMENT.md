@@ -1,9 +1,9 @@
-# WaqtWise - notes for developers
+# WaqtWise - Notes for Developers
 
 Everything here is for people who build or change the app. If you only want to use WaqtWise, read the
 [README](../README.md) and the [user guide](USER_GUIDE.md).
 
-## Run and test
+## Run and Test
 
 ```
 npm ci
@@ -29,7 +29,7 @@ The guide pages of the website are produced by `python3 tools/build-site.py`.
 - `docs/` - USER_GUIDE.md (for the user), ACCEPTANCE_CHECKLIST.md (what is checked where, and what to
   try on a real PC), DATA_FORMAT.md (backup file format), CHANGELOG.md (what changed in each version; raise `version` in `package.json` and add a section there before every release)
 
-## GitHub does the work
+## GitHub Does the Work
 
 - **Run tests**: runs the tests when you start it by hand (Actions -> Run tests -> Run workflow). The workflows no longer start by themselves on every upload.
 - **Build Windows installer**: builds `WaqtWise-Setup-<version>.exe`. Open the Actions tab, click the
@@ -43,38 +43,38 @@ English and Arabic (Settings -> Language). Arabic is a full right-to-left screen
 
 The side menu has **Routines**: things that repeat several times a day inside a window (`src/core/routines.js`: the model, the times of a day, ticks; `src/core/routine-engine.js`: the background engine that rings them; `src/main/planner/routines.js`: the service methods; `src/renderer/routines.js`: the screen and the form). It is a list of its own (like the free list) and does not touch the task engine, the zones or the statistics. Each routine rings as a notification, a full-screen alert (same alert window, `kind: 'routine'`), or both. Times missed while the computer was off are skipped. Data format: `docs/DATA_FORMAT.md`.
 
-## Free To-Do list and task details
+## Free To-Do List and Task Details
 
-The side menu has a **Free To-Do list** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time* (tasks ticked before this version have no tick time and are not counted). **Settings -> Daily View** chooses which details each task row shows (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes), with a live preview. Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
+The side menu has a **Free To-Do List** for tasks that have no time yet (own screen, quick add with Enter, a **Schedule Task** button that opens the normal task window). Clicking a task anywhere (Daily View, bell, missed reminders, Statistics, a notification) shows its details; **Edit Task** opens the edit window. The window always opens maximized. Every screen uses one shared look (sizes, corners, switches, Settings rows and section index); see `docs/UI_REVIEW.md` before adding a screen. **Settings -> Late tasks** sets after how many hours and minutes a ticked task counts as late; Statistics then has *Done on Time*, *Most Late Tasks*, *Lateness by Zone and Category* and *Lateness Over Time* (tasks ticked before this version have no tick time and are not counted). **Settings -> Daily View** chooses which details each task row shows (time, end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes), with a live preview. Free tasks are saved in `data.json` and travel with export, import and backups (see `docs/DATA_FORMAT.md`).
 
-## Saving problems and statistics
+## Saving Problems and Statistics
 
-If the data cannot be saved (disk full, file locked), a red banner stays at the top until a save works again; it has **Try again** and **Export a copy**. The export file also carries the saved statistics of finished days (`statsHistory`), so they survive moving to another computer. See `docs/DATA_FORMAT.md`.
+If the data cannot be saved (disk full, file locked), a red banner stays at the top until a save works again; it has **Try Again** and **Export a Copy**. The export file also carries the saved statistics of finished days (`statsHistory`), so they survive moving to another computer. See `docs/DATA_FORMAT.md`.
 
-## Alert buttons and details
+## Alert Buttons and Details
 
-Settings -> Full-screen reminder lets you choose which details and which buttons (Snooze, Open task, Mark as Done) the alert shows; "Got it" always stays.
+Settings -> Full-screen reminder lets you choose which details and which buttons (Snooze, Open task, Mark as Done) the alert shows; "Got It" always stays.
 
-## One note at random
+## One Note at Random
 
-In the task form (full-screen alert on) tick **Show one note at random** and separate the notes with `;`. The full-screen alert shows one of them, every note once before any repeats. See `docs/DATA_FORMAT.md`.
+In the task form (full-screen alert on) tick **Show One Note at Random** and separate the notes with `;`. The full-screen alert shows one of them, every note once before any repeats. See `docs/DATA_FORMAT.md`.
 
-## Start time options
+## Start Time Options
 
 Fixed Time, Relative to Prayer, and Relative to Task ("15 minutes after the end of <task>").
 
-## Full-screen alert
+## Full-Screen Alert
 
 `src/core/reminder-engine.js` sets one timer for the next start time, so the alert appears at the exact second.
 `src/main/alert-window.js` opens the borderless windows (one per screen); the page is `src/renderer/alert.html`
 (drawn by `alert-view.js`, which the Settings preview uses too). Settings: `src/core/settings.js`.
 
-## First run
+## First Run
 
-A welcome screen asks for the city once. Settings -> Reminders has a "Send a test notification" button that also
+A welcome screen asks for the city once. Settings -> Reminders has a "Send a Test Notification" button that also
 checks that Windows shows notifications; clicking one opens WaqtWise on the Daily View.
 
-## Keep package-lock.json
+## Keep Package-Lock.json
 
 The workflows use `npm ci`, which needs `package-lock.json` in the repository. It is not part of the zip files sent for review: keep the one that is already on GitHub (or make a new one with the Lockfile workflow after changing a dependency).
 
@@ -82,7 +82,7 @@ The workflows use `npm ci`, which needs `package-lock.json` in the repository. I
 
 See `docs/TODO.md` (more countries and cities).
 
-## Assumptions made so far
+## Assumptions Made So Far
 
 - Asr uses the standard (Shafi) calculation.
 - Recurrence weeks run Sunday to Saturday when counting "every N weeks".

@@ -1,7 +1,7 @@
 'use strict';
 
 // Languages. The app is written in English; every sentence is also looked up here by its English text, so
-// `t('Task added')` shows the Arabic when the language is Arabic and the English as written otherwise.
+// `t('Task Added')` shows the Arabic when the language is Arabic and the English as written otherwise.
 // Numbers are never translated: they are always written 0123456789.
 //
 // This file works both in Node (require) and in the window (a plain <script> that makes window.WWI18n).

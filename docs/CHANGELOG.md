@@ -1,4 +1,4 @@
-# What changed in each version
+# What Changed in Each Version
 
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
@@ -9,10 +9,11 @@ New
 - **Routines** (menu -> Routines): things that repeat several times a day inside a time window, for example "drink water every 2 hours 30 minutes from 8:00 AM to 8:00 PM". Each routine has its own start and end time (a window may run past midnight), a repeat distance given in hours and minutes (at least 5 minutes), the days of the week it applies to, and its own way of reminding: a notification, a full-screen alert, or both. The page shows today's times for each routine to tick off; a routine can be paused. A time missed while the computer was off is skipped. Routines are a list of their own, separate from tasks: they are not in the five zones or the statistics (a statistics card for them may come later). They are saved with the data and travel with export, import and backups (`routines` in the file, see `docs/DATA_FORMAT.md`).
 - **One note at random for routines**: write several notes separated by `;` and the full-screen alert shows a different one each time it rings, none repeating until all were shown (same as for tasks).
 - **Statistics card for routines** (Statistics -> Manage -> *Routines*, on by default for new installs): for each routine the share of its times done in the chosen range, the current streak, the last days as small squares, and the time you miss most often. Only times that have passed count, on the days the routine applies, since the routine was made. Ticks are now kept for 400 days (were 60).
-- **Routine times left today** are shown next to *Routines* in the menu.
-- **Stay quiet during prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.
+- **Stay Quiet During Prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.
 - **Notification a few minutes early** (per routine): the notification can come 0 to 120 minutes before each time (exact minutes, no hours). The full-screen alert stays on the exact time.
 - **Silent while chosen tasks run** (per routine): choose tasks; a routine time that falls while one of them is running does not ring (a task already ticked as done does not count).
+- **Roomier routine card**: a summary line (done, silent, missed, next), a progress bar, and a timeline of the day with the silent tasks drawn as bands; the long list of times and the silent tasks open on request (*Show All Times*, *Silent During N Tasks*).
+- **Title Case** for buttons, headings, labels and menu items in the app, the guides and the website (full sentences keep normal capitals).
 - **No ticking the future**: a task on a day that has not come yet (tomorrow or later) can no longer be marked done (its circle is greyed out and the app refuses); a routine time that has not come yet cannot be ticked either. Taking a tick back always works.
 - Clicking a routine notification opens the Routines page. Notifications still have no buttons; Snooze, Mark as Done and Open routines are on the full-screen alert.
 
@@ -30,9 +31,9 @@ The first public release. The work before it was numbered 0.x while the app was 
 
 New
 - **Daily View details** (Settings -> Daily View): choose which of 14 details each task row shows (start and end time, duration, priority, category, status, conflicts, repeat, what the start follows, reminders, full-screen alert, notes, "continues", backup-time warning), with three presets and a live preview.
-- **Shorter Daily View**: a zone with no tasks, and (on today) a zone that is over with every task done, is shown as one line (click it to open; the arrow in its band hides it again). A zone that is over with something not done stays open and shows "N not done". Opening today scrolls to the zone happening now. Settings -> Daily View -> *Empty and finished zones*: Collapse (default) or Show in full.
+- **Shorter Daily View**: a zone with no tasks, and (on today) a zone that is over with every task done, is shown as one line (click it to open; the arrow in its band hides it again). A zone that is over with something not done stays open and shows "N not done". Opening today scrolls to the zone happening now. Settings -> Daily View -> *Empty and Finished Zones*: Collapse (default) or Show in full.
 - **Any country, any city**: Settings -> Prayer Times and the welcome screen have a country list, then a searchable list of that country's cities (about 30,000 cities of 15,000 people or more, 209 countries). The city's coordinates and time zone are saved, and the calculation method of the country is chosen for you (Umm al-Qura for Saudi Arabia, Turkey, North America, and so on); you can change it. Egypt keeps its own list. Country names follow the app language. City data: GeoNames (CC BY 4.0), see `src/core/WORLD_CITIES_SOURCE.md`.
-- **Late tasks** (Settings -> Application): set after how many hours and minutes a ticked task counts as late. Statistics has *Done on time*, *Most late tasks*, *Lateness by zone and category* and *Lateness over time*.
+- **Late Tasks** (Settings -> Application): set after how many hours and minutes a ticked task counts as late. Statistics has *Done on Time*, *Most Late Tasks*, *Lateness by Zone and Category* and *Lateness Over Time*.
 - The window opens **maximized**.
 - **Arabic font**: IBM Plex Sans Arabic is inside the app (English letters and numbers keep Plus Jakarta Sans).
 - Start-up screen shows for 3 seconds and nothing skips it.

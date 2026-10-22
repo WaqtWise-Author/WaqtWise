@@ -18,7 +18,7 @@
   // A search box and the matching cities of one country. `onChosen(result)` runs after the city has been saved.
   WW.worldCitySearch = function worldCitySearch({ country, onChosen }) {
     const input = h('input', {
-      type: 'search', 'aria-label': T('Search for your city'), placeholder: T('Type your city (in English)'),
+      type: 'search', 'aria-label': T('Search for Your City'), placeholder: T('Type your city (in English)'),
       autocomplete: 'off', spellcheck: 'false', maxlength: '60', 'data-city-search': country,
     });
     const list = h('ul', { class: 'city-results' });

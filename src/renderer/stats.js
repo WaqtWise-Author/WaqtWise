@@ -17,20 +17,20 @@
 
   // Must match STATS_CHARTS in src/core/settings.js (a test checks that).
   const CHARTS_DEF = () => [
-    ['kpi-rate', T('Completion rate'), T('Share of counted tasks that are done')],
-    ['kpi-done', T('Tasks done'), T('How many tasks were done, out of how many')],
-    ['kpi-streak', T('Current streak'), T('Days in a row with at least 70% done')],
-    ['kpi-time', T('Planned time'), T('Total time of the counted tasks')],
-    ['kpi-ontime', T('Done on time'), T('Share of done tasks that were not late')],
-    ['bars', T('Done vs planned'), T('Bars of done and planned tasks')],
-    ['zones', T('By zone'), T('Share done in each of the 5 zones')],
-    ['heat', T('Calendar heat map'), T('Every day of the month or year as a colour')],
-    ['trend', T('Completion trend'), T('How the completion rate moves over time')],
-    ['categories', T('By category'), T('Share done and planned time per category')],
+    ['kpi-rate', T('Completion Rate'), T('Share of counted tasks that are done')],
+    ['kpi-done', T('Tasks Done'), T('How many tasks were done, out of how many')],
+    ['kpi-streak', T('Current Streak'), T('Days in a row with at least 70% done')],
+    ['kpi-time', T('Planned Time'), T('Total Time of the Counted Tasks')],
+    ['kpi-ontime', T('Done on Time'), T('Share of done tasks that were not late')],
+    ['bars', T('Done vs Planned'), T('Bars of Done and Planned Tasks')],
+    ['zones', T('By Zone'), T('Share done in each of the 5 zones')],
+    ['heat', T('Calendar Heat Map'), T('Every day of the month or year as a colour')],
+    ['trend', T('Completion Trend'), T('How the Completion Rate Moves Over Time')],
+    ['categories', T('By Category'), T('Share Done and Planned Time per Category')],
     ['late', T('Needs attention'), T('Tasks not done and already past their time')],
-    ['lateness', T('Most late tasks'), T('Which tasks are done late, and by how much on average')],
-    ['lateby', T('Lateness by zone and category'), T('Average delay in each zone and category')],
-    ['latetrend', T('Lateness over time'), T('Average delay in each day, week or month')],
+    ['lateness', T('Most Late Tasks'), T('Which tasks are done late, and by how much on average')],
+    ['lateby', T('Lateness by Zone and Category'), T('Average Delay in Each Zone and Category')],
+    ['latetrend', T('Lateness Over Time'), T('Average delay in each day, week or month')],
     ['routines', T('Routines'), T('How steadily you keep each routine, with its streak')],
   ];
   const CHARTS = { map: (f) => CHARTS_DEF().map(f), find: (f) => CHARTS_DEF().find(f) };
@@ -49,8 +49,8 @@
 
   function header(data) {
     const go = (query) => query && WW.showStats(query);
-    const prev = h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Previous period'), disabled: !data.prevQuery, onclick: () => go(data.prevQuery) }, WW.icon(WW.arrowIcon('prev'), 18, 2.2));
-    const next = h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next period'), disabled: !data.nextQuery, onclick: () => go(data.nextQuery) }, WW.icon(WW.arrowIcon('next'), 18, 2.2));
+    const prev = h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Previous Period'), disabled: !data.prevQuery, onclick: () => go(data.prevQuery) }, WW.icon(WW.arrowIcon('prev'), 18, 2.2));
+    const next = h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next Period'), disabled: !data.nextQuery, onclick: () => go(data.nextQuery) }, WW.icon(WW.arrowIcon('next'), 18, 2.2));
 
     const choose = (id) => {
       if (id === data.range) return;
@@ -64,12 +64,12 @@
 
     const custom = data.range === 'custom'
       ? [
-        h('input', { type: 'date', value: data.rangeStartKey, max: data.todayKey, 'aria-label': T('From date'), id: 'stats-from',
+        h('input', { type: 'date', value: data.rangeStartKey, max: data.todayKey, 'aria-label': T('From Date'), id: 'stats-from',
           onchange: (e) => e.target.value && go({ range: 'custom', fromKey: e.target.value, toKey: data.rangeEndKey }) }),
         h('span', { class: 'stats-to', text: T('to') }),
-        h('input', { type: 'date', value: data.rangeEndKey, max: data.todayKey, 'aria-label': T('To date'), id: 'stats-to',
+        h('input', { type: 'date', value: data.rangeEndKey, max: data.todayKey, 'aria-label': T('To Date'), id: 'stats-to',
           onchange: (e) => e.target.value && go({ range: 'custom', fromKey: data.rangeStartKey, toKey: e.target.value }) }),
-        h('button', { class: 'btn tall', type: 'button', id: 'stats-all', text: T('All time'), onclick: () => go({ range: 'custom', fromKey: data.earliestKey, toKey: data.todayKey }) }),
+        h('button', { class: 'btn tall', type: 'button', id: 'stats-all', text: T('All Time'), onclick: () => go({ range: 'custom', fromKey: data.earliestKey, toKey: data.todayKey }) }),
       ]
       : [];
 
@@ -109,7 +109,7 @@
     const labels = h('div', { class: `bar-labels ${many ? 'tight' : ''}` }, b.items.map((it, i) =>
       h('div', {}, h('div', { class: 'bl-name', text: i % stride === 0 ? it.label : '' }),
         h('div', { class: 'bl-ratio', text: detailed && !it.future ? `${it.done}/${it.total}` : '' }))));
-    return h('section', { class: 'stats-card bars-card', 'aria-label': T('Done versus planned') },
+    return h('section', { class: 'stats-card bars-card', 'aria-label': T('Done Versus Planned') },
       h('div', { class: 'stats-card-head' },
         h('div', {}, h('h2', { text: b.title }), h('div', { class: 'sub', id: 'bars-sub', text: b.sub })),
         h('div', { class: 'stats-legend' },
@@ -118,8 +118,8 @@
   }
 
   function zonesCard(data) {
-    return h('section', { class: 'stats-card zones-card', 'aria-label': T('By zone') },
-      h('h2', { text: T('By zone') }), h('div', { class: 'sub', text: T('Share of tasks done in each zone') }),
+    return h('section', { class: 'stats-card zones-card', 'aria-label': T('By Zone') },
+      h('h2', { text: T('By Zone') }), h('div', { class: 'sub', text: T('Share of Tasks Done in Each Zone') }),
       h('div', { class: 'bars-list' }, data.zones.map((z) =>
         h('div', { class: `z${z.index}` },
           h('div', { class: 'row-top' }, h('span', { class: 'zone-label' }, WW.zoneIcon(z.index, 18), z.name), h('span', { text: `${z.pct}%` })),
@@ -162,7 +162,7 @@
       })));
       body = h('div', { class: 'heat-year-wrap' }, h('div', { class: 'heat-year' }, h('div', { class: 'heat-marks' }, marks), h('div', { class: 'heat-grid' }, cells)));
     }
-    return h('section', { class: 'stats-card heat-card', 'aria-label': T('Calendar heat map') },
+    return h('section', { class: 'stats-card heat-card', 'aria-label': T('Calendar Heat Map') },
       h('div', { class: 'stats-card-head' },
         h('div', {}, h('h2', { id: 'heat-title', text: heat.title }), h('div', { class: 'sub', text: T('Darker = more of that day’s tasks were done. Click a day to open it.') })),
         legend),
@@ -222,9 +222,9 @@
 
   function trendCard(data) {
     const t = data.trend;
-    return h('section', { class: 'stats-card trend-card', 'aria-label': T('Completion trend') },
+    return h('section', { class: 'stats-card trend-card', 'aria-label': T('Completion Trend') },
       h('div', { class: 'stats-card-head' },
-        h('div', {}, h('h2', { text: T('Completion trend') }), h('div', { class: 'sub', id: 'trend-sub', text: t.sub })),
+        h('div', {}, h('h2', { text: T('Completion Trend') }), h('div', { class: 'sub', id: 'trend-sub', text: t.sub })),
         h('div', { class: 'stats-legend' }, t.legend.map((l) => h('span', {}, h('i', { class: `ln ${l.style}` }), l.label)))),
       t.ok
         ? h('div', { class: 'trend-body' }, trendChart(t))
@@ -234,8 +234,8 @@
   // ---- by category, needs attention ---------------------------------------------------------------------------------
 
   function categoriesCard(data) {
-    return h('section', { class: 'stats-card cat-card', 'aria-label': T('By category') },
-      h('h2', { text: T('By category') }), h('div', { class: 'sub', text: T('Share done, and planned time') }),
+    return h('section', { class: 'stats-card cat-card', 'aria-label': T('By Category') },
+      h('h2', { text: T('By Category') }), h('div', { class: 'sub', text: T('Share Done, and Planned Time') }),
       data.categories.length === 0
         ? h('div', { class: 'stats-none', text: T('No tasks in this range.') })
         : h('div', { class: 'bars-list cats' }, data.categories.map((c) =>
@@ -257,11 +257,11 @@
       h('span', { class: 'late-age', text: t.ageLabel }))));
     const more = late.total > LATE_SHOWN
       ? h('button', { class: 'link-btn late-more', type: 'button', id: 'late-more',
-        text: local.showAllLate ? T('Show fewer') : T('View all {n}', { n: late.total }),
+        text: local.showAllLate ? T('Show Fewer') : T('View all {n}', { n: late.total }),
         onclick: () => { local.showAllLate = !local.showAllLate; WW.renderStats(); } })
       : null;
     return h('section', { class: 'stats-card late-card', 'aria-label': T('Needs attention') },
-      h('h2', { text: T('Needs attention') }), h('div', { class: 'sub', text: T('Not done and already past their time') }),
+      h('h2', { text: T('Needs attention') }), h('div', { class: 'sub', text: T('Not Done and Already Past Their Time') }),
       late.total === 0 ? h('div', { class: 'stats-none', id: 'late-none', text: T('Nothing overdue in this range.') }) : list, more);
   }
 
@@ -284,8 +284,8 @@
           t.missed ? TP(t.missed, 'Not done {n} time', 'Not done {n} times') : '',
         ].filter(Boolean).join(' · ') })),
       h('span', { class: 'late-age', text: t.avg === null ? '–' : T('Average {time}', { time: t.avgLabel }) }))));
-    return h('section', { class: 'stats-card late-card lateness-card', 'aria-label': T('Most late tasks') },
-      h('h2', { text: T('Most late tasks') }),
+    return h('section', { class: 'stats-card late-card lateness-card', 'aria-label': T('Most Late Tasks') },
+      h('h2', { text: T('Most Late Tasks') }),
       h('div', { class: 'sub', text: T('Late means done more than {time} after the start. Change this in Settings.', { time: l.thresholdLabel }) }),
       l.measured === 0 && l.total === 0 ? noTiming('lateness-none')
         : l.total === 0 ? h('div', { class: 'stats-none', id: 'lateness-clear', text: T('Nothing was late in this range.') }) : list,
@@ -305,12 +305,12 @@
   function latebyCard(data) {
     const b = data.lateBy;
     const any = b.zones.some((z) => z.n > 0);
-    return h('section', { class: 'stats-card cat-card lateby-card', 'aria-label': T('Lateness by zone and category') },
-      h('h2', { text: T('Lateness by zone and category') }), h('div', { class: 'sub', text: T('Average time from the start until the task was ticked') }),
+    return h('section', { class: 'stats-card cat-card lateby-card', 'aria-label': T('Lateness by Zone and Category') },
+      h('h2', { text: T('Lateness by Zone and Category') }), h('div', { class: 'sub', text: T('Average time from the start until the task was ticked') }),
       !any ? noTiming('lateby-none') : h('div', {},
-        h('div', { class: 'lateby-head', text: T('By zone') }),
+        h('div', { class: 'lateby-head', text: T('By Zone') }),
         h('div', { class: 'bars-list cats' }, b.zones.map((z) => delayLine(z, b.maxAvg, null))),
-        h('div', { class: 'lateby-head', text: T('By category') }),
+        h('div', { class: 'lateby-head', text: T('By Category') }),
         h('div', { class: 'bars-list cats' }, b.categories.map((c) => delayLine(c, b.maxAvg, c.color)))));
   }
 
@@ -319,8 +319,8 @@
     const many = t.items.length > 14;
     const stride = t.items.length > 12 ? Math.ceil(t.items.length / 10) : 1;
     const detailed = t.items.length <= 12;
-    return h('section', { class: 'stats-card bars-card latetrend-card', 'aria-label': T('Lateness over time') },
-      h('div', { class: 'stats-card-head' }, h('div', {}, h('h2', { text: T('Lateness over time' ) }), h('div', { class: 'sub', text: T('Average delay of the tasks done in each bar') }))),
+    return h('section', { class: 'stats-card bars-card latetrend-card', 'aria-label': T('Lateness Over Time') },
+      h('div', { class: 'stats-card-head' }, h('div', {}, h('h2', { text: T('Lateness Over Time' ) }), h('div', { class: 'sub', text: T('Average delay of the tasks done in each bar') }))),
       t.known === 0 ? noTiming('latetrend-none') : h('div', {},
         h('div', { class: `bars ${many ? 'tight' : ''}` }, t.items.map((it) =>
           h('div', { class: 'bar-col', title: it.n ? T('{title}: average {time}', { title: it.title, time: formatMinutes(it.avg) }) : it.title },
@@ -349,13 +349,13 @@
             x.weakest ? h('div', { class: 'row-note', text: T('Most often missed: {at} ({pct}% done)', { at: x.weakest.label, pct: x.weakest.pct }) }) : null)));
     return h('section', { class: 'stats-card routines-card', 'aria-label': T('Routines') },
       h('h2', { text: T('Routines') }),
-      h('div', { class: 'sub', id: 'routines-sub', text: r.total.pct === null ? T('How steadily you keep each routine') : T('{pct}% of routine times done ({done} of {total})', { pct: r.total.pct, done: r.total.done, total: r.total.planned }) }),
+      h('div', { class: 'sub', id: 'routines-sub', text: r.total.pct === null ? T('How Steadily You Keep Each Routine') : T('{pct}% of routine times done ({done} of {total})', { pct: r.total.pct, done: r.total.done, total: r.total.planned }) }),
       body);
   }
 
   function formatMinutes(m) {
     if (m === null || m === undefined) return '–';
-    if (m === 0) return T('On time');
+    if (m === 0) return T('On Time');
     const hrs = Math.floor(m / 60);
     return hrs > 0 ? T('{h}h {m}m', { h: hrs, m: m % 60 }) : T('{m}m', { m });
   }
@@ -381,7 +381,7 @@
   // ---- Manage: add, remove and re-order the charts -------------------------------------------------------
 
   function openManage() {
-    const dlg = WW.openDialog({ title: T('Manage charts') });
+    const dlg = WW.openDialog({ title: T('Manage Charts') });
     const info = (id) => CHARTS.find((c) => c[0] === id);
     const save = async (list) => {
       try {
@@ -415,7 +415,7 @@
     }
     draw();
     dlg.footer.append(
-      h('button', { class: 'btn', type: 'button', id: 'manage-reset', text: T('Show all, default order'), onclick: () => save(CHARTS.map((c) => c[0])) }),
+      h('button', { class: 'btn', type: 'button', id: 'manage-reset', text: T('Show All, Default Order'), onclick: () => save(CHARTS.map((c) => c[0])) }),
       h('button', { class: 'btn primary', type: 'button', text: T('Done'), onclick: () => dlg.close() }));
   }
 

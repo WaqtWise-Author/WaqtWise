@@ -68,7 +68,7 @@
     draw();
   });
 
-  // Keyboard: Enter or Escape = "Got it", once the short pause is over.
+  // Keyboard: Enter or Escape = "Got It", once the short pause is over.
   document.addEventListener('keydown', (event) => {
     const item = current();
     if (!item || performance.now() < guardUntil) return;

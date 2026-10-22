@@ -1,4 +1,4 @@
-# Code of conduct
+# Code of Conduct
 
 We want WaqtWise to be a friendly place for everyone, in English or Arabic, whatever your experience, country or beliefs.
 

@@ -151,7 +151,7 @@ class MissedAlertMethods {
       id: `sample-${now.getTime()}`,
       taskId: '__sample__',
       dateKey: dateKey(now),
-      title: t('Study SQL: joins and subqueries'),
+      title: t('Study SQL: Joins and Subqueries'),
       notes: t('Open the exercises from yesterday.\nFinish chapter 4, then try the practice questions.'),
       startLabel: formatTime12(now),
       endLabel: formatTime12(new Date(now.getTime() + 45 * 60000)),

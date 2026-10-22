@@ -57,7 +57,7 @@ function formatRoutineNotification(item, settings) {
   const line = item.leadMinutes > 0
     ? t('Starts in {time} · {at}', { time: item.leadMinutes < 60 ? t('{n} min', { n: item.leadMinutes }) : formatDuration(item.leadMinutes), at: formatTime12(item.at) })
     : t('Routine time · {at}', { at: formatTime12(item.at) });
-  const lines = item.snoozed ? [t('Snoozed reminder'), line] : [line];
+  const lines = item.snoozed ? [t('Snoozed Reminder'), line] : [line];
   return {
     kind: 'routine',
     id: item.id,

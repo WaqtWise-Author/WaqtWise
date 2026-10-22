@@ -47,7 +47,7 @@
   };
 
   function offsetLabel(n) {
-    if (n === 0) return T('At start time');
+    if (n === 0) return T('At Start Time');
     if (n % 1440 === 0) return TP(n / 1440, '{n} day before', '{n} days before');
     if (n < 60) return T('{n} min before', { n });
     if (n % 60 === 0) return TP(n / 60, '{n} hour before', '{n} hours before');
@@ -86,12 +86,12 @@
     // The other tasks this one could follow (for "Relative to Task").
     const choices = await WW.call('getReferenceChoices', { taskId: options.taskId || null });
 
-    const dlg = WW.openDialog({ title: isEdit ? T('Edit task') : T('New task'), wide: true });
+    const dlg = WW.openDialog({ title: isEdit ? T('Edit Task') : T('New Task'), wide: true });
     const errorsBox = h('div', { class: 'errors', hidden: true });
     const startBox = h('div');
     const startReadout = h('div', { class: 'readout' });
     const startWarning = h('div', { class: 'note start-warning', hidden: true });
-    const endReadout = h('div', { class: 'readout', 'aria-label': T('End time') });
+    const endReadout = h('div', { class: 'readout', 'aria-label': T('End Time') });
     const zoneReadout = h('div', { class: 'readout zone-readout', 'aria-label': T('Zone') });
     const placementNote = h('div', { class: 'note placement', hidden: true });
     const dateBox = h('div');
@@ -154,7 +154,7 @@
       clear(startBox);
       const mode = f.start.mode;
       const toggle = h(
-        'div', { class: 'segmented', role: 'group', 'aria-label': T('Start time type') },
+        'div', { class: 'segmented', role: 'group', 'aria-label': T('Start Time Type') },
         h('button', {
           type: 'button', class: mode === 'fixed' ? 'on' : '', text: T('Fixed Time'),
           onclick: () => { f.start = { mode: 'fixed', time: '09:00' }; renderStart(); changed(); },
@@ -178,7 +178,7 @@
       } else if (mode === 'prayer') {
         const prayerSel = h('select', { class: 'sel-auto', 'aria-label': T('Prayer'), onchange: (e) => { f.start.prayer = e.target.value; changed(); } },
           PRAYERS().map(([key, label]) => h('option', { value: key, text: label, selected: f.start.prayer === key })));
-        const dirSel = h('select', { class: 'sel-auto', 'aria-label': T('Before or after'), onchange: (e) => { f.start.direction = e.target.value; changed(); } },
+        const dirSel = h('select', { class: 'sel-auto', 'aria-label': T('Before or After'), onchange: (e) => { f.start.direction = e.target.value; changed(); } },
           h('option', { value: 'before', text: T('before'), selected: f.start.direction === 'before' }),
           h('option', { value: 'after', text: T('after'), selected: f.start.direction === 'after' }));
         const mins = h('input', {
@@ -192,14 +192,14 @@
           type: 'number', class: 'num', min: '0', max: '10080', value: String(f.start.minutes), 'aria-label': T('Minutes'),
           oninput: (e) => { f.start.minutes = e.target.value === '' ? NaN : Number(e.target.value); changed(); },
         });
-        const dirSel = h('select', { class: 'sel-auto', 'aria-label': T('Before or after'), onchange: (e) => { f.start.direction = e.target.value; changed(); } },
+        const dirSel = h('select', { class: 'sel-auto', 'aria-label': T('Before or After'), onchange: (e) => { f.start.direction = e.target.value; changed(); } },
           h('option', { value: 'before', text: T('before'), selected: f.start.direction === 'before' }),
           h('option', { value: 'after', text: T('after'), selected: f.start.direction === 'after' }));
-        const pointSel = h('select', { class: 'sel-auto', 'aria-label': T('Start or end of that task'), onchange: (e) => { f.start.point = e.target.value; changed(); } },
+        const pointSel = h('select', { class: 'sel-auto', 'aria-label': T('Start or End of That Task'), onchange: (e) => { f.start.point = e.target.value; changed(); } },
           h('option', { value: 'start', text: T('start'), selected: f.start.point === 'start' }),
           h('option', { value: 'end', text: T('end'), selected: f.start.point === 'end' }));
-        const taskSel = h('select', { 'aria-label': T('Task to follow'), onchange: (e) => { f.start.taskId = e.target.value; changed(); } },
-          h('option', { value: '', text: choices.length ? T('Choose a task…') : T('There are no other tasks yet') }),
+        const taskSel = h('select', { 'aria-label': T('Task to Follow'), onchange: (e) => { f.start.taskId = e.target.value; changed(); } },
+          h('option', { value: '', text: choices.length ? T('Choose a Task…') : T('There are no other tasks yet') }),
           choices.map((c) => h('option', { value: c.taskId, text: c.label, selected: f.start.taskId === c.taskId })));
         startBox.appendChild(h('div', { class: 'row', style: { marginTop: '10px' } },
           mins, h('span', { text: T('minutes') }), dirSel, WW.isRtl() ? null : h('span', { text: T('the') }), pointSel, WW.isRtl() ? null : h('span', { text: T('of') })));
@@ -213,11 +213,11 @@
 
     // ---- duration ----
     const hoursInput = h('input', {
-      type: 'number', class: 'num', min: '0', max: '168', value: String(Math.floor(f.durationMinutes / 60)), 'aria-label': T('Duration hours'),
+      type: 'number', class: 'num', min: '0', max: '168', value: String(Math.floor(f.durationMinutes / 60)), 'aria-label': T('Duration Hours'),
       oninput: updateDuration,
     });
     const minutesInput = h('input', {
-      type: 'number', class: 'num', min: '0', value: String(f.durationMinutes % 60), 'aria-label': T('Duration minutes'),
+      type: 'number', class: 'num', min: '0', value: String(f.durationMinutes % 60), 'aria-label': T('Duration Minutes'),
       oninput: updateDuration,
     });
     function updateDuration() {
@@ -252,7 +252,7 @@
       ruleSummary.textContent = rule ? rule.summary : '';
       clear(rulePreview);
       if (rule) {
-        rulePreview.appendChild(h('li', { class: 'hint', text: T('Next occurrences:'), style: { listStyle: 'none', marginInlineStart: '-18px' } }));
+        rulePreview.appendChild(h('li', { class: 'hint', text: T('Next Occurrences:'), style: { listStyle: 'none', marginInlineStart: '-18px' } }));
         rule.preview.forEach((d) => rulePreview.appendChild(h('li', { text: d.label })));
       }
     }
@@ -283,11 +283,11 @@
     function monthlyControls(r) {
       const m = r.monthly;
       const modes = [
-        ['dayOfMonth', T('On day number(s)')],
-        ['lastDay', T('On the last day of the month')],
+        ['dayOfMonth', T('On Day Number(s)')],
+        ['lastDay', T('On the Last Day of the Month')],
         ['nthWeekday', T('On the …th weekday')],
-        ['lastWorkingDay', T('On the last working day')],
-        ['weekdaysInMonth', T('On every chosen weekday')],
+        ['lastWorkingDay', T('On the Last Working Day')],
+        ['weekdaysInMonth', T('On Every Chosen Weekday')],
       ];
       const defaults = {
         dayOfMonth: () => ({ type: 'dayOfMonth', days: [Number(r.startDate.slice(8, 10))] }),
@@ -302,7 +302,7 @@
         let detail = null;
         if (active && type === 'dayOfMonth') {
           detail = h('input', {
-            type: 'text', class: 'sel-auto', value: m.days.join(', '), placeholder: '1, 15', 'aria-label': T('Day numbers'), style: { width: '140px' },
+            type: 'text', class: 'sel-auto', value: m.days.join(', '), placeholder: '1, 15', 'aria-label': T('Day Numbers'), style: { width: '140px' },
             oninput: (e) => {
               m.days = e.target.value.split(/[ ,]+/).filter(Boolean).map(Number).filter((n) => Number.isInteger(n));
               changed();
@@ -333,7 +333,7 @@
         h('div', { class: 'row', style: { marginBottom: '6px' } },
           h('label', { class: 'switch' },
             h('input', { type: 'radio', name: 'yearly-mode', checked: isDay, onchange: () => { r.yearly = { month: y.month, type: 'dayOfMonth', day: Number(r.startDate.slice(8, 10)) }; renderRecurrence(); changed(); } }),
-            h('span', { text: T('On day') })),
+            h('span', { text: T('On Day') })),
           isDay ? h('input', { type: 'number', class: 'num', min: '1', max: '31', value: String(y.day), 'aria-label': T('Day'), oninput: (e) => { y.day = Number(e.target.value); changed(); } }) : null,
           h('span', { text: T('of') }), monthSel),
         h('div', { class: 'row' },
@@ -358,10 +358,10 @@
             h('span', { text: label })),
           type === value ? extra : null);
       return h('div', {},
-        radio('never', T('Never ends')),
-        radio('date', T('Ends on'), h('input', { type: 'date', class: 'sel-auto', value: r.end.date || '', 'aria-label': T('End date'), oninput: (e) => { r.end.date = e.target.value; changed(); } })),
-        radio('count', T('Ends after'), h('span', { class: 'row tight' },
-          h('input', { type: 'number', class: 'num', min: '1', max: '9999', value: String(r.end.count), 'aria-label': T('Number of occurrences'), oninput: (e) => { r.end.count = Number(e.target.value); changed(); } }),
+        radio('never', T('Never Ends')),
+        radio('date', T('Ends On'), h('input', { type: 'date', class: 'sel-auto', value: r.end.date || '', 'aria-label': T('End Date'), oninput: (e) => { r.end.date = e.target.value; changed(); } })),
+        radio('count', T('Ends After'), h('span', { class: 'row tight' },
+          h('input', { type: 'number', class: 'num', min: '1', max: '9999', value: String(r.end.count), 'aria-label': T('Number of Occurrences'), oninput: (e) => { r.end.count = Number(e.target.value); changed(); } }),
           h('span', { text: T('occurrences') }))));
     }
 
@@ -372,13 +372,13 @@
         h('div', { class: 'field' },
           h('div', { class: 'label', text: T('Repeat') }),
           h('div', { class: 'segmented', role: 'group', 'aria-label': T('Repeat') },
-            h('button', { type: 'button', class: repeats ? '' : 'on', text: T('Does not repeat'), onclick: () => { f.recurrence = null; renderDate(); renderRecurrence(); changed(); } }),
+            h('button', { type: 'button', class: repeats ? '' : 'on', text: T('Does Not Repeat'), onclick: () => { f.recurrence = null; renderDate(); renderRecurrence(); changed(); } }),
             h('button', { type: 'button', class: repeats ? 'on' : '', text: T('Repeats'), onclick: () => { if (!f.recurrence) f.recurrence = newRule(f.date); renderDate(); renderRecurrence(); changed(); } })))
       );
       if (!repeats) return;
       const r = f.recurrence;
 
-      const unitSel = h('select', { class: 'sel-auto', 'aria-label': T('Repeat unit'),
+      const unitSel = h('select', { class: 'sel-auto', 'aria-label': T('Repeat Unit'),
         onchange: (e) => {
           const freq = e.target.value;
           r.frequency = freq;
@@ -393,17 +393,17 @@
       const box = h('div', { class: 'box' },
         h('div', { class: 'row', style: { marginBottom: '10px' } },
           h('span', { text: T('Every') }),
-          h('input', { type: 'number', class: 'num', min: '1', max: '999', value: String(r.interval), 'aria-label': T('Repeat every'), oninput: (e) => { r.interval = e.target.value === '' ? NaN : Number(e.target.value); changed(); } }),
+          h('input', { type: 'number', class: 'num', min: '1', max: '999', value: String(r.interval), 'aria-label': T('Repeat Every'), oninput: (e) => { r.interval = e.target.value === '' ? NaN : Number(e.target.value); changed(); } }),
           unitSel));
 
       if (r.frequency === 'weekly') {
-        box.appendChild(h('div', { class: 'field' }, h('div', { class: 'label', text: window.WWI18n.getLanguage() === 'en' ? 'On' : T('On days') }), weekdayToggles(() => r.weekdays, (list) => { r.weekdays = list; })));
+        box.appendChild(h('div', { class: 'field' }, h('div', { class: 'label', text: window.WWI18n.getLanguage() === 'en' ? 'On' : T('On Days') }), weekdayToggles(() => r.weekdays, (list) => { r.weekdays = list; })));
       }
       if (r.frequency === 'monthly') box.appendChild(h('div', { class: 'field' }, monthlyControls(r)));
       if (r.frequency === 'yearly') box.appendChild(h('div', { class: 'field' }, yearlyControls(r)));
 
       box.appendChild(h('div', { class: 'field' },
-        h('label', { for: 'f-start-date', text: T('Starts on') }),
+        h('label', { for: 'f-start-date', text: T('Starts On') }),
         h('input', { type: 'date', id: 'f-start-date', class: 'sel-auto', value: r.startDate, oninput: (e) => { r.startDate = e.target.value; f.date = e.target.value; changed(); } })));
       box.appendChild(h('div', { class: 'field' }, h('div', { class: 'label', text: T('Ends') }), endControls(r)));
       box.appendChild(ruleSummary);
@@ -418,7 +418,7 @@
       // The full-screen alert is independent of the reminder On/Off switch below.
       remindersBox.appendChild(
         h('div', { class: 'field' },
-          WW.onOffSwitch(T('Full-screen alert at the start time'), Boolean(rem.fullScreen),
+          WW.onOffSwitch(T('Full-Screen Alert at the Start Time'), Boolean(rem.fullScreen),
             (on) => { rem.fullScreen = on; renderReminders(); const again = document.getElementById('f-fullscreen'); if (again) again.focus(); },
             null, { id: 'f-fullscreen' }),
           h('p', {
@@ -429,7 +429,7 @@
           }),
           rem.fullScreen
             ? h('div', { style: { marginTop: '12px' } },
-              WW.onOffSwitch(T('Show one note at random'), Boolean(rem.randomNotes), (on) => { rem.randomNotes = on; }, null, { id: 'f-random-notes' }),
+              WW.onOffSwitch(T('Show One Note at Random'), Boolean(rem.randomNotes), (on) => { rem.randomNotes = on; }, null, { id: 'f-random-notes' }),
               h('p', { class: 'hint', text: T('Separate the notes with ; (for example: first note; second note). The alert shows one of them each time, and every note is shown once before any is repeated.') }))
             : null)
       );
@@ -448,13 +448,13 @@
         remindersBox.appendChild(h('p', { class: 'hint', text: T('No custom times: the default reminder ({what}) will be used.', { what: offsetLabel(settings.defaultReminderOffsetMinutes).toLowerCase() }) }));
       }
 
-      const amount = h('input', { type: 'number', class: 'num', min: '0', max: '10080', value: '15', 'aria-label': T('Reminder amount') });
-      const unit = h('select', { class: 'sel-auto', 'aria-label': T('Reminder unit') },
+      const amount = h('input', { type: 'number', class: 'num', min: '0', max: '10080', value: '15', 'aria-label': T('Reminder Amount') });
+      const unit = h('select', { class: 'sel-auto', 'aria-label': T('Reminder Unit') },
         h('option', { value: '1', text: T('minutes') }), h('option', { value: '60', text: T('Hours') }), h('option', { value: '1440', text: T('Days') }));
       remindersBox.appendChild(h('div', { class: 'row' },
         amount, unit, h('span', { text: T('before the start') }),
         h('button', {
-          type: 'button', class: 'btn small', text: T('Add reminder'),
+          type: 'button', class: 'btn small', text: T('Add Reminder'),
           onclick: () => {
             const minutes = Number(amount.value) * Number(unit.value);
             if (!Number.isInteger(minutes) || minutes < 0) { WW.toast(T('Please enter a whole number of 0 or more.'), 'error'); return; }
@@ -462,7 +462,7 @@
             renderReminders();
           },
         }),
-        h('button', { type: 'button', class: 'btn small', text: T('At start time'), onclick: () => { if (!rem.offsets.includes(0)) rem.offsets.push(0); renderReminders(); } })));
+        h('button', { type: 'button', class: 'btn small', text: T('At Start Time'), onclick: () => { if (!rem.offsets.includes(0)) rem.offsets.push(0); renderReminders(); } })));
     }
 
     // ---- assemble ----
@@ -471,7 +471,7 @@
     const prioritySel = h('select', { id: 'f-priority', onchange: (e) => { f.priority = e.target.value; } },
       ['Low', 'Medium', 'High'].map((p) => h('option', { value: p, text: T(p), selected: f.priority === p })));
     const categorySel = h('select', { id: 'f-category', onchange: (e) => { f.categoryId = e.target.value || null; } },
-      h('option', { value: '', text: T('No category') }),
+      h('option', { value: '', text: T('No Category') }),
       WW.state.categories.map((c) => h('option', { value: c.id, text: c.name, selected: f.categoryId === c.id })));
     const notes = h('textarea', { id: 'f-notes', 'aria-label': T('Notes'), value: f.notes, oninput: (e) => { f.notes = e.target.value; } });
 
@@ -479,12 +479,12 @@
       errorsBox,
       h('div', { class: 'field' }, h('label', { for: 'f-title', text: T('Title') }), titleInput),
       h('div', { class: 'field' }, h('div', { class: 'label', text: T('Start Time') }), startBox,
-        h('div', { class: 'row', style: { marginTop: '10px' } }, h('span', { class: 'hint', text: T('Starts at') }), startReadout),
+        h('div', { class: 'row', style: { marginTop: '10px' } }, h('span', { class: 'hint', text: T('Starts At') }), startReadout),
         startWarning),
       h('div', { class: 'field' }, h('div', { class: 'label', text: T('Duration') }),
         h('div', { class: 'row' }, hoursInput, h('span', { text: T('h') }), minutesInput, h('span', { text: T('min') }),
-          h('span', { class: 'hint', text: T('Ends at') }), endReadout)),
-      h('div', { class: 'field' }, h('div', { class: 'label', text: T('Zone (set automatically)') }), zoneReadout, placementNote),
+          h('span', { class: 'hint', text: T('Ends At') }), endReadout)),
+      h('div', { class: 'field' }, h('div', { class: 'label', text: T('Zone (Set Automatically)') }), zoneReadout, placementNote),
       dateBox,
       recurrenceBox,
       remindersBox,
@@ -519,14 +519,14 @@
       let scope = 'all';
       if (isEdit && info.isRecurring && f.recurrence) {
         const ruleChanged = JSON.stringify(f.recurrence) !== originalRule;
-        scope = await WW.askScope({ title: T('Save changes'), verb: T('Save'), allowThis: !ruleChanged });
+        scope = await WW.askScope({ title: T('Save Changes'), verb: T('Save'), allowThis: !ruleChanged });
         if (scope === null) return;
       }
       saveBtn.disabled = true;
       try {
         await WW.call('saveTask', { mode: options.mode, taskId: options.taskId, dateKey: options.dateKey, scope, form: f, fromFreeTaskId: options.fromFreeTaskId });
         dlg.close();
-        WW.toast(isEdit ? T('Task saved') : options.fromFreeTaskId ? T('Task scheduled') : T('Task added'));
+        WW.toast(isEdit ? T('Task Saved') : options.fromFreeTaskId ? T('Task Scheduled') : T('Task Added'));
         if (options.fromFreeTaskId && WW.refreshFreeCount) WW.refreshFreeCount();
         WW.afterChange();
       } catch (error) {
@@ -539,7 +539,7 @@
     async function onDelete() {
       let scope = 'all';
       if (info.isRecurring) {
-        scope = await WW.askScope({ title: T('Delete task'), verb: T('Delete'), allowThis: true });
+        scope = await WW.askScope({ title: T('Delete Task'), verb: T('Delete'), allowThis: true });
         if (scope === null) return;
       }
       try {
@@ -547,14 +547,14 @@
         if (impact.wholeTask && impact.dependents.length > 0) {
           const names = impact.dependents.map((d) => `“${d.title}”`).join(T(', '));
           const go = await WW.ask({
-            title: T('Other tasks follow this task'),
+            title: T('Other Tasks Follow This Task'),
             message: T('These tasks start relative to “{title}”: {names}. If you delete it, they stay at the times they have now, as fixed times.', { title: f.title, names }),
-            choices: [{ label: T('Cancel'), value: false }, { label: T('Delete anyway'), value: true, kind: 'danger' }],
+            choices: [{ label: T('Cancel'), value: false }, { label: T('Delete Anyway'), value: true, kind: 'danger' }],
           });
           if (!go) return;
         } else if (!info.isRecurring) {
           const answer = await WW.ask({
-            title: T('Delete task'), message: T('Delete "{title}"?', { title: f.title }),
+            title: T('Delete Task'), message: T('Delete "{title}"?', { title: f.title }),
             choices: [{ label: T('Cancel'), value: false }, { label: T('Delete'), value: true, kind: 'danger' }],
           });
           if (!answer) return;
@@ -564,7 +564,7 @@
         const inexact = (result.frozen || []).filter((t) => !t.exact);
         WW.toast(inexact.length
           ? T('Task deleted. “{titles}” could not keep its exact time and uses its backup time.', { titles: inexact.map((t) => t.title).join('”, “') })
-          : T('Task deleted'));
+          : T('Task Deleted'));
         WW.afterChange();
       } catch (error) {
         showErrors([error.message]);
@@ -575,7 +575,7 @@
       try {
         await WW.call('duplicateTask', { taskId: options.taskId });
         dlg.close();
-        WW.toast(T('Task duplicated'));
+        WW.toast(T('Task Duplicated'));
         WW.afterChange();
       } catch (error) {
         showErrors([error.message]);

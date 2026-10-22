@@ -1,4 +1,4 @@
-# Code signing policy
+# Code Signing Policy
 
 **Current status: the installer is NOT signed yet.** We are applying to the
 [SignPath Foundation](https://signpath.org/) for free code signing for open-source projects. This page is the
@@ -10,13 +10,13 @@ Once accepted, this text will be shown on the download page:
 > Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
 > [SignPath Foundation](https://signpath.org/).
 
-## What is signed
+## What Is Signed
 
 Only the Windows installer `WaqtWise-Setup-<version>.exe` (and the program files inside it) built by this project's
 own GitHub workflow from the public source code in this repository. Nothing else is signed with this
 certificate, and no third-party or closed-source binaries are added by us.
 
-## How a release is made
+## How a Release Is Made
 
 1. The source code is public in this repository under GPL-3.0-or-later.
 2. A maintainer starts the **Release** workflow by hand. It builds on GitHub's own Windows runner from the exact
@@ -36,12 +36,12 @@ At the moment the project is small, so one maintainer may hold all roles; the ap
 build comes from this repository and the intended tag before approving. All team members with signing access use
 multi-factor authentication on GitHub and SignPath.
 
-## What the app does (privacy)
+## What the App Does (Privacy)
 
 This program will not transfer any information to other networked systems unless specifically requested by the
 user or the person installing or operating it. See [PRIVACY](../PRIVACY.md).
 
-## Reporting abuse or problems with a signed file
+## Reporting Abuse or Problems with a Signed File
 
 If you think a signed file is not from this project or behaves badly, please use the private report in the
 [security policy](../SECURITY.md). We can ask SignPath to revoke a certificate or a file if needed.

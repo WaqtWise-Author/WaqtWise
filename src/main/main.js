@@ -218,7 +218,7 @@ async function announceBackgroundRunning() {
     buttons: [t('OK')],
     defaultId: 0,
     noLink: true,
-    checkboxLabel: t("Don't show this again"),
+    checkboxLabel: t("Don't Show This Again"),
     checkboxChecked: false,
   });
   if (result.checkboxChecked) service.saveSettings({ showBackgroundMessage: false });
@@ -264,7 +264,7 @@ function startTray() {
 // ---- Notification clicks and links ---------------------------------------------------------------------------------------
 
 // action: { type: 'open' | 'missed' | 'routines' } from a click on a notification (or a waqtwise:// link): show the main
-// window. { type: 'open-task', taskId, dateKey } comes from the "Open task" button of the full-screen alert.
+// window. { type: 'open-task', taskId, dateKey } comes from the "Open Task" button of the full-screen alert.
 function handleAction(action) {
   if (!action) return;
   showWindow();
@@ -422,9 +422,9 @@ function registerIpc() {
     refuseOutsiders(event);
     const stamp = new Date().toISOString().slice(0, 10);
     const result = await dialog.showSaveDialog(mainWindow, {
-      title: t('Export data'),
+      title: t('Export Data'),
       defaultPath: `waqtwise-backup-${stamp}.json`,
-      filters: [{ name: t('WaqtWise backup'), extensions: ['json'] }],
+      filters: [{ name: t('WaqtWise Backup'), extensions: ['json'] }],
     });
     if (result.canceled || !result.filePath) return { canceled: true };
     fs.writeFileSync(result.filePath, JSON.stringify(service.exportData(), null, 2), 'utf8');
@@ -434,9 +434,9 @@ function registerIpc() {
   ipcMain.handle('import-data', async (event) => {
     refuseOutsiders(event);
     const result = await dialog.showOpenDialog(mainWindow, {
-      title: t('Import data'),
+      title: t('Import Data'),
       properties: ['openFile'],
-      filters: [{ name: t('WaqtWise backup'), extensions: ['json'] }],
+      filters: [{ name: t('WaqtWise Backup'), extensions: ['json'] }],
     });
     if (result.canceled || result.filePaths.length === 0) return { canceled: true };
     // A backup is a small file; refuse a huge one before reading it into memory.
@@ -451,7 +451,7 @@ function registerIpc() {
     notify({
       kind: 'task',
       id: `test-${Date.now()}`,
-      title: t('WaqtWise test notification'),
+      title: t('WaqtWise Test Notification'),
       lines: [t('If you can see this, notifications work.'), t('Click it to open WaqtWise.')],
       silent: !settings.soundEnabled,
       taskId: null,

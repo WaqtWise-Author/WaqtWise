@@ -63,7 +63,7 @@ test('links between documents point at files and headings that exist', () => {
 test('both guides cover every Settings section and every Statistics chart', () => {
   const { STATS_CHARTS } = require('../src/core/settings');
   const en = read('docs/USER_GUIDE.md');
-  for (const section of ['Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Daily View', 'Full-screen reminder', 'Sounds', 'Categories', 'Data']) {
+  for (const section of ['Language', 'Prayer Times', 'Reminders & Notifications', 'Application', 'Daily View', 'Full-Screen Reminder', 'Sounds', 'Categories', 'Data']) {
     assert.ok(en.includes(`**${section}**`), `the English guide describes the "${section}" section`);
   }
   for (const chart of STATS_CHARTS) assert.ok(en.includes(chart.title), `the English guide lists the chart "${chart.title}"`);

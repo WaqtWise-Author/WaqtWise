@@ -3,7 +3,7 @@
 Thank you for wanting to help. You do not have to write code: bug reports, translation fixes, ideas, testing on
 your own PC and improvements to the guides are all welcome.
 
-## Ways to help
+## Ways to Help
 
 - **Report a problem** or **suggest a feature**: open an [issue](../../issues/new/choose). Say your Windows
   version, the WaqtWise version (it is in the installer file name) and the steps to repeat it. Screenshots help.
@@ -13,7 +13,7 @@ your own PC and improvements to the guides are all welcome.
   Corrections are very welcome.
 - **Code:** see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the folders, how to run the tests and how to build.
 
-## Before you send a pull request
+## Before You Send a Pull Request
 
 1. Open an issue first for anything bigger than a small fix, so we can agree on the direction.
 2. Keep the change small and focused.
@@ -22,7 +22,7 @@ your own PC and improvements to the guides are all welcome.
 5. Follow the look in [docs/UI_REVIEW.md](docs/UI_REVIEW.md) and add a line to [docs/CHANGELOG.md](docs/CHANGELOG.md).
 6. Do not add network access, tracking, or new dependencies without discussing it first.
 
-## License of contributions
+## License of Contributions
 
 By sending a contribution you agree that it is licensed under the project's license, **GPL-3.0-or-later**
 (see [NOTICE.md](NOTICE.md)). The name, logo and icon are not licensed (see NOTICE.md).

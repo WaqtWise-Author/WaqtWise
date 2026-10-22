@@ -8,20 +8,20 @@ const { formatDuration } = require('./time');
 
 // id, name (also the Settings label), what it shows, shown by default
 const TASK_INFO = [
-  { id: 'time', title: 'Start time', about: 'The time the task starts', on: true },
-  { id: 'endTime', title: 'End time', about: 'The time the task ends', on: false },
-  { id: 'duration', title: 'Duration', about: 'How long the task takes', on: true },
-  { id: 'priority', title: 'Priority', about: 'The coloured diamond: low, medium or high', on: true },
-  { id: 'category', title: 'Category', about: 'The category name and colour', on: true },
-  { id: 'status', title: 'Status', about: '"Not done" and "In progress"', on: true },
-  { id: 'conflicts', title: 'Conflicts', about: 'Which tasks overlap this one', on: true },
-  { id: 'repeat', title: 'Repeat', about: 'How often the task repeats', on: false },
-  { id: 'startRule', title: 'What the start follows', about: 'A prayer or another task the start time is based on', on: false },
-  { id: 'reminders', title: 'Reminders', about: 'When the reminders go off', on: false },
-  { id: 'fullScreen', title: 'Full-screen alert', about: 'That a full-screen alert is on', on: false },
-  { id: 'notes', title: 'Notes', about: 'The first line of the notes', on: false },
-  { id: 'continues', title: 'Continues into next zone', about: 'When the task runs past the end of its zone', on: true },
-  { id: 'backupStart', title: 'Backup start time warning', about: 'When the prayer time was not available and a backup time is used', on: true },
+  { id: 'time', title: 'Start Time', about: 'The Time the Task Starts', on: true },
+  { id: 'endTime', title: 'End Time', about: 'The Time the Task Ends', on: false },
+  { id: 'duration', title: 'Duration', about: 'How Long the Task Takes', on: true },
+  { id: 'priority', title: 'Priority', about: 'The Coloured Diamond: Low, Medium or High', on: true },
+  { id: 'category', title: 'Category', about: 'The Category Name and Colour', on: true },
+  { id: 'status', title: 'Status', about: '"Not Done" and "In Progress"', on: true },
+  { id: 'conflicts', title: 'Conflicts', about: 'Which Tasks Overlap This One', on: true },
+  { id: 'repeat', title: 'Repeat', about: 'How Often the Task Repeats', on: false },
+  { id: 'startRule', title: 'What the Start Follows', about: 'A prayer or another task the start time is based on', on: false },
+  { id: 'reminders', title: 'Reminders', about: 'When the Reminders Go Off', on: false },
+  { id: 'fullScreen', title: 'Full-Screen Alert', about: 'That a full-screen alert is on', on: false },
+  { id: 'notes', title: 'Notes', about: 'The First Line of the Notes', on: false },
+  { id: 'continues', title: 'Continues into Next Zone', about: 'When the task runs past the end of its zone', on: true },
+  { id: 'backupStart', title: 'Backup Start Time Warning', about: 'When the prayer time was not available and a backup time is used', on: true },
 ];
 const TASK_INFO_IDS = TASK_INFO.map((x) => x.id);
 const DEFAULT_TASK_INFO = Object.fromEntries(TASK_INFO.map((x) => [x.id, x.on]));

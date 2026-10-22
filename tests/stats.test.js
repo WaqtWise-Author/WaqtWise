@@ -214,7 +214,7 @@ test('zones and categories add up what is in the range', () => {
   const s = stats([markDone(study, [TODAY]), quran, loose], { range: 'day' });
   assert.deepEqual(s.zones.map((z) => [z.done, z.total]), [[1, 1], [0, 2], [0, 0], [0, 0], [0, 0]]);
   assert.equal(s.zones[0].pct, 100);
-  assert.deepEqual(s.categories.map((c) => c.name), ['Study', 'Worship', 'No category'], 'longest planned time first');
+  assert.deepEqual(s.categories.map((c) => c.name), ['Study', 'Worship', 'No Category'], 'longest planned time first');
   assert.equal(s.categories[0].timeLabel, '1h 0m');
   assert.equal(s.categories[0].pct, 100);
   assert.equal(s.categories[2].color, '#8ca0b5');

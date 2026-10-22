@@ -1,4 +1,4 @@
-# "Windows protected your PC" - why you see it and what to do
+# "Windows Protected Your PC" - Why You See It and What to Do
 
 **Languages:** English · [العربية](WINDOWS_WARNING.ar.md)
 
@@ -7,7 +7,7 @@ When you run the installer for the first time, Windows may show a blue window:
 > **Windows protected your PC**
 > Microsoft Defender SmartScreen prevented an unrecognized app from starting.
 
-## Why it happens
+## Why It Happens
 
 SmartScreen is a Windows feature that warns about programs it does not know. A program is "known" when it is
 **signed** with a certificate (a digital signature that proves who published it) and has been downloaded by many
@@ -20,13 +20,13 @@ We are applying for free code signing for open-source projects (SignPath Foundat
 [the code signing policy](CODE_SIGNING_POLICY.md). Even after signing, SmartScreen may still show the warning for
 a while until enough people have downloaded the app. That is normal.
 
-## How to install anyway
+## How to Install Anyway
 
 1. In the blue window click **More info**.
 2. Click **Run anyway**.
 3. Continue with the installer as usual.
 
-## Check that your download is genuine (recommended)
+## Check That Your Download Is Genuine (Recommended)
 
 Download the installer only from this project's **Releases** page. Each release lists a **SHA256** checksum next
 to the file (and a `SHA256SUMS.txt` file). To compare it:
@@ -43,7 +43,7 @@ to the file (and a `SHA256SUMS.txt` file). To compare it:
 You can also upload the file to [virustotal.com](https://www.virustotal.com) to see what many antivirus engines say.
 A single "unknown" or a very rare false alarm from one engine can happen with new, unsigned programs.
 
-## Other things worth knowing
+## Other Things Worth Knowing
 
 - The app does not connect to the internet and needs no administrator rights.
 - All the source code is public. You can read it, or build the installer yourself (see

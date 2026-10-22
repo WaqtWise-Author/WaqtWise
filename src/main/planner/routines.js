@@ -8,7 +8,7 @@ const core = require('../../core');
 const { copy } = require('./util');
 
 const {
-  normalizeRoutine, setSlotDone, pickNote, occurrencesOn, describeRoutine, routineSlots, MAX_ROUTINES, localCategoryName, formatTime12, dateKey, parseTime,
+  normalizeRoutine, setSlotDone, pickNote, occurrencesOn, describeRoutine, routineSlots, taskSpans, MAX_ROUTINES, localCategoryName, formatTime12, dateKey, parseTime,
 } = core;
 
 class RoutineMethods {
@@ -24,10 +24,24 @@ class RoutineMethods {
     const today = dateKey(this.now());
     return (this.data.routines || []).map((r) => {
       const category = this.categoryOf(r.categoryId);
-      const times = occurrencesOn(r, today).map((o) => ({
-        slot: o.slot, label: formatTime12(o.at), done: o.done, past: o.at.getTime() <= nowMs,
-      }));
-      const next = times.find((x) => !x.done && !x.past) || null;
+      const occ = occurrencesOn(r, today);
+      const first = occ.length ? occ[0].at.getTime() : 0;
+      const last = occ.length ? occ[occ.length - 1].at.getTime() : 0;
+      // The chosen tasks that run during today's window: the times inside them stay silent.
+      const spans = occ.length ? taskSpans(this.provider(), this.data.tasks, r.skipDuringTasks || [], first, last + 1, this.recurrenceOptions()) : [];
+      const times = occ.map((o) => {
+        const ms = o.at.getTime();
+        const span = spans.find((x) => x.startMs <= ms && ms < x.endMs);
+        const past = ms <= nowMs;
+        return {
+          slot: o.slot, label: formatTime12(o.at), ms, done: o.done, past,
+          state: o.done ? 'done' : span ? 'silent' : past ? 'missed' : 'future',
+          silentTitle: span && !o.done ? span.title : '',
+        };
+      });
+      const next = times.find((x) => x.state === 'future') || null;
+      const count = (state) => times.filter((x) => x.state === state).length;
+      const silentList = spans.map((x) => ({ title: x.title, startMs: x.startMs, endMs: x.endMs, startLabel: formatTime12(new Date(x.startMs)), endLabel: formatTime12(new Date(x.endMs)) }));
       return {
         ...copy(r),
         categoryName: category ? localCategoryName(category) : '',
@@ -40,7 +54,13 @@ class RoutineMethods {
         dateKey: today,
         onToday: times.length > 0,
         times,
-        doneToday: times.filter((x) => x.done).length,
+        doneToday: count('done'),
+        missedToday: count('missed'),
+        silentToday: count('silent'),
+        windowStartMs: first,
+        windowEndMs: last,
+        nowMs,
+        silentSpans: silentList,
         nextLabel: next ? next.label : '',
       };
     });
@@ -138,17 +158,6 @@ class RoutineMethods {
     this.data.routines = this.data.routines.map((x) => (x.id === id ? setSlotDone(old, key, slot, Boolean(done), this.now()) : x));
     this.changed();
     return { ok: true };
-  }
-
-  // Up to `n` times still to come today, for a small badge: how many routine times are left today.
-  getRoutineLeftToday() {
-    const nowMs = this.now().getTime();
-    const today = dateKey(this.now());
-    let left = 0;
-    for (const r of this.data.routines || []) {
-      for (const o of occurrencesOn(r, today)) if (!o.done && o.at.getTime() > nowMs) left += 1;
-    }
-    return left;
   }
 
   // ---- used by the background routine engine (main process) -----------------------------------------------------------

@@ -195,7 +195,7 @@ test('The alert takes the place of the plain notification at the start time, but
   w.clock = at(DAY, '12:00');
   w.live()[0].fn();
   w.tickAt(atS(DAY, '12:00:15'));
-  assert.equal(w.toasts.length, 1, 'no "Starts now" notification');
+  assert.equal(w.toasts.length, 1, 'no "Starts Now" notification');
   assert.equal(w.alerts.length, 1);
 
   const without = setup({ tasks: [task('Study', '12:00', { reminders: { enabled: true, offsets: [10, 0], fullScreen: false } })], startAt: atS(DAY, '11:49:45') });

@@ -1,8 +1,8 @@
-# UI review and the shared design system
+# UI Review and the Shared Design System
 
 This is what the screen-by-screen review found, what was changed, and the rules to follow when adding screens.
 
-## What was found (and fixed)
+## What Was Found (and Fixed)
 
 | # | Problem | Why it mattered | Fix |
 |---|---------|-----------------|-----|
@@ -18,7 +18,7 @@ This is what the screen-by-screen review found, what was changed, and the rules 
 | 10 | No respect for "reduce motion". | Accessibility. | Transitions and scrolling animations are switched off when Windows asks for less motion. |
 | 11 | Small tap targets on the remove "x" of reminder chips. | Hard to hit. | 24 px. |
 
-## The shared scale (src/renderer/styles.css, top of the file)
+## The Shared Scale (Src/renderer/styles.css, Top of the File)
 
 - `--r-card` 22 px: cards, dialogs, settings sections.
 - `--r-ctl-lg` 14 px at `--ctl-h-lg` 44 px: big controls in screen headers (date field, "Today", Manage, the Add row).
@@ -28,7 +28,7 @@ This is what the screen-by-screen review found, what was changed, and the rules 
 
 Rules: use these variables, not new pixel values; a yes/no choice is `WW.onOffSwitch`; a setting is `row(label, control)` inside a `settings-grid`; a "pick several" set is checkboxes; a one-of-few choice is a segmented control.
 
-## Still open (optional)
+## Still Open (Optional)
 
 - Check the Arabic (right-to-left) screens on a real Windows machine, and with Windows text scaling at 125% and 150%.
 - The smallest text is now 12 px (it was 11 px in seven places); a test keeps it that way.

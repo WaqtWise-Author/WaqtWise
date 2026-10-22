@@ -204,11 +204,11 @@ test('Sound settings: defaults, choices and volumes are validated, and bad saved
   assert.deepEqual([clean.doneSound, clean.doneSoundVolume, clean.alertSound, clean.alertSoundRepeat], ['chime', 20, 'pulse', false]);
 });
 
-test('Alert buttons: all shown by default, each can be switched off, "Got it" cannot', () => {
+test('Alert buttons: all shown by default, each can be switched off, "Got It" cannot', () => {
   assert.deepEqual(DEFAULT_ALERT_APPEARANCE.buttons, { snooze: true, open: true, done: true });
   assert.deepEqual(validateAppearance({ buttons: { snooze: false, open: false, done: false } }), []);
   assert.ok(validateAppearance({ buttons: { snooze: 'no' } }).length > 0);
-  assert.ok(validateAppearance({ buttons: { dismiss: false } }).length > 0, 'there is no switch for "Got it"');
+  assert.ok(validateAppearance({ buttons: { dismiss: false } }).length > 0, 'there is no switch for "Got It"');
   const merged = mergeSettings(DEFAULT_SETTINGS, { alertAppearance: { buttons: { open: false } } });
   assert.deepEqual(merged.alertAppearance.buttons, { snooze: true, open: false, done: true }, 'only the sent switch changes');
   for (const preset of Object.values(ALERT_PRESETS)) assert.deepEqual(preset.appearance.buttons, { snooze: true, open: true, done: true });

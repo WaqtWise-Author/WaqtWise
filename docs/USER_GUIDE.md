@@ -1,4 +1,4 @@
-# WaqtWise user guide
+# WaqtWise User Guide
 
 **Languages:** English · [العربية](USER_GUIDE.ar.md)
 
@@ -24,7 +24,7 @@ technical knowledge. Questions that are not answered here: see [FAQ and troubles
 
 ---
 
-## 1. What WaqtWise is
+## 1. What WaqtWise Is
 
 WaqtWise is a free Windows app that plans your day around the five daily prayer times. Instead of a plain hour
 grid, your day is split into **five zones** (Fajr to Dhuhr, Dhuhr to Asr, Asr to Maghrib, Maghrib to Isha, Isha to
@@ -49,10 +49,10 @@ before the next prayer.
 3. Click **Next**, choose where to install (the suggested place is fine), click **Install**, then **Finish**.
 4. A shortcut is placed on the Desktop and in the Start menu.
 
-## 3. First start
+## 3. First Start
 
 A welcome screen asks for your **country** and then your **city**. Choose the country, type a few letters of the
-city, and click it. Click **Start planning**. You can change this later in Settings.
+city, and click it. Click **Start Planning**. You can change this later in Settings.
 
 ![Welcome screen](images/welcome.webp)
 
@@ -61,9 +61,9 @@ city, and click it. Click **Start planning**. You can change this later in Setti
 - Check the prayer times at the top of each zone against a timetable you trust. If one differs by a few
   minutes, add or subtract minutes for that prayer in Settings → Prayer Times. You can also choose another
   calculation method.
-- Your city is not listed? Use **Custom city…** and type its name, latitude, longitude and time zone.
+- Your city is not listed? Use **Custom City…** and type its name, latitude, longitude and time zone.
 
-## 4. The idea: five zones
+## 4. The Idea: Five Zones
 
 | Zone | From | To |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ The main screen shows one day: the zones from top to bottom, with tasks inside t
 - **Each zone:** its start and end time, a time bar that shows the tasks and the free space, the planned time,
   the free time left, and the zone's completion ring.
 - **Each task row:** a tick circle on the right (click to mark done), the title, and small details (time,
-  duration, priority, category, repeat, and so on). **Click a task** to see its details; **Edit task** opens the
+  duration, priority, category, repeat, and so on). **Click a task** to see its details; **Edit Task** opens the
   form.
 - **Conflicts:** if two tasks overlap, both show a *conflict* tag. Nothing is blocked; you decide.
 - **Shorter view:** a zone with no tasks, or a finished zone in the past, shrinks to one line. Click it to
@@ -103,7 +103,7 @@ Click **+ New task**. Fill in:
 ![The task form](images/task-form.webp)
 
 - **Title** (up to 200 characters) and optional **notes**.
-- **Start time** (three ways):
+- **Start Time** (three ways):
   - **Fixed Time**: for example 9:00 AM.
   - **Relative to Prayer**: for example "10 minutes after Asr".
   - **Relative to Task**: for example "15 minutes after the end of *another task*". If that task is not on the
@@ -119,7 +119,7 @@ Click **+ New task**. Fill in:
   ![Repeat options](images/task-form-repeat.webp)
 - **Category** (defaults: Work, Study, Worship, Personal, Health; you can add your own) and **Priority**
   (High, Medium, Low).
-- **Reminders** and the **Full-screen alert** (see [section 8](#8-reminders-and-full-screen-alerts)).
+- **Reminders** and the **Full-Screen Alert** (see [section 8](#8-reminders-and-full-screen-alerts)).
 
 **Changing a repeating task.** The app asks whether the change applies to this occurrence only, this and the
 following ones, or all of them. Deleting works the same way. You can also skip one date without touching the rest.
@@ -132,12 +132,12 @@ the times they have now as fixed times. Marking a task done does not move the ta
 
 ![Task details](images/task-details.webp)
 
-## 7. Free To-Do list
+## 7. Free To-Do List
 
-For things you want to remember but have no time for yet. Open the menu and choose **Free To-Do list**.
+For things you want to remember but have no time for yet. Open the menu and choose **Free To-Do List**.
 
-- Type a title and press **Enter** to add it; **Add with details** opens the full form.
-- **Schedule task** opens the normal form with the title and notes filled in; pick the time and Save. The task
+- Type a title and press **Enter** to add it; **Add with Details** opens the full form.
+- **Schedule Task** opens the normal form with the title and notes filled in; pick the time and Save. The task
   moves into the five zones.
 - Tick a task to finish it, use the arrows to reorder, give it a category and priority.
 
@@ -146,27 +146,27 @@ For things you want to remember but have no time for yet. Open the menu and choo
 ### Routines
 
 For things that repeat **several times a day**, such as drinking water, stretching or a short break. Open the menu
-and choose **Routines**, then **Add routine**.
+and choose **Routines**, then **Add Routine**.
 
 - Choose the window with **From** and **To** (for example 8:00 AM to 8:00 PM; a window may run past midnight).
-- Choose **Repeat every** with separate boxes for hours and minutes (at least 5 minutes). The first time is the
+- Choose **Repeat Every** with separate boxes for hours and minutes (at least 5 minutes). The first time is the
   start time, and the next ones follow at that distance while they are inside the window. A line under the boxes
   lists the times that will ring.
-- Choose **On these days**: any days of the week you like.
+- Choose **On These Days**: any days of the week you like.
 - Choose how it reminds you: a **notification**, a **full-screen alert**, or **both**. The switches in
   Settings → Reminders still apply. Snooze and Mark as Done work on the full-screen alert as usual.
 - **Notification comes before the time by**: a number of minutes (0 = at the exact time, up to 120). Only the notification comes early; the full-screen alert always comes at the exact time.
 - **Stay silent while these tasks are running**: choose one or more of your tasks. A time that falls while one of them is running (from its start until its end) does not ring. A task that is already ticked as done is not counted as running.
-- **Stay quiet during prayer**: if a time falls from the call to prayer until the number of minutes you choose after it, it rings when that quiet period ends instead (a time that falls outside prayer rings at its own time).
-- Tick **Show one note at random** to have the full-screen alert show a different note each time it rings: write several notes separated by `;`, and none repeats until all have been shown. (A notification never shows notes.)
-- The page shows today's times for each routine; tick a time when you have done it. **Pause** stops a routine without
+- **Stay Quiet During Prayer**: if a time falls from the call to prayer until the number of minutes you choose after it, it rings when that quiet period ends instead (a time that falls outside prayer rings at its own time).
+- Tick **Show One Note at Random** to have the full-screen alert show a different note each time it rings: write several notes separated by `;`, and none repeats until all have been shown. (A notification never shows notes.)
+- Each routine card shows today at a glance: how many times are done, silent, missed and still coming, a progress bar, and a timeline of the day. On the timeline a filled dot is a time you ticked, an orange ring a time that passed, a grey ring a time still to come, and a dotted dot a time that stayed silent because one of your chosen tasks was running; the chosen tasks are drawn as bands under the line. Click **Silent During N Tasks** to list them, and **Show All Times** to see every time as a button. Tick a time (a dot or a button) when you have done it; a time that has not come yet cannot be ticked. **Pause** stops a routine without
   deleting it. A time that passes while the computer is off or asleep is simply skipped.
 
-The menu shows how many routine times are still to come today next to **Routines**. Routines are kept apart from your tasks: they do not appear in the five zones, but **Statistics** has a **Routines** card (it counts only times that have passed, on the days the routine applies, since the routine was made; add it with **Manage** if you updated from an older version). They are saved with your data and travel with export, import and backups.
+Routines are kept apart from your tasks: they do not appear in the five zones, but **Statistics** has a **Routines** card (it counts only times that have passed, on the days the routine applies, since the routine was made; add it with **Manage** if you updated from an older version). They are saved with your data and travel with export, import and backups.
 
 ![Routines](images/routines.webp)
 
-## 8. Reminders and full-screen alerts
+## 8. Reminders and Full-Screen Alerts
 
 **Reminders (notifications).** New tasks have a reminder switched on. With no times added, it reminds you
 **10 minutes before** (change this in Settings). You can add several reminders to one task, for example
@@ -175,18 +175,18 @@ The menu shows how many routine times are still to come today next to **Routines
 **Missed reminders.** If the computer was off or asleep, the bell lists what you missed. A reminder up to 2
 minutes late is still shown normally.
 
-**Full-screen alert.** For tasks you must not miss, switch on **Full-screen alert at the start time**. At exactly
+**Full-screen alert.** For tasks you must not miss, switch on **Full-Screen Alert at the Start Time**. At exactly
 the start time the whole screen (all screens, if you have several) shows the task until you press a button:
 
 ![Full-screen alert](images/fullscreen-alert.webp)
 
-- **Got it** (always there), **Snooze**, **Open task**, **Mark as Done**.
+- **Got It** (always there), **Snooze**, **Open Task**, **Mark as Done**.
 - **One note at random:** write several notes separated by `;` (for example `Drink water; Stretch; Breathe`)
-  and tick *Show one note at random*. Each alert shows one note, and all are used before any repeats.
+  and tick *Show One Note at Random*. Each alert shows one note, and all are used before any repeats.
 - A few presses right after it appears are ignored on purpose, so typing cannot close it by accident.
 - If it is more than 15 seconds late (for example after sleep), the task goes into the missed list instead.
 - Look, colours, fonts, size and buttons: Settings → Full-screen reminder (with ready-made looks and a
-  **Preview full screen** button).
+  **Preview Full Screen** button).
 
 ![Full-screen alert settings](images/settings-fullscreen.webp)
 
@@ -202,29 +202,29 @@ with the arrows.
 
 The charts (use **Manage** to show, hide or reorder them):
 
-| Chart | What it shows |
+| Chart | What It Shows |
 | --- | --- |
-| Completion rate | Share of counted tasks that are done |
-| Tasks done | How many were done out of how many |
-| Current streak | Days in a row with at least 70% done |
-| Planned time | Total time of the counted tasks |
-| Done on time | Share of done tasks that were not late |
-| Done vs planned | One bar per day, done against planned |
-| By zone | Share done in each of the five zones |
-| Calendar heat map | Every day as a colour; click a day to open it |
-| Completion trend | How the rate moves, with a smoothed line |
-| By category | Share done and planned time for each category |
+| Completion Rate | Share of counted tasks that are done |
+| Tasks Done | How many were done out of how many |
+| Current Streak | Days in a row with at least 70% done |
+| Planned Time | Total Time of the Counted Tasks |
+| Done on Time | Share of done tasks that were not late |
+| Done vs Planned | One bar per day, done against planned |
+| By Zone | Share done in each of the five zones |
+| Calendar Heat Map | Every day as a colour; click a day to open it |
+| Completion Trend | How the rate moves, with a smoothed line |
+| By Category | Share done and planned time for each category |
 | Needs attention | Tasks not done and already past their time |
-| Most late tasks | Which tasks are done late and by how much on average |
-| Lateness by zone and category | Average delay in each |
-| Lateness over time | Average delay per day, week or month |
+| Most Late Tasks | Which tasks are done late and by how much on average |
+| Lateness by Zone and Category | Average delay in each |
+| Lateness Over Time | Average delay per day, week or month |
 | Routines | For each routine: the share of its times done, the current streak, the last days as small squares, and the time you miss most often |
 
 Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
 A task counts as **late** if you tick it more than a chosen time after its start (Settings → Application →
 Late tasks). Tasks ticked in very old versions have no tick time and are not counted for lateness.
 
-## 10. Settings, section by section
+## 10. Settings, Section by Section
 
 Open the menu → **Settings**. A row of buttons at the top jumps to each section.
 
@@ -232,10 +232,10 @@ Open the menu → **Settings**. A row of buttons at the top jumps to each sectio
 | --- | --- |
 | **Language** | English or العربية, applied immediately. Your own text (task names, notes, your categories) is never translated. Numbers always use 0123456789. |
 | **Prayer Times** | Country and city (or a custom city), calculation method (12 are offered), minutes to add or subtract for each prayer, and the Hijri date adjustment. |
-| **Reminders & Notifications** | Windows notifications on/off, a sound, the default reminder time (10 minutes before), the snooze length, an optional notification at the start of each zone, and a **Send a test notification** button. |
+| **Reminders & Notifications** | Windows notifications on/off, a sound, the default reminder time (10 minutes before), the snooze length, an optional notification at the start of each zone, and a **Send a Test Notification** button. |
 | **Application** | **Start with Windows**, the background message, theme (system, light or dark), first day of the week, **late tasks** (after how long a ticked task counts as late) and working days (used by "last working day" repeats). |
-| **Daily View** | Which details each task row shows (with *Show everything*, *Standard* and *Name only* presets and a live preview), and whether empty and finished zones are collapsed. |
-| **Full-screen reminder** | Whether new tasks get it, which screens, colours, font, name and note sizes, details and buttons shown, and ready-made looks. |
+| **Daily View** | Which details each task row shows (with *Show Everything*, *Standard* and *Name Only* presets and a live preview), and whether empty and finished zones are collapsed. |
+| **Full-Screen Reminder** | Whether new tasks get it, which screens, colours, font, name and note sizes, details and buttons shown, and ready-made looks. |
 | **Sounds** | The sound for finishing a task and for the full-screen alert (or off). |
 | **Categories** | Add, rename, colour or delete categories. Deleting one also clears it from tasks. |
 | **Data** | Export, import, restore from backup. |
@@ -243,7 +243,7 @@ Open the menu → **Settings**. A row of buttons at the top jumps to each sectio
 ![Prayer time settings](images/settings-prayer-times.webp)
 ![Daily View settings](images/settings-daily-view.webp)
 
-**A city that is not in the list.** Settings → Prayer Times → City → **Custom city…**: type the name, latitude,
+**A city that is not in the list.** Settings → Prayer Times → City → **Custom City…**: type the name, latitude,
 longitude and time zone (for example `Asia/Riyadh`; a button fills in this computer's time zone), then **Save
 city**. The start and end of each zone are shown in that city's time zone, while your tasks keep using this
 computer's clock. Very far north or south places where the sun does not rise or set cannot be used; the app says so.
@@ -251,22 +251,22 @@ computer's clock. Very far north or south places where the sun does not rise or 
 **Tasks that repeat every 2 or more weeks** count their weeks from the first day of the week chosen in Settings.
 Changing it can move such tasks to other weeks.
 
-## 11. Your data, backups and privacy
+## 11. Your Data, Backups and Privacy
 
 - Everything is stored **only on your computer**, in the app's data folder
   (`%APPDATA%\WaqtWise`, files `data.json` and `state.json`). WaqtWise does not use the network.
-- **Export data** (menu → Export data, or Settings → Data) saves a backup file. **Import data** restores one;
+- **Export Data** (menu → Export data, or Settings → Data) saves a backup file. **Import Data** restores one;
   it replaces what is in the app, so export first if unsure. Backups also carry the saved statistics, so they
   move with you to another computer.
 - **Automatic backups:** one per day (the last 7 days) and one just before each import or restore (the last 5
-  of each) in a `backups` folder. To go back: Settings → Data → **Restore from backup…**, pick a copy and
+  of each) in a `backups` folder. To go back: Settings → Data → **Restore from Backup…**, pick a copy and
   **Restore**. The data you had a moment before is saved first, so a restore can be undone.
-- If saving ever fails (disk full, file locked) a red banner stays at the top with **Try again** and
-  **Export a copy**.
+- If saving ever fails (disk full, file locked) a red banner stays at the top with **Try Again** and
+  **Export a Copy**.
 
 More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 
-## 12. Background running, tray and Windows start
+## 12. Background Running, Tray and Windows Start
 
 - Closing or minimizing the window **keeps WaqtWise running in the tray** (small icons near the clock; you may
   need the small arrow). This is what lets reminders appear when the window is closed. The app tells you the
@@ -276,14 +276,14 @@ More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 - Settings → Application → **Start with Windows** starts it when you log in, quietly in the tray.
 - The window always opens maximized. A change of your computer's time zone is noticed within about a minute.
 
-## 13. Updating and uninstalling
+## 13. Updating and Uninstalling
 
 - **Update:** WaqtWise does not update itself (it never connects to the internet). Download the newer installer
   from the [releases page](../../../releases) and run it. Your tasks and settings are kept.
 - **Uninstall:** Windows Settings → Apps → WaqtWise → Uninstall. It asks whether to delete your data too;
   choose **No** to keep it for a later reinstall.
 
-## 14. FAQ and troubleshooting
+## 14. FAQ and Troubleshooting
 
 **Is it really free? Is there an account or ads?** Free, open source, no account, no ads, no tracking.
 
@@ -292,18 +292,18 @@ More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 
 | Problem | What to try |
 | --- | --- |
-| No notifications appear | Settings → Reminders → **Send a test notification**. If nothing shows: Windows Settings → System → Notifications, make sure notifications are on and WaqtWise is allowed, and turn off Focus assist / Do not disturb. |
+| No notifications appear | Settings → Reminders → **Send a Test Notification**. If nothing shows: Windows Settings → System → Notifications, make sure notifications are on and WaqtWise is allowed, and turn off Focus assist / Do not disturb. |
 | Clicking a notification does not open WaqtWise | Please [report it](../../../issues/new/choose). |
 | The full-screen alert is hidden by a game or video | The program runs in exclusive full-screen. Use its windowed or borderless mode. |
 | The window disappeared | It is in the tray. Click the tray icon. |
 | After Windows starts, the window only flashes in the taskbar | Click it. If it keeps happening, please report it. |
 | Prayer times look wrong | Check the city and calculation method, then adjust minutes for the prayer that differs. |
-| A task shows "Backup start time" | It follows another task that is not on that day. Change the task it follows, or accept the backup time. |
-| I cannot find my small town | Choose a larger town nearby, or use **Custom city…** with exact coordinates. |
+| A task shows "Backup Start Time" | It follows another task that is not on that day. Change the task it follows, or accept the backup time. |
+| I cannot find my small town | Choose a larger town nearby, or use **Custom City…** with exact coordinates. |
 | City names are only in English | Yes, the city list is English only for now. Country names follow the app language. |
 | Everything is gone after reinstalling Windows | Import your exported backup file (menu → Import data). Make exports regularly. |
 
-## 15. Keyboard and accessibility
+## 15. Keyboard and Accessibility
 
 - Tab stays inside dialogs; Enter and Space work on every list item; Enter on the tick button only ticks.
 - Focus stays on the same task when the day is redrawn.

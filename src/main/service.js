@@ -133,7 +133,7 @@ class PlannerService {
     return this.saveProblem ? { ok: false, ...this.saveProblem } : { ok: true };
   }
 
-  // "Try again" on the banner.
+  // "Try Again" on the banner.
   retrySave() {
     try {
       this.persist();
@@ -143,7 +143,7 @@ class PlannerService {
     return this.getSaveStatus();
   }
 
-  // Even when saving fails, the change is kept in memory (the banner offers "Try again"), so the window must still redraw.
+  // Even when saving fails, the change is kept in memory (the banner offers "Try Again"), so the window must still redraw.
   changed() {
     try {
       this.persist();
@@ -236,7 +236,7 @@ const PUBLIC_METHODS = [
   'bootstrap', 'getDay', 'getStats', 'getUpcoming', 'getMissed', 'dismissMissed', 'clearMissed', 'newTaskDefaults', 'getTaskForEdit', 'previewForm', 'saveTask',
   'getReferenceChoices', 'getDeleteImpact', 'getAlertPreset', 'deleteTask', 'setDone', 'duplicateTask', 'getSettings', 'saveSettings', 'addCategory', 'updateCategory',
   'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
-  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone', 'getRoutineLeftToday',
+  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone',
   'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 

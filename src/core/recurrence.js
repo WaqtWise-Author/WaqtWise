@@ -387,7 +387,7 @@ function describeRule(rule) {
   let text;
 
   if (r.frequency === 'daily') {
-    text = tp(n, 'Every day', 'Every {n} days');
+    text = tp(n, 'Every Day', 'Every {n} days');
   } else if (r.frequency === 'weekly') {
     if (n === 1 && r.weekdays.length === 1) {
       text = t('Every {day}', { day: weekdayLong(r.weekdays[0]) });

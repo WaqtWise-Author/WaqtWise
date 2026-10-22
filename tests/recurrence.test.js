@@ -260,7 +260,7 @@ test('Plain-language summaries', () => {
     'Every 2 weeks on Mon, Wed, Fri, starting Oct 1, until Dec 31'
   );
   assert.equal(describeRule(rule({ frequency: 'weekly', interval: 1, weekdays: [5] })), 'Every Friday, starting Oct 1');
-  assert.equal(describeRule(rule({ frequency: 'daily', interval: 1 })), 'Every day, starting Oct 1');
+  assert.equal(describeRule(rule({ frequency: 'daily', interval: 1 })), 'Every Day, starting Oct 1');
   assert.equal(
     describeRule(rule({ frequency: 'weekly', interval: 1, weekdays: [1], end: { type: 'count', count: 20 } })),
     'Every Monday, starting Oct 1, for 20 occurrences'

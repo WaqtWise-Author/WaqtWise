@@ -37,10 +37,10 @@ test('plural forms have 4 entries and keep their placeholders', () => {
 });
 
 test('English is unchanged and Arabic switches text and direction', () => {
-  assert.strictEqual(i18n.t('Task added'), 'Task added');
+  assert.strictEqual(i18n.t('Task Added'), 'Task Added');
   assert.strictEqual(i18n.isRtl(), false);
   i18n.setLanguage('ar');
-  assert.strictEqual(i18n.t('Task added'), 'تمت إضافة المهمة');
+  assert.strictEqual(i18n.t('Task Added'), 'تمت إضافة المهمة');
   assert.strictEqual(i18n.isRtl(), true);
   assert.strictEqual(i18n.t('A text nobody translated'), 'A text nobody translated');
   assert.ok(i18n.takeMissing().includes('A text nobody translated'));

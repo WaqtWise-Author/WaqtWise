@@ -25,7 +25,7 @@ A free day planner for Windows that divides your day into five zones by the pray
   <img src="docs/images/daily-light-top.webp" width="860" alt="The WaqtWise Daily View with five prayer-time zones">
 </p>
 
-## What it does
+## What It Does
 
 Your day is split into **five zones** - Fajr to Dhuhr, Dhuhr to Asr, Asr to Maghrib, Maghrib to Isha, Isha to Fajr.
 Add a task and it lands in the right zone by itself, so you always see how much time you have before the next prayer.
@@ -33,7 +33,7 @@ Add a task and it lands in the right zone by itself, so you always see how much 
 - **Smart start times**: a fixed time, *10 minutes after Asr*, or *15 minutes after the end of another task*.
 - **Repeats**: daily, weekly, monthly (first Friday, last working day, ...), yearly; change one, the following, or all.
 - **Reminders and hard-to-miss full-screen alerts** with snooze, "open task" and "mark as done", and one random note each time.
-- **Free To-Do list** for things with no time yet; schedule them when you decide.
+- **Free To-Do List** for things with no time yet; schedule them when you decide.
 - **Routines** for things that repeat several times a day (every 2 hours 30 minutes between 8 AM and 8 PM, on the days you choose), with a notification, a full-screen alert, or both.
 - **Statistics**: completion, streaks, done on time, lateness, heat map, by zone and category.
 - **Any country and city** (about 30,000 cities, 209 countries), 12 calculation methods, manual minute adjustments, Hijri date.
@@ -55,7 +55,7 @@ Add a task and it lands in the right zone by itself, so you always see how much 
 
 Requires Windows 10 or 11 (64-bit). No administrator rights. The app never updates itself: to update, run the newer installer.
 
-## Learn more
+## Learn More
 
 - [User guide](docs/USER_GUIDE.md) (every feature and setting, FAQ, troubleshooting) · [دليل المستخدم](docs/USER_GUIDE.ar.md)
 - [Privacy](PRIVACY.md) · [Security policy](SECURITY.md) · [Code signing policy](docs/CODE_SIGNING_POLICY.md)
@@ -69,7 +69,7 @@ study, share and change it, and if you share a changed version you must share it
 The name, logo and icon are not covered by the license; see [NOTICE.md](NOTICE.md). Third-party components and data
 (including city data from GeoNames, CC BY 4.0) are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Build it yourself
+## Build It Yourself
 
 ```
 npm ci

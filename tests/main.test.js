@@ -334,7 +334,7 @@ test('First close: "still running in the background" message, once', async () =>
   const box = app.messageBoxes[0];
   assert.match(box.message, /still running in the background/);
   assert.match(box.detail, /Exit/);
-  assert.equal(box.checkboxLabel, "Don't show this again");
+  assert.equal(box.checkboxLabel, "Don't Show This Again");
   assert.equal(app.dataFile().settings.backgroundMessageShown, true);
   assert.equal(app.dataFile().settings.showBackgroundMessage, true, 'not switched off unless the user asks');
 
@@ -613,7 +613,7 @@ test('The test notification works and has no buttons; clicking it opens the app'
   assert.equal(result.ok, true);
   assert.equal(app.notifications.length, 1);
   const xml = app.notifications[0].options.toastXml;
-  assert.ok(xml.includes('WaqtWise test notification'));
+  assert.ok(xml.includes('WaqtWise Test Notification'));
   assert.ok(!xml.includes('<actions>'));
   assert.ok(xml.includes('launch="waqtwise://open"'));
 
@@ -838,7 +838,7 @@ test('Full-screen alert: a task that starts while the alert is open joins the qu
   app.cleanup();
 });
 
-test('Full-screen alert: "Main screen only" uses just the primary screen', async () => {
+test('Full-screen alert: "Main Screen Only" uses just the primary screen', async () => {
   const app = await launch({ displays: twoScreens });
   await app.svc('saveSettings', { alertScreens: 'main' });
   await app.svc('saveTask', { mode: 'create', form: alertForm() });
@@ -968,7 +968,7 @@ test('Full-screen alert closed without a button (Alt+F4) is kept in the bell', a
 
 test('Full-screen alert: a button, or the app closing it itself, adds nothing to the bell', async () => {
   const app = await launch();
-  await app.svc('saveTask', { mode: 'create', form: alertForm({ title: 'Got it' }) });
+  await app.svc('saveTask', { mode: 'create', form: alertForm({ title: 'Got It' }) });
   app.fire(11, 59, 50);
   app.fire(12, 0, 0);
   const win = app.alertWindows()[0];

@@ -120,7 +120,7 @@ async function openMenu(page, label) {
     await section(app.page, '.dialog', 'task-form-relative', 560);
     await app.page.click('button:text-is("Fixed Time")');
     await app.page.click('button:text-is("Repeats")');
-    await app.page.selectOption('select[aria-label="Repeat unit"]', 'weekly');
+    await app.page.selectOption('select[aria-label="Repeat Unit"]', 'weekly');
     await app.page.waitForSelector('.preview-list');
     await section(app.page, '.dialog', 'task-form-repeat', 1700);
     await app.page.keyboard.press('Escape');
@@ -175,7 +175,7 @@ async function openMenu(page, label) {
     free('Send the invoice to the client', { priority: 'High', durationMinutes: 15, categoryId: 'cat-work' });
     free('Book the flight tickets', { priority: 'Medium', categoryId: 'cat-personal' });
     const app = await openApp({ playwright, service, executablePath, width: 1280, height: 900 });
-    await openMenu(app.page, 'Free To-Do list');
+    await openMenu(app.page, 'Free To-Do List');
     await app.page.waitForSelector('.free-row');
     await shot(app.page, 'free-list');
     await app.browser.close();
@@ -185,10 +185,12 @@ async function openMenu(page, label) {
   {
     const service = createService({ now: at(DAY, '13:10') });
     const routine = (form) => service.saveRoutine({ form: { notes: '', categoryId: null, weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false, ...form } });
-    const water = routine({ title: 'Drink a glass of water', from: '08:00', to: '20:00', hours: 2, minutes: 30, categoryId: 'cat-health' });
+    const meeting = makeTask(service, { title: 'Team meeting', start: fixed('10:00'), durationMinutes: 60, date: DAY });
+    const study = makeTask(service, { title: 'Study session', start: fixed('14:00'), durationMinutes: 90, date: DAY });
+    const water = routine({ title: 'Drink a glass of water', from: '08:00', to: '20:00', hours: 1, minutes: 30, categoryId: 'cat-health', notifyBefore: 10, skipTasks: [meeting, study] });
     routine({ title: 'Stand up and stretch', from: '09:00', to: '17:00', hours: 1, minutes: 0, weekdays: [1, 2, 3, 4, 5, 6], fullScreen: true, categoryId: 'cat-work' });
     service.setRoutineSlotDone({ id: water.id, dateKey: DAY, slot: 480, done: true });
-    service.setRoutineSlotDone({ id: water.id, dateKey: DAY, slot: 630, done: true });
+    service.setRoutineSlotDone({ id: water.id, dateKey: DAY, slot: 570, done: true });
     const app = await openApp({ playwright, service, executablePath, width: 1280, height: 900 });
     await openMenu(app.page, 'Routines');
     await app.page.waitForSelector('.routine-card');

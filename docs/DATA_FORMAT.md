@@ -1,4 +1,4 @@
-# WaqtWise backup file format
+# WaqtWise Backup File Format
 
 Export / Import (Settings -> Data) uses one JSON file. Version 1:
 
@@ -58,13 +58,13 @@ Export / Import (Settings -> Data) uses one JSON file. Version 1:
   `src/core/recurrence.js` for every field (weekday lists, monthly modes, yearly modes, end rules).
 - `exceptions`, `additions`, `overrides` and `completions` are keyed by occurrence date (`YYYY-MM-DD`).
 
-## Full-screen alert buttons
+## Full-Screen Alert Buttons
 
-`settings.alertAppearance.buttons` = `{ snooze, open, done }` (true/false, all true by default) chooses which of the buttons **Snooze**, **Open task** and **Mark as Done** the full-screen alert shows. **Got it** has no switch and is always shown, so the alert can always be closed (Enter and Esc also close it). The choice is for every task. The "Details shown" choices (`show`: time, duration, zone, category, priority, and `notes.show`) work the same way. Older files without `buttons` get all three.
+`settings.alertAppearance.buttons` = `{ snooze, open, done }` (true/false, all true by default) chooses which of the buttons **Snooze**, **Open Task** and **Mark as Done** the full-screen alert shows. **Got It** has no switch and is always shown, so the alert can always be closed (Enter and Esc also close it). The choice is for every task. The "Details Shown" choices (`show`: time, duration, zone, category, priority, and `notes.show`) work the same way. Older files without `buttons` get all three.
 
-## One note at random
+## One Note at Random
 
-In the task form, with the full-screen alert on, **Show one note at random** is saved as `reminders.randomNotes` (true/false; it can differ per occurrence like the other reminder options). The notes are split on `;` or `؛`, blanks are dropped, and the full-screen alert shows one message. Every message is shown once before any is repeated (never the same one twice in a row), and the same message stays when the alert is only shown again on the same day; after **Snooze** the alert comes back with a different message. With only one message the notes are shown as written. Everywhere else (details, edit form) the notes are shown whole. What was shown last is kept in `data.json` as `noteRotation` (`{ taskId: { sig, dateKey, index, used } }`); it is not part of the export file, and it starts over when the notes are changed.
+In the task form, with the full-screen alert on, **Show One Note at Random** is saved as `reminders.randomNotes` (true/false; it can differ per occurrence like the other reminder options). The notes are split on `;` or `؛`, blanks are dropped, and the full-screen alert shows one message. Every message is shown once before any is repeated (never the same one twice in a row), and the same message stays when the alert is only shown again on the same day; after **Snooze** the alert comes back with a different message. With only one message the notes are shown as written. Everywhere else (details, edit form) the notes are shown whole. What was shown last is kept in `data.json` as `noteRotation` (`{ taskId: { sig, dateKey, index, used } }`); it is not part of the export file, and it starts over when the notes are changed.
 
 ## Saved statistics (`statsHistory`)
 
@@ -83,7 +83,7 @@ A routine repeats several times a day inside a time window (for example "every 2
 
 `from` and `to` are 24-hour clock times (if `to` is earlier than `from` the window runs past midnight); the times are `from`, `from + everyMinutes`, … up to and including `to`. `weekdays` are the days the window starts on (0 = Sunday). `quietAfterPrayerMinutes` (0 to 60, 0 = off): a time that falls from a prayer's call until that many minutes later rings when that period ends. `notifyBeforeMinutes` (0 to 120): the notification comes that many minutes before each time (the full-screen alert stays exact). `skipDuringTasks`: ids of tasks (up to 20); a time that falls while one of them is running does not ring. `randomNotes`: the full-screen alert shows one of the notes (separated by `;`) each time. `completions` lists, for each date, the times already ticked as minutes after midnight (kept for 400 days). `routineState` (what already rang, snoozed reminders) is only in `data.json`, not in the export file.
 
-## Free task
+## Free Task
 
 The Free To-Do list holds tasks that have no time yet. It has no reminders, no zone and no statistics. When a free task is scheduled it becomes a normal task and leaves the list. A file without `freeTasks` (made by an older version) loads with an empty list.
 
@@ -94,7 +94,7 @@ The Free To-Do list holds tasks that have no time yet. It has no reminders, no z
 
 `durationMinutes` is optional (`null` or 1 to 10080); it is used when the task is scheduled. The order of the list is the order shown.
 
-## Full-screen alert
+## Full-Screen Alert
 
 - Each task's `reminders` object may contain `"fullScreen": true` (missing means off). Single-occurrence edits in
   `overrides` can carry their own `reminders`, so one day can differ.
@@ -102,7 +102,7 @@ The Free To-Do list holds tasks that have no time yet. It has no reminders, no z
   `alertAppearance` (colors as `#rrggbb`, `fontFamily`, `alignment`, and the groups `name`, `notes` and `show`).
   Missing or invalid values are replaced by the defaults when a backup is imported.
 
-## Settings added in this version
+## Settings Added in This Version
 
 - `lateAfterMinutes` (0-10080, default 60): a done task is *late* when it was ticked more than this many minutes after its start time. It only affects the lateness charts in Statistics.
 - `taskInfo` (object of 14 true/false keys): which details each task row shows in the Daily View. Keys: `time`, `endTime`, `duration`, `priority`, `category`, `status`, `conflicts`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`, `continues`, `backupStart`. Default: all on except `endTime`, `repeat`, `startRule`, `reminders`, `fullScreen`, `notes`. It only changes how rows look; no task data changes.
@@ -115,7 +115,7 @@ the time zone being an IANA name such as `Asia/Riyadh`). An invalid city is drop
 
 `settings.weekStart` (6, 0 or 1) is also used to count the weeks of tasks that repeat every 2 or more weeks.
 
-## Saved data file (not the export file)
+## Saved Data File (Not the Export File)
 
 `data.json` also holds `statsHistory`: `{ "through": "YYYY-MM-DD", "days": { "<day>": [[taskId, dateKey, title, categoryId, minutes, done(0/1), startMs, zone, completedMs], ...] } }`,
 the saved statistics of finished days. It is not part of the export file. Automatic copies of `data.json` are kept
@@ -126,11 +126,11 @@ in the `backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.jso
 Numbers are checked when a task is saved and when a data file is loaded (a task or a part that fails is skipped with a message, never trusted): task duration 1 to 10080 minutes (7 days); "minutes before or after a prayer or task" and reminder times 0 to 10080; "every N" 1 to 999; "after N occurrences" 1 to 9999; at most 20000 tasks and 5000 free tasks per file; a title of at most 200 characters; a backup file larger than 20 MB is refused. The limits are in `src/core/limits.js`.
 
 
-## state.json (reminder bookkeeping)
+## State.json (Reminder Bookkeeping)
 
 Next to `data.json` the app keeps `state.json`: the small reminder bookkeeping (`delivered`, `snoozed`, `lastTickAt`), written about once a minute. Before this, the whole data file was rewritten every minute. Every full save writes it too, and when the app starts the content of `state.json` is used for `reminderState` (the copy inside `data.json` is the fallback if the small file is missing or damaged). It is not part of the export file and is not copied into the daily backups; deleting it is harmless (a reminder may be shown a second time at most).
 
-## Limits (checked when saving and when reading a file)
+## Limits (Checked When Saving and When Reading a File)
 
 - A task title: at most 200 characters (a longer one in an old file is shortened, the task is kept). Notes: at most 20000 characters (cut, not refused).
 - One task keeps at most 3660 dates in each of `exceptions`, `additions`, `overrides`, `completions` and `completedAt` (about 10 years); the newest are kept.

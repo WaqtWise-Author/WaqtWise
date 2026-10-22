@@ -24,7 +24,7 @@
     const button = document.getElementById('theme-btn');
     if (!button) return;
     const dark = effectiveTheme() === 'dark';
-    const label = T(dark ? 'Switch to light theme' : 'Switch to dark theme');
+    const label = T(dark ? 'Switch to Light Theme' : 'Switch to Dark Theme');
     clear(button).appendChild(WW.icon(dark ? 'sun' : 'moon'));
     button.title = label;
     button.setAttribute('aria-label', label);
@@ -88,22 +88,22 @@
     if (show.category && t.categoryName) {
       tags.push(h('span', { class: 'tag pill' }, h('span', { class: 'dot', style: { background: t.categoryColor } }), t.categoryName));
     }
-    if (show.status && t.overdue) tags.push(h('span', { class: 'tag late', text: T('Not done') }));
-    if (show.status && t.inProgress) tags.push(h('span', { class: 'tag live', text: T('In progress') }));
+    if (show.status && t.overdue) tags.push(h('span', { class: 'tag late', text: T('Not Done') }));
+    if (show.status && t.inProgress) tags.push(h('span', { class: 'tag live', text: T('In Progress') }));
     if (show.conflicts && t.overlaps) {
       const names = (t.conflictWith || []).map((n) => `“${n}”`).join(T(', '));
-      tags.push(h('span', { class: 'tag warn conflict', title: T('Overlaps another task') },
+      tags.push(h('span', { class: 'tag warn conflict', title: T('Overlaps Another Task') },
         WW.icon('warn', 13, 2.6), names ? T('Conflict with {names}', { names }) : T('Conflict')));
     }
     if (show.backupStart && t.startWarning) tags.push(h('span', { class: 'tag warn', title: t.startWarning, text: T('⚠ Backup start time') }));
-    if (show.continues && t.extendsPastZoneEnd) tags.push(h('span', { class: 'tag', title: T('Continues into the next zone'), text: T('→ Continues into next zone') }));
+    if (show.continues && t.extendsPastZoneEnd) tags.push(h('span', { class: 'tag', title: T('Continues into the Next Zone'), text: T('→ Continues into next zone') }));
     if (show.repeat && t.repeatSummary) tags.push(h('span', { class: 'tag', title: T('Repeat'), text: `↻ ${t.repeatSummary}` }));
     if (show.startRule && t.startRuleLabel) tags.push(h('span', { class: 'tag', text: t.startRuleLabel }));
     if (show.reminders && t.reminderOffsets && t.reminderOffsets.length) {
       const labels = t.reminderOffsets.slice().sort((x, y) => y - x).map((n) => WW.offsetLabel(n)).join(T(', '));
       tags.push(h('span', { class: 'tag', title: T('Reminders') }, WW.icon('bell', 13, 2), labels));
     }
-    if (show.fullScreen && t.hasFullScreen) tags.push(h('span', { class: 'tag', text: T('Full-screen alert') }));
+    if (show.fullScreen && t.hasFullScreen) tags.push(h('span', { class: 'tag', text: T('Full-Screen Alert') }));
 
     const check = h('button', {
       class: `check ${t.done ? 'on' : ''}`, type: 'button', disabled: Boolean(t.future && !t.done), title: t.future && !t.done ? T('This task is on a day that has not come yet') : null,
@@ -248,7 +248,7 @@
   function heroCard(day) {
     const cur = day.currentZone;
     const pct = percent(day.doneCount, day.taskCount);
-    const title = cur ? cur.name : day.isCurrentDay ? T('Between zones') : T('Day overview');
+    const title = cur ? cur.name : day.isCurrentDay ? T('Between Zones') : T('Day Overview');
     const sub = cur
       ? [h('b', { text: cur.timeLeftLabel }), cur.nextName ? T(' until {zone} · ', { zone: arrowHead(cur.nextName) }) : T(' left · '), T('{free} free in this zone', { free: cur.freeLabel })]
       : [TP(day.taskCount, '{n} task planned for this day', '{n} tasks planned for this day')];
@@ -268,7 +268,7 @@
     if (day.dayNowPct !== null) strip.appendChild(h('div', { class: 'strip-now', style: { insetInlineStart: `${day.dayNowPct}%` }, title: T('Now') }));
     strip.appendChild(labels);
 
-    return h('section', { class: 'hero', 'aria-label': T('Right now') },
+    return h('section', { class: 'hero', 'aria-label': T('Right Now') },
       h('div', { class: 'hero-top' },
         h('div', {},
           h('div', { class: 'hero-eyebrow', text: cur ? T('RIGHT NOW') : day.isCurrentDay ? T('TODAY') : T('OVERVIEW') }),
@@ -278,11 +278,11 @@
           h('div', { class: 'stat-card', role: 'img', 'aria-label': T('Done {done} of {total} tasks ({pct}%)', { done: day.doneCount, total: day.taskCount, pct }) },
             donut(64, 25, 7, pct, 'var(--accent)', 14),
             h('div', {},
-              h('div', { class: 'stat-label', text: day.isCurrentDay ? T('Done today') : T('Done') }),
+              h('div', { class: 'stat-label', text: day.isCurrentDay ? T('Done Today') : T('Done') }),
               h('div', { class: 'stat-value' }, `${day.doneCount} `, h('small', { text: `/ ${day.taskCount}` })))),
           day.isCurrentDay
             ? h('div', { class: 'stat-card plain' },
-              h('div', { class: 'stat-label', text: T('In progress') }),
+              h('div', { class: 'stat-label', text: T('In Progress') }),
               h('div', { class: 'stat-text', text: day.inProgress.length ? day.inProgress.join(T(', ')) : '—' }))
             : null)),
       strip);
@@ -309,7 +309,7 @@
     const root = clear(view());
 
     const picker = h('input', {
-      type: 'date', value: day.planningDayKey, 'aria-label': T('Jump to date'),
+      type: 'date', value: day.planningDayKey, 'aria-label': T('Jump to Date'),
       onchange: (e) => { if (e.target.value) WW.showDay(e.target.value); },
     });
 
@@ -333,10 +333,10 @@
           h('div', { class: 'day-actions' },
             h('button', { class: 'btn', text: T('Today'), onclick: () => WW.showDay(WW.state.todayKey || day.currentPlanningDayKey) }),
             picker)),
-        h('div', { class: 'week-strip', role: 'group', 'aria-label': T('Days of this week') },
-          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Previous week'), onclick: () => WW.showDay(week.prevKey) }, WW.icon(WW.arrowIcon('prev'), 18, 2.2)),
+        h('div', { class: 'week-strip', role: 'group', 'aria-label': T('Days of This Week') },
+          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Previous Week'), onclick: () => WW.showDay(week.prevKey) }, WW.icon(WW.arrowIcon('prev'), 18, 2.2)),
           ...week.days.map(chip),
-          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next week'), onclick: () => WW.showDay(week.nextKey) }, WW.icon(WW.arrowIcon('next'), 18, 2.2)))),
+          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next Week'), onclick: () => WW.showDay(week.nextKey) }, WW.icon(WW.arrowIcon('next'), 18, 2.2)))),
       heroCard(day),
       h('div', { class: 'zones' }, day.zones.map((z) => zoneSection(z, day))));
     restoreFocus(memory);
@@ -360,7 +360,7 @@
       if (keepScroll) window.scrollTo(0, scrollY);
       else if (day.isCurrentDay) {
         // Opening today: when the zone happening now (or the next one with something in it) starts low on the screen,
-        // scroll it up. When it is already well in view the top of the page - the "Right now" card - stays.
+        // scroll it up. When it is already well in view the top of the page - the "Right Now" card - stays.
         const target = view().querySelector('.zone.current') || view().querySelector('.zone:not(.folded)');
         if (target && target.scrollIntoView && target.getBoundingClientRect().top > window.innerHeight * 0.6) target.scrollIntoView({ block: 'start' });
       }
@@ -420,13 +420,13 @@
       h('div', { class: 'save-text' },
         T('Your changes could not be saved. Do not close WaqtWise yet.'),
         h('span', { class: 'save-reason', text: status.message })),
-      h('button', { class: 'btn small', type: 'button', id: 'save-retry', text: T('Try again'), onclick: async () => {
+      h('button', { class: 'btn small', type: 'button', id: 'save-retry', text: T('Try Again'), onclick: async () => {
         try { await window.api.call('retrySave'); } catch (error) { /* the banner says why */ }
         await WW.refreshSaveBanner();
         const again = document.getElementById('save-banner');
         if (again && again.hidden) WW.toast(T('Saved'));
       } }),
-      h('button', { class: 'btn small', type: 'button', id: 'save-export', text: T('Export a copy'), onclick: () => WW.exportData() }));
+      h('button', { class: 'btn small', type: 'button', id: 'save-export', text: T('Export a Copy'), onclick: () => WW.exportData() }));
     banner.hidden = false;
   };
 
@@ -446,7 +446,7 @@
       const list = await WW.call('getMissed');
       WW.state.missedCount = list.length;
       button.classList.toggle('bell-empty', list.length === 0);
-      const label = list.length === 0 ? T('No missed reminders') : TP(list.length, '{n} missed reminder', '{n} missed reminders');
+      const label = list.length === 0 ? T('No Missed Reminders') : TP(list.length, '{n} missed reminder', '{n} missed reminders');
       button.title = label;
       button.setAttribute('aria-label', label);
       let badge = button.querySelector('.bell-badge');
@@ -469,9 +469,9 @@
     if (!wasHidden) return;
     const list = (await refreshBell()) || [];
     clear(panel).appendChild(h('div', { class: 'popover-head' },
-      h('h3', { text: T('Missed reminders') }),
+      h('h3', { text: T('Missed Reminders') }),
       list.length ? h('button', {
-        class: 'link-btn', type: 'button', text: T('Clear all'),
+        class: 'link-btn', type: 'button', text: T('Clear All'),
         onclick: async () => {
           try { await WW.call('clearMissed'); } catch (error) { WW.toast(error.message, 'error'); }
           closePopovers();
@@ -503,11 +503,6 @@
   async function openDrawer() {
     closePopovers();
     if (WW.refreshFreeCount) await WW.refreshFreeCount();
-    try {
-      WW.state.routineLeft = await WW.call('getRoutineLeftToday'); // the routine times still to come today
-    } catch (error) {
-      WW.state.routineLeft = 0;
-    }
     const drawer = document.getElementById('drawer');
     const item = (icon, label, fn, active) => h('button', {
       class: `drawer-item ${active ? 'active' : ''}`, type: 'button',
@@ -517,16 +512,16 @@
       h('div', { class: 'drawer-head' },
         h('img', { class: 'app-logo', src: 'logo.png', alt: '' }),
         h('div', { class: 'drawer-title', text: 'WaqtWise' }),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': T('Close menu'), onclick: closeDrawer }, WW.icon('close', 18, 2))),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': T('Close Menu'), onclick: closeDrawer }, WW.icon('close', 18, 2))),
       item('calendar', T('Daily View'), () => WW.showDaily(), WW.state.view === 'daily'),
-      item('check', T('Free To-Do list') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
-      item('bell', T('Routines') + (WW.state.routineLeft ? ` (${WW.state.routineLeft})` : ''), () => WW.showRoutines(), WW.state.view === 'routines'),
+      item('check', T('Free To-Do List') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
+      item('bell', T('Routines'), () => WW.showRoutines(), WW.state.view === 'routines'),
       item('chart', T('Statistics'), () => WW.showStats({ range: 'week' }), WW.state.view === 'stats'),
       item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'),
       h('div', { class: 'drawer-sep' }),
       h('div', { class: 'drawer-label', text: T('YOUR DATA') }),
-      item('export', T('Export data…'), () => WW.exportData()),
-      item('import', T('Import data…'), () => WW.importData()),
+      item('export', T('Export Data…'), () => WW.exportData()),
+      item('import', T('Import Data…'), () => WW.importData()),
       h('p', { class: 'drawer-note', text: T('Export saves a backup file on this computer. Importing a backup replaces all tasks, categories and settings.') }));
     drawer.hidden = false;
     document.getElementById('scrim').hidden = false;
@@ -540,7 +535,7 @@
   WW.exportData = async function exportData() {
     try {
       const result = await window.api.exportData();
-      if (result && result.ok) WW.toast(T('Backup saved'));
+      if (result && result.ok) WW.toast(T('Backup Saved'));
     } catch (error) {
       WW.toast(error.message, 'error');
     }
@@ -548,9 +543,9 @@
 
   WW.importData = async function importData() {
     const go = await WW.ask({
-      title: T('Import data'),
+      title: T('Import Data'),
       message: T('Importing a backup replaces ALL tasks, categories and settings on this computer with the contents of the file. Continue?'),
-      choices: [{ label: T('Cancel'), value: false }, { label: T('Choose file…'), value: true, kind: 'primary' }],
+      choices: [{ label: T('Cancel'), value: false }, { label: T('Choose File…'), value: true, kind: 'primary' }],
     });
     if (!go) return;
     try {
@@ -571,7 +566,7 @@
 
   // ---- Restore from a saved copy -----------------------------------------------------------------------------------
 
-  const BACKUP_KIND = () => ({ daily: T('Daily copy'), 'before-import': T('Before an import'), 'before-restore': T('Before a restore') });
+  const BACKUP_KIND = () => ({ daily: T('Daily Copy'), 'before-import': T('Before an Import'), 'before-restore': T('Before a Restore') });
 
   WW.restoreBackup = async function restoreBackup() {
     let list;
@@ -581,7 +576,7 @@
       WW.toast(error.message, 'error');
       return;
     }
-    const dlg = WW.openDialog({ title: T('Restore from backup') });
+    const dlg = WW.openDialog({ title: T('Restore from Backup') });
     dlg.body.appendChild(h('p', { class: 'dialog-message', text: T('WaqtWise keeps a copy of your data every day (last 7 days) and one before every import or restore. Restoring replaces all tasks, categories and settings with the chosen copy. Your current data is saved first, so you can undo it from this same list.') }));
     if (!list.length) {
       dlg.body.appendChild(h('p', { class: 'hint', text: T('No saved copies yet. The first one is made automatically today.') }));
@@ -624,7 +619,7 @@
     Object.assign(WW.state, { settings: boot.settings, categories: boot.categories, cities: boot.cities, countries: boot.countries, methods: boot.methods, city: boot.city, todayKey: boot.currentPlanningDayKey });
     WW.applyLanguage(boot.settings.language);
     const add = document.getElementById('add-btn');
-    if (add) clear(add).append(WW.icon('plus', 16, 2.6), T('New task'));
+    if (add) clear(add).append(WW.icon('plus', 16, 2.6), T('New Task'));
     WW.applyTheme(boot.settings.theme);
     if (WW.refreshBell) WW.refreshBell();
     if (WW.state.view === 'settings') WW.renderSettings();
@@ -663,13 +658,13 @@
     let city = WW.state.settings.cityName;
     let country = 'EG';
     let worldChosen = null; // { name, timeZone } once a city of another country has been picked (it is saved at once)
-    const select = h('select', { id: 'welcome-city', 'aria-label': T('Your city'), onchange: (e) => { city = e.target.value; } },
+    const select = h('select', { id: 'welcome-city', 'aria-label': T('Your City'), onchange: (e) => { city = e.target.value; } },
       WW.state.cities.map((name) => h('option', { value: name, text: T(name), selected: name === city })));
     const cityBox = h('div', { class: 'welcome-city-box' });
     const drawCity = () => {
       cityBox.replaceChildren();
       if (country === 'EG') { cityBox.append(select); return; }
-      if (worldChosen) cityBox.append(h('p', { class: 'current-city', role: 'status' }, `✓ ${worldChosen.name}`, h('small', { text: ` · ${T('Time zone')}: ${worldChosen.timeZone}` })));
+      if (worldChosen) cityBox.append(h('p', { class: 'current-city', role: 'status' }, `✓ ${worldChosen.name}`, h('small', { text: ` · ${T('Time Zone')}: ${worldChosen.timeZone}` })));
       cityBox.append(
         WW.worldCitySearch({
           country,
@@ -701,7 +696,7 @@
           WW.toast(error.message, 'error');
         }
       },
-    }, T('Start planning'), WW.icon(WW.arrowIcon('next'), 20, 2.4));
+    }, T('Start Planning'), WW.icon(WW.arrowIcon('next'), 20, 2.4));
     const screen = h('div', { class: 'welcome', role: 'dialog', 'aria-modal': 'true', 'aria-label': T('Welcome to WaqtWise') },
       h('div', { class: 'welcome-brand' },
         h('img', { src: 'logo-large.png', alt: '' }),
@@ -710,11 +705,11 @@
         strip),
       h('div', { class: 'welcome-form' },
         h('div', { class: 'welcome-eyebrow', text: T('WELCOME') }),
-        h('h2', { text: T('Let\u2019s set up your day') }),
+        h('h2', { text: T('Let\u2019s Set Up Your Day') }),
         h('p', { class: 'lead', text: T('WaqtWise divides your day into 5 zones using the prayer times, so it needs to know your city.') }),
-        h('label', { for: 'welcome-country', text: T('Your country') }),
+        h('label', { for: 'welcome-country', text: T('Your Country') }),
         countrySel,
-        h('label', { for: 'welcome-city', text: T('Your city') }),
+        h('label', { for: 'welcome-city', text: T('Your City') }),
         cityBox,
         h('p', { class: 'hint', text: T('You can change this later in Settings. Everything stays on this computer.') }),
         start));
@@ -760,7 +755,7 @@
     const put = (id, node) => clear(document.getElementById(id)).appendChild(node);
     put('menu-btn', WW.icon('menu', 22, 1.9));
     put('bell-btn', WW.icon('bell'));
-    clear(document.getElementById('add-btn')).append(WW.icon('plus', 16, 2.6), T('New task'));
+    clear(document.getElementById('add-btn')).append(WW.icon('plus', 16, 2.6), T('New Task'));
     updateThemeButton();
     if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', updateThemeButton);
 

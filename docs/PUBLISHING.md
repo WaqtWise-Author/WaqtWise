@@ -1,8 +1,8 @@
-# Publishing checklist (for the project owner)
+# Publishing Checklist (for the Project Owner)
 
 This is a to-do list for the person who owns the GitHub repository. It is not needed by users.
 
-## 0. Before the first public upload
+## 0. Before the First Public Upload
 
 - [ ] **Copyright holder.** `LICENSE` is the standard GPL text and needs no change. In `NOTICE.md`,
       `package.json` (`author`, `build.copyright`) the holder is "The WaqtWise authors". Replace it with your name
@@ -10,7 +10,7 @@ This is a to-do list for the person who owns the GitHub repository. It is not ne
 - [ ] **Search for private things** you do not want public: names, emails, paths in `docs/` and `src/`.
 - [ ] Keep `package-lock.json` in the repository (the workflows use `npm ci`) and upload the whole `.github` folder.
 
-## 1. Create the repository
+## 1. Create the Repository
 
 1. GitHub → **New repository**, name e.g. `waqtwise`, **Public**, no template files.
 2. Upload everything (drag the extracted folder's content, including the hidden `.github`).
@@ -21,7 +21,7 @@ This is a to-do list for the person who owns the GitHub repository. It is not ne
 6. Turn on **two-factor authentication** for your GitHub account (SignPath requires MFA for everyone with access).
 7. Optional but recommended: **Settings → Branches**, protect `main`.
 
-## 2. Check that everything builds (Actions tab)
+## 2. Check That Everything Builds (Actions Tab)
 
 **Run tests**, **Screen check** and **Publish website** also start by themselves on every push (the website only
 when `site/`, `docs/` or the page builder change on `main`). **Build Windows installer** and **Release** are always
@@ -31,14 +31,14 @@ started by hand.
 - [ ] Download the installer from the build and test it on your Windows PC (checks 40, 41 and 42 in
       `ACCEPTANCE_CHECKLIST.md`, and the new check 43 for the website).
 
-## 3. Publish the website (GitHub Pages)
+## 3. Publish the Website (GitHub Pages)
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. **Actions → Publish website → Run workflow** (the first time; after that it runs by itself when the site changes).
 3. The site is at `https://<your-user>.github.io/<repo>/`. Links to the downloads are worked out from that
    address automatically. If you use another domain, edit `site/config.js`.
 
-## 4. First release
+## 4. First Release
 
 1. Raise `version` in `package.json` if needed and add the section in `docs/CHANGELOG.md`.
 2. **Actions → Release → Run workflow** with the version (e.g. `1.1.0`). It builds the installer and creates a
@@ -71,7 +71,7 @@ website), no malware or hacking tools, MFA for all members.
 5. There is no promise: they may decline or ask for changes, and approval time is not stated. Publishing unsigned in the
    meantime is fine. Even a signed file may still show SmartScreen for a while until it earns reputation.
 
-## 6. After publishing
+## 6. After Publishing
 
 - Put the repository link in the README badges if you like (replace the placeholders `OWNER/REPO`).
 - Share the website link, not the zip. Answer issues; keep `docs/CHANGELOG.md` current.

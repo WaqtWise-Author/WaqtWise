@@ -1,6 +1,6 @@
 'use strict';
 
-// "One note at random": a task's notes can hold several messages separated by ; (or the Arabic ؛).
+// "One Note at Random": a task's notes can hold several messages separated by ; (or the Arabic ؛).
 // The full-screen alert shows one of them. Every message is shown once before any is repeated, and the same
 // message is kept while the alert is simply shown again on the same day; after a snooze a different one is chosen.
 //

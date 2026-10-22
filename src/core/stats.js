@@ -26,7 +26,7 @@ const wd = (key) => weekdayShort(weekdayOfKey(key));
 const monthName = (key) => monthLong(splitKey(key).m - 1);
 const monthAbbr = (key) => monthShort(splitKey(key).m - 1);
 const ZONE_SHORT = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-const noCategory = () => ({ name: tr('No category'), color: '#8ca0b5' });
+const noCategory = () => ({ name: tr('No Category'), color: '#8ca0b5' });
 const noun = (range) => ({ day: tr('yesterday'), week: tr('last week'), month: tr('last month'), year: tr('last year'), custom: tr('the previous period') })[range];
 const LATE_LIMIT = 200;
 
@@ -218,7 +218,7 @@ function delayStat(list, thresholdMs) {
   }
   return { n, late, onTime: n - late, avg: n ? Math.round(sum / 60000 / n) : null, max: Math.round(max / 60000) };
 }
-const lateMinutes = (m) => (m === null ? '–' : m === 0 ? tr('On time') : formatDuration(m));
+const lateMinutes = (m) => (m === null ? '–' : m === 0 ? tr('On Time') : formatDuration(m));
 const percentOf = (t) => (t.total ? Math.round((t.done / t.total) * 100) : null);
 
 // ---- the whole picture ------------------------------------------------------------------------
@@ -286,22 +286,22 @@ function computeStats({ provider, tasks, categories, options, now, query, weekSt
   const onNow = dNow.n ? Math.round((dNow.onTime / dNow.n) * 100) : null;
   const onBefore = dBefore.n ? Math.round((dBefore.onTime / dBefore.n) * 100) : null;
   const onTimeKpi = {
-    id: 'ontime', label: tr('Done on time'), value: onNow === null ? '–' : String(onNow), unit: '%',
-    delta: onNow === null ? { text: tr('No timing data yet'), tone: 'none' }
+    id: 'ontime', label: tr('Done on Time'), value: onNow === null ? '–' : String(onNow), unit: '%',
+    delta: onNow === null ? { text: tr('No Timing Data Yet'), tone: 'none' }
       : onBefore === null ? { text: tp(dNow.n, 'Out of {n} timed task', 'Out of {n} timed tasks'), tone: 'none' }
         : onNow === onBefore ? { text: tr('Same as {period}', { period: lastPeriod }), tone: 'flat' }
           : { text: tr(onNow > onBefore ? '▲ {n} pts vs {period}' : '▼ {n} pts vs {period}', { n: Math.abs(onNow - onBefore), period: lastPeriod }), tone: onNow > onBefore ? 'up' : 'down' },
   };
   const kpis = [
     {
-      id: 'rate', label: tr('Completion rate'), value: pctNow === null ? '–' : String(pctNow), unit: '%',
-      delta: pctBefore === null || pctNow === null ? { text: tr('No earlier data'), tone: 'none' }
+      id: 'rate', label: tr('Completion Rate'), value: pctNow === null ? '–' : String(pctNow), unit: '%',
+      delta: pctBefore === null || pctNow === null ? { text: tr('No Earlier Data'), tone: 'none' }
         : pctNow === pctBefore ? { text: tr('Same as {period}', { period: lastPeriod }), tone: 'flat' }
           : { text: tr(pctNow > pctBefore ? '▲ {n} pts vs {period}' : '▼ {n} pts vs {period}', { n: Math.abs(pctNow - pctBefore), period: lastPeriod }), tone: pctNow > pctBefore ? 'up' : 'down' },
     },
     {
-      id: 'done', label: tr('Tasks done'), value: String(cur.done), unit: tr('of {n}', { n: cur.total }),
-      delta: before.total === 0 ? { text: tr('No earlier data'), tone: 'none' }
+      id: 'done', label: tr('Tasks Done'), value: String(cur.done), unit: tr('of {n}', { n: cur.total }),
+      delta: before.total === 0 ? { text: tr('No Earlier Data'), tone: 'none' }
         : cur.done === before.done ? { text: tr('Same as {period}', { period: lastPeriod }), tone: 'flat' }
           : {
             text: tr(cur.done > before.done ? '▲ {n} more than {period}' : '▼ {n} fewer than {period}', { n: Math.abs(cur.done - before.done), period: lastPeriod }),
@@ -309,10 +309,10 @@ function computeStats({ provider, tasks, categories, options, now, query, weekSt
           },
     },
     onTimeKpi,
-    { id: 'streak', label: tr('Current streak · as of today'), value: String(current), unit: tp(current, 'day', 'days'), delta: { text: tp(best, 'Best: {n} day', 'Best: {n} days'), tone: 'none' } },
+    { id: 'streak', label: tr('Current Streak · As of Today'), value: String(current), unit: tp(current, 'day', 'days'), delta: { text: tp(best, 'Best: {n} day', 'Best: {n} days'), tone: 'none' } },
     {
-      id: 'time', label: tr('Planned time'), value: formatDuration(cur.minutes), unit: '',
-      delta: before.total === 0 ? { text: tr('No earlier data'), tone: 'none' }
+      id: 'time', label: tr('Planned Time'), value: formatDuration(cur.minutes), unit: '',
+      delta: before.total === 0 ? { text: tr('No Earlier Data'), tone: 'none' }
         : cur.minutes === before.minutes ? { text: tr('Same as {period}', { period: lastPeriod }), tone: 'flat' }
           : { text: tr(cur.minutes > before.minutes ? '▲ {time} vs {period}' : '▼ {time} vs {period}', { time: formatDuration(Math.abs(cur.minutes - before.minutes)), period: lastPeriod }), tone: 'flat' },
     },
@@ -348,7 +348,7 @@ function computeStats({ provider, tasks, categories, options, now, query, weekSt
     }
   }
   const bars = {
-    title: tr('Done vs planned'),
+    title: tr('Done vs Planned'),
     sub: unit === 'zone' ? tr('Each bar is one zone of the day') : tr({ day: 'Each bar is one day', week: 'Each bar is one week', month: 'Each bar is one month' }[unit]),
     unit, items, maxTotal: Math.max(1, ...items.map((i) => i.total)),
   };
@@ -470,7 +470,7 @@ function computeStats({ provider, tasks, categories, options, now, query, weekSt
     for (let i = 0; i < 7; i++) points.push(dayPoint(addDaysToKey(r.start, i)));
     compare = [];
     for (let i = 0; i < 7; i++) compare.push(pctAt(addDaysToKey(r.prevStart, i)));
-    legend = [{ label: tr('This week'), style: 'solid' }, { label: tr('Last week'), style: 'dashed' }];
+    legend = [{ label: tr('This Week'), style: 'solid' }, { label: tr('Last Week'), style: 'dashed' }];
     sub = tr('Each day of this week, against the same days last week');
   } else if (r.range === 'month' || (r.range === 'custom' && r.span <= 31)) {
     const average = r.range === 'month';

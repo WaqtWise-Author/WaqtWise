@@ -182,7 +182,6 @@ test('service: add, edit, pause, tick, delete a routine', () => {
   assert.equal(r.times[0].label, '9:00 AM');
   assert.equal(r.times[0].past, true);
   assert.equal(r.nextLabel, '10:30 AM');
-  assert.equal(s.getRoutineLeftToday(), 5);
 
   assert.deepEqual(s.getRoutineForEdit({ id }), { title: 'Stretch', notes: '', categoryId: null, from: '09:00', to: '17:00', hours: 1, minutes: 30, weekdays: [0, 1, 2, 3, 4], notification: true, fullScreen: false, randomNotes: false, quietMinutes: 0, notifyBefore: 0, skipTasks: [], enabled: true });
   s.setRoutineSlotDone({ id, dateKey: DAY, slot: 540, done: true });
@@ -194,7 +193,6 @@ test('service: add, edit, pause, tick, delete a routine', () => {
 
   s.setRoutineEnabled({ id, enabled: false });
   assert.equal(s.getRoutines()[0].times.length, 0);
-  assert.equal(s.getRoutineLeftToday(), 0);
   s.deleteRoutine({ id });
   assert.equal(s.getRoutines().length, 0);
   assert.throws(() => s.deleteRoutine({ id }));
@@ -365,12 +363,6 @@ test('the Statistics screen data carries the routines card, which can be chosen 
   assert.equal(data.routineStats.items.length, 1);
   assert.ok(require('../src/core').STATS_CHARTS.some((c) => c.id === 'routines'));
   assert.ok(s.getSettings().statsCharts.includes('routines'));
-});
-
-test('the number of routine times still to come today', () => {
-  const s = service(); // 10:00 on a Sunday
-  s.saveRoutine({ form: form() }); // 9:00 10:30 12:00 13:30 15:00 16:30 on Sunday
-  assert.equal(s.getRoutineLeftToday(), 5);
 });
 
 // ---- notification lead time, silence during tasks, no ticking the future ------------------------------------------------
