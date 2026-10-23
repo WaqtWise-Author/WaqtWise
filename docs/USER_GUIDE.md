@@ -271,7 +271,7 @@ More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 - Closing or minimizing the window **keeps WaqtWise running in the tray** (small icons near the clock; you may
   need the small arrow). This is what lets reminders appear when the window is closed. The app tells you the
   first time.
-- Click the tray icon to open the window. Right-click for **Open / Show**, **Hide / Minimize** and **Exit**.
+- Click the tray icon to open the window. Right-click for the menu: the **next task** that has not started yet (a line of information), **Pause Reminders**, **Open / Show**, **Hide / Minimize** and **Exit**. **Pause Reminders** silences notifications, full-screen alerts and routines **for 30 minutes, 1 hour, 2 hours, or until the next Fajr**. Whatever falls inside the pause is skipped (it does not come back later and is not added to the missed reminders). The tray icon's tooltip and the menu show when the pause ends; choose **Resume Reminders** to end it earlier. The pause is not saved: closing the app ends it.
   **Exit** stops the app, and reminders stop too.
 - Settings → Application → **Start with Windows** starts it when you log in, quietly in the tray.
 - The window always opens maximized. A change of your computer's time zone is noticed within about a minute.

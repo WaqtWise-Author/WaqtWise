@@ -7,7 +7,7 @@ const { t, tp, getLanguage, weekdayShort, weekdayLong, monthLong } = require('..
 const core = require('../../core');
 
 const {
-  localCategoryName, occurrencesForPlanningDay, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
+  localCategoryName, occurrencesForPlanningDay, getOccurrences, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
 } = core;
 
 // The first non-empty line of a note, cut short for a task row.
@@ -17,6 +17,39 @@ function firstLine(text) {
 }
 
 class DayViewMethods {
+  // ---- for the tray menu (main process only) ------------------------------------------------------------------------------
+
+  // The next task that has not started yet: { title, when } with "when" such as "4:30 PM" or "Tomorrow 4:30 PM"; null if none soon.
+  getNextTask() {
+    const nowDate = this.now();
+    const nowMs = nowDate.getTime();
+    const today = dateKey(nowDate);
+    const tomorrow = addDaysToKey(today, 1);
+    const provider = this.provider();
+    const options = this.recurrenceOptions();
+    let best = null;
+    for (const task of this.data.tasks) {
+      for (const o of getOccurrences(provider, task, addDaysToKey(today, -1), addDaysToKey(today, 14), { ...options, tasks: this.data.tasks })) {
+        if (o.done || o.start.getTime() <= nowMs) continue;
+        if (!best || o.start < best.start) best = o;
+      }
+    }
+    if (!best) return null;
+    const key = dateKey(best.start);
+    const day = key === today ? '' : `${key === tomorrow ? t('Tomorrow') : formatKeyShort(key)} `;
+    return { title: best.title, when: `${day}${formatTime12(best.start)}` };
+  }
+
+  // The next Fajr after now (the end of the current Planning Day), in milliseconds.
+  nextFajrMs() {
+    const nowDate = this.now();
+    const provider = this.provider();
+    const today = dateKey(nowDate);
+    const candidates = [provider(today).fajr, provider(addDaysToKey(today, 1)).fajr];
+    const next = candidates.find((d) => d.getTime() > nowDate.getTime());
+    return (next || candidates[1]).getTime();
+  }
+
   // ---- the Daily View -----------------------------------------------------------------------------------
 
   hijriLabel(key) {

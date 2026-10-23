@@ -243,12 +243,79 @@ async function confirmExit() {
   }
 }
 
+// ---- Pause reminders ---------------------------------------------------------------------------------------------------
+// While paused, notifications, full-screen alerts and routines stay silent. Whatever falls inside the pause is simply
+// dropped (it is not put in the missed list). The pause is not saved: it ends when the app is closed.
+
+let pausedUntil = 0; // moment (ms) the pause ends; 0 = not paused
+let pauseTimer = null;
+
+function remindersPaused() {
+  return pausedUntil > service.now().getTime();
+}
+
+// The settings the engines see: with the pause on, every kind of reminder is switched off.
+function engineSettings() {
+  const settings = service.getReminderSettings();
+  if (!remindersPaused()) return settings;
+  return { ...settings, notificationsEnabled: false, fullScreenAlerts: false, zoneStartNotifications: false };
+}
+
+function pausedUntilLabel() {
+  return t('Reminders Paused Until {time}', { time: formatTime12(new Date(pausedUntil)) });
+}
+
+function refreshTrayTooltip() {
+  if (trayController) trayController.setTooltip(remindersPaused() ? `WaqtWise · ${pausedUntilLabel()}` : 'WaqtWise');
+}
+
+function pauseReminders(until) {
+  pausedUntil = until;
+  if (pauseTimer) clearTimeout(pauseTimer);
+  pauseTimer = setTimeout(resumeReminders, Math.max(0, until - service.now().getTime()) + 500);
+  if (pauseTimer.unref) pauseTimer.unref();
+  refreshTrayTooltip();
+}
+
+function resumeReminders() {
+  pausedUntil = 0;
+  if (pauseTimer) clearTimeout(pauseTimer);
+  pauseTimer = null;
+  refreshTrayTooltip();
+}
+
 // ---- Tray ----------------------------------------------------------------------------------------------------------------
 
-// To add a tray menu item later, add one line here.
-function trayActions() {
+// The line at the top of the menu: the next task that has not started yet.
+function nextTaskLine() {
+  const next = service.getNextTask();
+  if (!next) return t('No Upcoming Tasks');
+  const title = next.title.length > 36 ? `${next.title.slice(0, 35)}…` : next.title;
+  return t('Next Task: {title} · {when}', { title, when: next.when });
+}
+
+function pauseChoices() {
+  const minutes = (n) => () => pauseReminders(service.now().getTime() + n * 60000);
   return [
-    { id: 'open', label: t('Open / Show'), click: showWindow },
+    { id: 'pause-30', label: t('For 30 Minutes'), click: minutes(30) },
+    { id: 'pause-60', label: t('For 1 Hour'), click: minutes(60) },
+    { id: 'pause-120', label: t('For 2 Hours'), click: minutes(120) },
+    { id: 'pause-fajr', label: t('Until the Next Fajr'), click: () => pauseReminders(service.nextFajrMs()) },
+  ];
+}
+
+// To add a tray menu item later, add one line here. It is built again every time the menu opens.
+function trayActions() {
+  const pauseItems = remindersPaused()
+    ? [
+      { id: 'paused', label: pausedUntilLabel(), enabled: false, separatorBefore: true },
+      { id: 'resume', label: t('Resume Reminders'), click: resumeReminders },
+    ]
+    : [{ id: 'pause', label: t('Pause Reminders'), separatorBefore: true, submenu: pauseChoices() }];
+  return [
+    { id: 'next', label: nextTaskLine(), enabled: false },
+    ...pauseItems,
+    { id: 'open', label: t('Open / Show'), separatorBefore: true, click: showWindow },
     { id: 'hide', label: t('Hide / Minimize'), click: hideWindow },
     { id: 'exit', label: t('Exit'), separatorBefore: true, click: confirmExit },
   ];
@@ -257,7 +324,7 @@ function trayActions() {
 function startTray() {
   trayController = createTray(
     { Tray, Menu, nativeImage },
-    { iconPath: TRAY_ICON, tooltip: 'WaqtWise', actions: trayActions(), onOpen: showWindow }
+    { iconPath: TRAY_ICON, tooltip: 'WaqtWise', getActions: trayActions, onOpen: showWindow }
   );
 }
 
@@ -327,7 +394,7 @@ function startEngine() {
   engine = new ReminderEngine({
     getTasks: () => service.getTasks(),
     getProvider: () => service.provider(),
-    getSettings: () => service.getReminderSettings(),
+    getSettings: () => engineSettings(),
     notify,
     onMissed: (items, payload) => {
       notify(payload);
@@ -351,7 +418,7 @@ function startEngine() {
 
   routineEngine = new RoutineEngine({
     getRoutines: () => service.getRoutineList(),
-    getSettings: () => service.getReminderSettings(),
+    getSettings: () => engineSettings(),
     getProvider: () => service.provider(),
     getTasks: () => service.getTasks(),
     notify,
@@ -514,7 +581,7 @@ function start() {
           if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer
           if (routineEngine) routineEngine.reschedule();
         },
-        onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); if (trayController) trayController.setActions(trayActions()); },
+        onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); refreshTrayTooltip(); },
       });
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
@@ -560,6 +627,7 @@ function start() {
     if (alertManager) alertManager.closeAll();
   });
   app.on('will-quit', () => {
+    if (pauseTimer) clearTimeout(pauseTimer);
     if (trayController) trayController.destroy();
   });
 }

@@ -97,6 +97,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     constructor(image) { this.image = image; this.handlers = {}; this.destroyed = false; fake.trays.push(this); }
     setToolTip(text) { this.tooltip = text; }
     setContextMenu(menu) { this.menu = menu; }
+    popUpContextMenu(menu) { this.menu = menu; }
     on(event, fn) { this.handlers[event] = fn; }
     destroy() { this.destroyed = true; }
     isDestroyed() { return this.destroyed; }
@@ -221,7 +222,9 @@ function tickEngineAt(fake, h, m, sec) {
   return engine.tick(new Date(2030, 0, 10, h, m, sec, 0));
 }
 
-const trayItem = (app, label) => app.trays[0].menu.template.find((item) => item.label === label);
+// Opens the tray menu the way a right click does (it is built fresh each time) and finds an item in it.
+const trayMenu = (app) => { app.trays[0].handlers['right-click'](); return app.trays[0].menu.template; };
+const trayItem = (app, label) => trayMenu(app).find((item) => item.label === label);
 
 // ---- Start-up -----------------------------------------------------------------------------------------------
 
@@ -362,7 +365,7 @@ test('"Don\'t show again" turns the message off; Settings can turn it back on', 
   app.cleanup();
 });
 
-test('Tray: tooltip, icon, and the Open / Hide / Exit menu', async () => {
+test('Tray: tooltip, icon, and the menu (next task, pause, open, hide, exit)', async () => {
   const app = await launch();
   const tray = app.trays[0];
   assert.equal(tray.tooltip, 'WaqtWise');
@@ -371,7 +374,7 @@ test('Tray: tooltip, icon, and the Open / Hide / Exit menu', async () => {
     assert.ok(fs.existsSync(path.join(path.dirname(tray.image.path), f)), `${f} exists`);
   }
   // The 16x16 size of the file itself is checked in packaging.test.js.
-  assert.deepEqual(tray.menu.template.map((i) => i.label || i.type), ['Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
+  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
 
   const win = app.win();
   win.emit('ready-to-show');
@@ -976,5 +979,34 @@ test('Full-screen alert: a button, or the app closing it itself, adds nothing to
   const itemId = win.sent.find(([c]) => c === 'alert-render')[1].items[0].id;
   app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId });
   assert.equal((await app.svc('getMissed')).length, 0, 'a button press is an answer');
+  app.cleanup();
+});
+
+test('Tray: Pause Reminders silences notifications until it is resumed', async () => {
+  const app = await launch();
+  await app.svc('saveTask', { mode: 'create', form: form({ title: 'First', start: { mode: 'fixed', time: '23:00' } }) });
+  await app.svc('saveTask', { mode: 'create', form: form({ title: 'Second', start: { mode: 'fixed', time: '23:30' } }) });
+  const pause = trayItem(app, 'Pause Reminders');
+  assert.deepEqual(pause.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Fajr']);
+  pause.submenu[1].click();
+  assert.match(app.trays[0].tooltip, /^WaqtWise · Reminders Paused Until /);
+  const labels = trayMenu(app).map((i) => i.label || i.type);
+  assert.ok(labels.some((l) => /^Reminders Paused Until /.test(l)) && labels.includes('Resume Reminders') && !labels.includes('Pause Reminders'));
+
+  const engine = app.main.getEngine();
+  engine.tick(at('2030-01-10', '22:59'));
+  engine.tick(at('2030-01-10', '23:00'));
+  assert.equal(app.notifications.length, 0, 'nothing rings while paused');
+
+  trayItem(app, 'Resume Reminders').click();
+  assert.equal(app.trays[0].tooltip, 'WaqtWise');
+  assert.ok(trayMenu(app).some((i) => i.label === 'Pause Reminders'));
+  engine.tick(at('2030-01-10', '23:29'));
+  engine.tick(at('2030-01-10', '23:30'));
+  assert.equal(app.notifications.length, 1, 'the next reminder rings again');
+  assert.ok(app.notifications[0].options.toastXml.includes('Second'));
+  engine.tick(at('2030-01-10', '23:45'));
+  assert.equal(app.dataFile().tasks.length, 2);
+  assert.equal(app.notifications.length, 1, 'the one that fell inside the pause does not come back later');
   app.cleanup();
 });
