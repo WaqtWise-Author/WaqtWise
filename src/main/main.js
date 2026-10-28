@@ -243,44 +243,52 @@ async function confirmExit() {
   }
 }
 
-// ---- Pause reminders ---------------------------------------------------------------------------------------------------
-// While paused, notifications, full-screen alerts and routines stay silent. Whatever falls inside the pause is simply
-// dropped (it is not put in the missed list). The pause is not saved: it ends when the app is closed.
+// ---- Pause reminders and routines ---------------------------------------------------------------------------------------
+// Two separate pauses. "Reminders" covers the tasks in the zones (notifications, full-screen alerts, zone-start
+// notifications); "routines" covers the routines. Whatever falls inside a pause is simply dropped (it is not put in the
+// missed list). A pause is not saved: it ends when the app is closed.
 
-let pausedUntil = 0; // moment (ms) the pause ends; 0 = not paused
-let pauseTimer = null;
+const pauses = {
+  reminders: { until: 0, timer: null },
+  routines: { until: 0, timer: null },
+};
 
-function remindersPaused() {
-  return pausedUntil > service.now().getTime();
+function isPaused(kind) {
+  return pauses[kind].until > service.now().getTime();
 }
 
-// The settings the engines see: with the pause on, every kind of reminder is switched off.
-function engineSettings() {
+// The settings each engine sees: with its pause on, every kind of reminder of that engine is switched off.
+function engineSettings(kind) {
   const settings = service.getReminderSettings();
-  if (!remindersPaused()) return settings;
+  if (!isPaused(kind)) return settings;
   return { ...settings, notificationsEnabled: false, fullScreenAlerts: false, zoneStartNotifications: false };
 }
 
-function pausedUntilLabel() {
-  return t('Reminders Paused Until {time}', { time: formatTime12(new Date(pausedUntil)) });
+function pausedLabel(kind) {
+  const forRoutines = kind === 'routines';
+  return t(forRoutines ? 'Routines Paused Until {time}' : 'Reminders Paused Until {time}', { time: formatTime12(new Date(pauses[kind].until)) });
 }
 
 function refreshTrayTooltip() {
-  if (trayController) trayController.setTooltip(remindersPaused() ? `WaqtWise · ${pausedUntilLabel()}` : 'WaqtWise');
+  if (!trayController) return;
+  const parts = ['reminders', 'routines'].filter(isPaused).map(pausedLabel);
+  trayController.setTooltip(['WaqtWise', ...parts].join(' · '));
 }
 
-function pauseReminders(until) {
-  pausedUntil = until;
-  if (pauseTimer) clearTimeout(pauseTimer);
-  pauseTimer = setTimeout(resumeReminders, Math.max(0, until - service.now().getTime()) + 500);
-  if (pauseTimer.unref) pauseTimer.unref();
+function pauseFor(kind, until) {
+  const p = pauses[kind];
+  p.until = until;
+  if (p.timer) clearTimeout(p.timer);
+  p.timer = setTimeout(() => resumeFor(kind), Math.max(0, until - service.now().getTime()) + 500);
+  if (p.timer.unref) p.timer.unref();
   refreshTrayTooltip();
 }
 
-function resumeReminders() {
-  pausedUntil = 0;
-  if (pauseTimer) clearTimeout(pauseTimer);
-  pauseTimer = null;
+function resumeFor(kind) {
+  const p = pauses[kind];
+  p.until = 0;
+  if (p.timer) clearTimeout(p.timer);
+  p.timer = null;
   refreshTrayTooltip();
 }
 
@@ -294,27 +302,34 @@ function nextTaskLine() {
   return t('Next Task: {title} · {when}', { title, when: next.when });
 }
 
-function pauseChoices() {
-  const minutes = (n) => () => pauseReminders(service.now().getTime() + n * 60000);
+function pauseChoices(kind) {
+  const minutes = (n) => () => pauseFor(kind, service.now().getTime() + n * 60000);
   return [
-    { id: 'pause-30', label: t('For 30 Minutes'), click: minutes(30) },
-    { id: 'pause-60', label: t('For 1 Hour'), click: minutes(60) },
-    { id: 'pause-120', label: t('For 2 Hours'), click: minutes(120) },
-    { id: 'pause-fajr', label: t('Until the Next Fajr'), click: () => pauseReminders(service.nextFajrMs()) },
+    { id: `pause-${kind}-30`, label: t('For 30 Minutes'), click: minutes(30) },
+    { id: `pause-${kind}-60`, label: t('For 1 Hour'), click: minutes(60) },
+    { id: `pause-${kind}-120`, label: t('For 2 Hours'), click: minutes(120) },
+    { id: `pause-${kind}-fajr`, label: t('Until the Next Fajr'), click: () => pauseFor(kind, service.nextFajrMs()) },
   ];
+}
+
+// While paused the item turns into "paused until ..." and "Resume"; otherwise it is the list of pause lengths.
+function pauseItems(kind) {
+  const forRoutines = kind === 'routines';
+  if (isPaused(kind)) {
+    return [
+      { id: `paused-${kind}`, label: pausedLabel(kind), enabled: false, separatorBefore: kind === 'reminders' },
+      { id: `resume-${kind}`, label: t(forRoutines ? 'Resume Routines' : 'Resume Reminders'), click: () => resumeFor(kind) },
+    ];
+  }
+  return [{ id: `pause-${kind}`, label: t(forRoutines ? 'Pause Routines' : 'Pause Reminders'), separatorBefore: kind === 'reminders', submenu: pauseChoices(kind) }];
 }
 
 // To add a tray menu item later, add one line here. It is built again every time the menu opens.
 function trayActions() {
-  const pauseItems = remindersPaused()
-    ? [
-      { id: 'paused', label: pausedUntilLabel(), enabled: false, separatorBefore: true },
-      { id: 'resume', label: t('Resume Reminders'), click: resumeReminders },
-    ]
-    : [{ id: 'pause', label: t('Pause Reminders'), separatorBefore: true, submenu: pauseChoices() }];
   return [
     { id: 'next', label: nextTaskLine(), enabled: false },
-    ...pauseItems,
+    ...pauseItems('reminders'),
+    ...pauseItems('routines'),
     { id: 'open', label: t('Open / Show'), separatorBefore: true, click: showWindow },
     { id: 'hide', label: t('Hide / Minimize'), click: hideWindow },
     { id: 'exit', label: t('Exit'), separatorBefore: true, click: confirmExit },
@@ -394,7 +409,7 @@ function startEngine() {
   engine = new ReminderEngine({
     getTasks: () => service.getTasks(),
     getProvider: () => service.provider(),
-    getSettings: () => engineSettings(),
+    getSettings: () => engineSettings('reminders'),
     notify,
     onMissed: (items, payload) => {
       notify(payload);
@@ -418,7 +433,7 @@ function startEngine() {
 
   routineEngine = new RoutineEngine({
     getRoutines: () => service.getRoutineList(),
-    getSettings: () => engineSettings(),
+    getSettings: () => engineSettings('routines'),
     getProvider: () => service.provider(),
     getTasks: () => service.getTasks(),
     notify,
@@ -627,11 +642,11 @@ function start() {
     if (alertManager) alertManager.closeAll();
   });
   app.on('will-quit', () => {
-    if (pauseTimer) clearTimeout(pauseTimer);
+    for (const p of Object.values(pauses)) if (p.timer) clearTimeout(p.timer);
     if (trayController) trayController.destroy();
   });
 }
 
 start();
 
-module.exports = { handleAction, getEngine: () => engine };
+module.exports = { handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine };

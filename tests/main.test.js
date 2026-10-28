@@ -374,7 +374,7 @@ test('Tray: tooltip, icon, and the menu (next task, pause, open, hide, exit)', a
     assert.ok(fs.existsSync(path.join(path.dirname(tray.image.path), f)), `${f} exists`);
   }
   // The 16x16 size of the file itself is checked in packaging.test.js.
-  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
+  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'Pause Routines', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
 
   const win = app.win();
   win.emit('ready-to-show');
@@ -982,7 +982,7 @@ test('Full-screen alert: a button, or the app closing it itself, adds nothing to
   app.cleanup();
 });
 
-test('Tray: Pause Reminders silences notifications until it is resumed', async () => {
+test('Tray: Pause Reminders silences the tasks until it is resumed, and leaves routines alone', async () => {
   const app = await launch();
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'First', start: { mode: 'fixed', time: '23:00' } }) });
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'Second', start: { mode: 'fixed', time: '23:30' } }) });
@@ -1008,5 +1008,32 @@ test('Tray: Pause Reminders silences notifications until it is resumed', async (
   engine.tick(at('2030-01-10', '23:45'));
   assert.equal(app.dataFile().tasks.length, 2);
   assert.equal(app.notifications.length, 1, 'the one that fell inside the pause does not come back later');
+  app.cleanup();
+});
+
+test('Tray: Pause Routines silences only the routines; Pause Reminders only the tasks', async () => {
+  const app = await launch();
+  await app.svc('saveTask', { mode: 'create', form: form({ title: 'Zone task', start: { mode: 'fixed', time: '23:00' } }) });
+  await app.svc('saveRoutine', { form: { title: 'Drink water', from: '23:00', to: '23:30', hours: 0, minutes: 30, weekdays: [0, 1, 2, 3, 4, 5, 6], notification: true, fullScreen: false } });
+  const routines = app.main.getRoutineEngine();
+  const engine = app.main.getEngine();
+  const tick = (h, m) => { engine.tick(at('2030-01-10', `${h}:${m}`)); routines.tick(at('2030-01-10', `${h}:${m}`)); };
+  const shown = () => app.notifications.map((n) => (n.options.toastXml.includes('Zone task') ? 'task' : n.options.toastXml.includes('Drink water') ? 'routine' : '?'));
+
+  trayItem(app, 'Pause Routines').submenu[0].click();
+  const labels = trayMenu(app).map((i) => i.label || i.type);
+  assert.ok(labels.includes('Pause Reminders') && labels.includes('Resume Routines') && !labels.includes('Pause Routines'), 'only the routines are paused');
+  assert.match(app.trays[0].tooltip, /^WaqtWise · Routines Paused Until /);
+  tick(22, 59);
+  tick(23, 0);
+  assert.deepEqual(shown(), ['task'], 'the task rings, the routine stays silent');
+
+  trayItem(app, 'Resume Routines').click();
+  trayItem(app, 'Pause Reminders').submenu[0].click();
+  assert.match(app.trays[0].tooltip, /^WaqtWise · Reminders Paused Until /);
+  tick(23, 29);
+  tick(23, 30);
+  assert.deepEqual(shown(), ['task', 'routine'], 'now the routine rings and the task side is paused');
+  assert.equal(app.notifications.length, 2);
   app.cleanup();
 });
