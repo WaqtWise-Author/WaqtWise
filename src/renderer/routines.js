@@ -136,7 +136,8 @@
       choices: [{ label: T('Cancel'), value: false }, { label: T('Delete'), value: true, kind: 'danger' }],
     });
     if (!go) return;
-    if (await call('deleteRoutine', { id: item.id })) { WW.toast(T('Routine Deleted')); WW.showRoutines(); }
+    const result = await call('deleteRoutine', { id: item.id });
+    if (result) { WW.toastUndo(T('Routine Deleted'), result.undoId, WW.showRoutines); WW.showRoutines(); }
   }
 
   function alertsText(item) {

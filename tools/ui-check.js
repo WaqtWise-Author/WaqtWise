@@ -794,7 +794,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.fill('input[aria-label="Longitude"]', '46.6753');
     await page.fill('input[aria-label="Time Zone"]', 'Asia/Riyadh');
     await page.click('.custom-city button:has-text("Save City")');
-    await page.waitForFunction(() => document.querySelector('.toast') && /City [Ss]aved/.test(document.querySelector('.toast').textContent));
+    await page.waitForFunction(() => [...document.querySelectorAll('.toast')].some((t) => /City [Ss]aved/.test(t.textContent)));
     assert.equal(service.getSettings().useCustomCity, true);
     assert.equal(service.getSettings().customCity.timeZone, 'Asia/Riyadh');
     await shot(page, 'settings-custom-city');
@@ -818,7 +818,7 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForFunction(() => document.querySelector('.city-results .city-result .city-name').textContent === 'Riyadh' && document.querySelectorAll('.city-results .city-result').length === 2);
     await shot(page, 'settings-world-city');
     await page.click('.city-results .city-result >> nth=0');
-    await page.waitForFunction(() => document.querySelector('.toast') && /City [Ss]aved/.test(document.querySelector('.toast').textContent));
+    await page.waitForFunction(() => [...document.querySelectorAll('.toast')].some((t) => /City [Ss]aved/.test(t.textContent)));
     const saved = service.getSettings();
     assert.equal(saved.customCity.name, 'Riyadh');
     assert.equal(saved.customCity.timeZone, 'Asia/Riyadh');
@@ -970,7 +970,7 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await preview((el) => el.querySelectorAll('.alert-notes').length), 0, 'notes hidden');
     assert.ok(!(await preview((el) => el.textContent)).includes('Zone:'), 'zone hidden');
     await shot(page, 'settings-fullscreen');
-    const previewButtons = () => preview((el) => [...el.querySelectorAll('.alert-actions button')].map((b) => b.dataset.action));
+    const previewButtons = () => preview((el) => [...el.querySelectorAll('.alert-actions button[data-action]:not([data-option])')].map((b) => b.dataset.action));
     assert.deepEqual(await previewButtons(), ['dismiss', 'snooze', 'open', 'done']);
     await page.click('input[aria-label="Snooze"]');
     await page.click('input[aria-label="Mark as Done"]');
@@ -1150,7 +1150,7 @@ async function setTime(page, hour, minute, ampm) {
       durationLabel: '1h 0m', zoneName: 'Dhuhr → Asr', zoneIndex: 2, categoryName: '', categoryColor: '', priority: 'Low', snoozed: false }], appearance: look, snoozeMinutes: 5, guardMs: 0 }]);
     assert.equal((await p.$$('.alert-notes')).length, 0);
     // buttons: all four by default, "Got It" always stays
-    const buttonsOf = () => p.$$eval('.alert-actions button', (els) => els.map((e) => e.dataset.action));
+    const buttonsOf = () => p.$$eval('.alert-actions button[data-action]:not([data-option])', (els) => els.map((e) => e.dataset.action));
     assert.deepEqual(await buttonsOf(), ['dismiss', 'snooze', 'open', 'done']);
     look.buttons = { snooze: false, open: true, done: false };
     await p.evaluate(([st]) => window.__render(st), [{ items: [{ id: 'z', taskId: 't', dateKey: 'd', title: 'Fewer buttons', notes: '', startLabel: '1:00 PM', endLabel: '2:00 PM',

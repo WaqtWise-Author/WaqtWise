@@ -34,9 +34,10 @@
       guardActive,
     }, {
       dismiss: () => { stopSound(); window.alertApi.action('dismiss', item.id); },
-      snooze: () => { stopSound(); window.alertApi.action('snooze', item.id); },
+      snooze: (option) => { stopSound(); window.alertApi.action('snooze', item.id, option); },
       done: () => { stopSound(); window.alertApi.action('done', item.id); },
       open: () => { stopSound(); window.alertApi.action('open', item.id); },
+      redraw: draw,
     });
     if (guardActive) {
       clearTimeout(guardTimer);

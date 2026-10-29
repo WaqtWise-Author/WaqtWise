@@ -25,6 +25,7 @@ const {
   formatMissedNotification,
 } = require('./reminders');
 const { deriveZone } = require('./zones');
+const { snoozeUntil } = require('./snooze');
 
 const MS_PER_MINUTE = 60000;
 const DAY_MS = 24 * 60 * MS_PER_MINUTE;
@@ -371,7 +372,7 @@ class ReminderEngine {
     const settings = this.settings();
 
     if (action.type === 'snooze') {
-      const until = now + settings.snoozeMinutes * MS_PER_MINUTE;
+      const until = snoozeUntil(now, settings.snoozeMinutes, action.option, this.deps.getProvider());
       this.state.snoozed = this.state.snoozed.filter(
         (s) => !(s.taskId === action.taskId && s.dateKey === action.dateKey)
       );

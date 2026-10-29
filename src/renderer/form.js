@@ -562,9 +562,10 @@
         const result = await WW.call('deleteTask', { taskId: options.taskId, dateKey: options.dateKey, scope });
         dlg.close();
         const inexact = (result.frozen || []).filter((t) => !t.exact);
-        WW.toast(inexact.length
+        const deletedText = inexact.length
           ? T('Task deleted. “{titles}” could not keep its exact time and uses its backup time.', { titles: inexact.map((t) => t.title).join('”, “') })
-          : T('Task Deleted'));
+          : T('Task Deleted');
+        WW.toastUndo(deletedText, result.undoId, WW.afterChange);
         WW.afterChange();
       } catch (error) {
         showErrors([error.message]);

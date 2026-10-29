@@ -78,7 +78,8 @@
       choices: [{ label: T('Cancel'), value: false }, { label: T('Delete'), value: true, kind: 'danger' }],
     });
     if (!go) return;
-    if (await call('deleteFreeTask', { id: item.id })) { WW.toast(T('Task Deleted')); refresh(); }
+    const result = await call('deleteFreeTask', { id: item.id });
+    if (result) { WW.toastUndo(T('Task Deleted'), result.undoId, refresh); refresh(); }
   }
 
   function freeRow(item, index, count) {
@@ -133,7 +134,7 @@
           h('div', { class: 'day-sub', text: T('Tasks with no time yet. Schedule one when you decide when to do it.') })),
         h('div', { class: 'day-actions' },
           h('span', { class: 'free-count', text: `${T('{n} open', { n: open })}${doneCount ? ` · ${T('{n} done', { n: doneCount })}` : ''}` }),
-          doneCount ? h('button', { class: 'btn', type: 'button', id: 'free-clear', text: T('Clear Done'), onclick: async () => { if (await call('clearFreeDone')) refresh(); } }) : null)),
+          doneCount ? h('button', { class: 'btn', type: 'button', id: 'free-clear', text: T('Clear Done'), onclick: async () => { const r = await call('clearFreeDone'); if (r) { if (r.undoId) WW.toastUndo(T('Done Tasks Cleared'), r.undoId, refresh); refresh(); } } }) : null)),
       h('section', { class: 'zone free-card', 'aria-label': T('Free To-Do List') },
         h('div', { class: 'zone-body' },
           items.length ? items.map((item, i) => freeRow(item, i, items.length)) : h('div', { class: 'empty-zone', id: 'free-empty', text: T('No free tasks yet. Add one below.') }))),
@@ -226,8 +227,8 @@
           const go = await WW.ask({ title: T('Delete Task'), message, choices: [{ label: T('Cancel'), value: false }, { label: T('Delete'), value: true, kind: 'danger' }] });
           if (!go) return;
         }
-        await WW.call('deleteTask', { taskId, dateKey, scope });
-        WW.toast(T('Task Deleted'));
+        const deleted = await WW.call('deleteTask', { taskId, dateKey, scope });
+        WW.toastUndo(T('Task Deleted'), deleted.undoId, WW.afterChange);
         after();
       }) }),
       h('button', { class: 'btn', type: 'button', id: 'details-duplicate', text: T('Duplicate'), onclick: () => guard(async () => {

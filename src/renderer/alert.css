@@ -49,6 +49,9 @@
 .alert-actions button.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--a-accent); }
 .alert-actions button:disabled { opacity: 0.35; cursor: default; }
 .alert-actions button:focus-visible { outline: 0.5cqmin solid var(--a-text); outline-offset: 0.6cqmin; }
+.alert-actions button.snooze-more { padding: 1.8cqmin 2.2cqmin; }
+.alert-actions.snooze-choices { margin-top: 1cqh; }
+.alert-actions.snooze-choices button { font-size: 2.3cqmin; padding: 1.2cqmin 3cqmin; }
 .alert-more { position: absolute; bottom: 4cqh; left: 0; right: 0; font-size: 2.4cqmin; opacity: 0.85; text-align: center; }
 .alert-guard { position: absolute; top: 3cqh; left: 0; right: 0; text-align: center; font-size: 2cqmin; opacity: 0.6; }
 

@@ -127,11 +127,37 @@
       hint ? h('p', { class: 'hint', text: hint }) : null);
   };
 
-  WW.toast = function toast(message, kind) {
+  // action (optional): { label, onClick, ms } adds a button to the message, which stays for `ms` (default 4.5 seconds).
+  WW.toast = function toast(message, kind, action) {
     const root = document.getElementById('toast-root');
-    const el = WW.h('div', { class: `toast ${kind || ''}`, text: message });
+    const el = WW.h('div', { class: `toast ${kind || ''} ${action ? 'has-action' : ''}` }, WW.h('span', { text: message }));
+    if (action) {
+      el.appendChild(WW.h('button', {
+        type: 'button', class: 'toast-action', text: action.label,
+        onclick: () => { el.remove(); action.onClick(); },
+      }));
+    }
     root.appendChild(el);
-    setTimeout(() => el.remove(), 4500);
+    setTimeout(() => el.remove(), action && action.ms ? action.ms : 4500);
+  };
+
+  // A message about something just deleted, with an Undo button for 8 seconds. `undoId` comes from the delete call.
+  WW.toastUndo = function toastUndo(message, undoId, after) {
+    const T = WW.T;
+    if (!undoId) { WW.toast(message); return; }
+    WW.toast(message, '', {
+      label: T('Undo'),
+      ms: 8000,
+      onClick: async () => {
+        try {
+          await WW.call('undoDelete', { id: undoId });
+          WW.toast(T('Restored'));
+          if (after) after();
+        } catch (error) {
+          WW.toast(error.message, 'error');
+        }
+      },
+    });
   };
 
   // ---- Modal dialogs ---------------------------------------------------------------------------------

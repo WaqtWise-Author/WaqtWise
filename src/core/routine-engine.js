@@ -11,6 +11,7 @@
 const { ringsInWindow, occurrencesOn, taskRunningAt } = require('./routines');
 const { t } = require('./i18n');
 const { formatTime12, formatDuration } = require('./time');
+const { snoozeUntil } = require('./snooze');
 
 const MS_PER_MINUTE = 60000;
 const DAY_MS = 24 * 60 * MS_PER_MINUTE;
@@ -279,8 +280,7 @@ class RoutineEngine {
     const now = this.now().getTime();
     const same = (s) => s.routineId === action.routineId && s.dateKey === action.dateKey && s.slot === action.slot;
     if (action.type === 'snooze') {
-      const minutes = this.settings().snoozeMinutes || 5;
-      const until = now + minutes * MS_PER_MINUTE;
+      const until = snoozeUntil(now, this.settings().snoozeMinutes, action.option, this.provider());
       this.state.snoozed = this.state.snoozed.filter((s) => !same(s));
       this.state.snoozed.push({ routineId: action.routineId, dateKey: action.dateKey, slot: action.slot, until, ...(action.fullScreen ? { fullScreen: true } : {}) });
       this.save();

@@ -59,9 +59,10 @@ class FreeTaskMethods {
 
   deleteFreeTask({ id }) {
     this.findFreeTask(id);
+    const token = this.beginUndo();
     this.data.freeTasks = this.data.freeTasks.filter((x) => x.id !== id);
     this.changed();
-    return { ok: true };
+    return { ok: true, undoId: this.endUndo(token) };
   }
 
   setFreeDone({ id, done }) {
@@ -73,9 +74,12 @@ class FreeTaskMethods {
 
   clearFreeDone() {
     const before = (this.data.freeTasks || []).length;
+    const token = this.beginUndo();
     this.data.freeTasks = (this.data.freeTasks || []).filter((x) => !x.done);
     this.changed();
-    return { ok: true, removed: before - this.data.freeTasks.length };
+    const removed = before - this.data.freeTasks.length;
+    if (removed === 0) this.cancelUndo(token);
+    return { ok: true, removed, undoId: removed > 0 ? this.endUndo(token) : undefined };
   }
 
   // direction: 'up' | 'down'

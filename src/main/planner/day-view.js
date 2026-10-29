@@ -117,6 +117,27 @@ class DayViewMethods {
     return other ? other.title : t('a deleted task');
   }
 
+  // "You have 40 minutes free before Asr." Only when nothing is running now and the gap is long enough to be useful.
+  freeTimeHint(occurrences, layout, zones, nowMs) {
+    const MIN_GAP_MS = 10 * 60000;
+    const zoneIndex = layout.zones.findIndex((z) => nowMs >= z.start.getTime() && nowMs < z.end.getTime());
+    if (zoneIndex < 0) return '';
+    const zoneEnd = layout.zones[zoneIndex].end.getTime();
+    const running = occurrences.some((o) => o.start.getTime() <= nowMs && nowMs < o.end.getTime());
+    if (running) return '';
+    const next = occurrences
+      .filter((o) => !o.done && o.start.getTime() > nowMs)
+      .sort((a, b) => a.start - b.start)[0];
+    const taskFirst = next && next.start.getTime() < zoneEnd;
+    const until = taskFirst ? next.start.getTime() : zoneEnd;
+    const gap = until - nowMs;
+    if (gap < MIN_GAP_MS) return '';
+    const time = formatDuration(Math.floor(gap / 60000));
+    if (taskFirst) return t('You have {time} free before “{task}”.', { time, task: next.title });
+    const following = zones[zoneIndex + 1];
+    return following ? t('You have {time} free before {zone}.', { time, zone: following.name }) : '';
+  }
+
   getDay(planningKey) {
     if (!isValidKey(planningKey)) throw new Error(t('That date is not valid.'));
     const provider = this.provider();
@@ -208,6 +229,8 @@ class DayViewMethods {
     const dayEnd = layout.zones[layout.zones.length - 1].end.getTime();
     const inProgress = zones.flatMap((z) => z.tasks.filter((t) => t.inProgress).map((t) => t.title));
 
+    const freeHint = planningKey === currentKey && inProgress.length === 0 ? this.freeTimeHint(occurrences, layout, zones, nowMs) : '';
+
     return {
       taskCount: listed,
       doneCount: listedDone,
@@ -216,6 +239,7 @@ class DayViewMethods {
         ? { name: currentZone.name, timeLeftLabel: currentZone.minutesLeftLabel, freeLabel: currentZone.freeLabel, nextName: (zones[currentZone.index] || {}).name || '' }
         : null,
       inProgress,
+      freeHint,
       planningDayKey: planningKey,
       prevKey: addDaysToKey(planningKey, -1),
       nextKey: endKey,

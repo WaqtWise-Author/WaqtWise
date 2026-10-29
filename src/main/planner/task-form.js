@@ -222,6 +222,7 @@ class TaskFormMethods {
   deleteTask({ taskId, dateKey: key, scope }) {
     this.freezePast();
     const task = this.findTask(taskId);
+    const token = this.beginUndo();
     const result = deleteOccurrences(task, scope || 'all', key, this.recurrenceOptions());
     let frozen = [];
     if (result === null) {
@@ -231,7 +232,7 @@ class TaskFormMethods {
       this.data.tasks = this.data.tasks.map((t) => (t.id === taskId ? result : t));
     }
     this.changed();
-    return { ok: true, frozen };
+    return { ok: true, frozen, undoId: this.endUndo(token) };
   }
 
   checkDependencies(task) {

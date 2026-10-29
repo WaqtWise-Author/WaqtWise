@@ -87,6 +87,8 @@ The main screen shows one day: the zones from top to bottom, with tasks inside t
 - **Each task row:** a tick circle on the right (click to mark done), the title, and small details (time,
   duration, priority, category, repeat, and so on). **Click a task** to see its details; **Edit Task** opens the
   form.
+- **Free time:** on today, when no task is running, the *In Progress* card says how long you are free before the next task or zone.
+- **Undo:** after you delete a task, a free task or a routine, an **Undo** button appears for 8 seconds.
 - **Conflicts:** if two tasks overlap, both show a *conflict* tag. Nothing is blocked; you decide.
 - **Shorter view:** a zone with no tasks, or a finished zone in the past, shrinks to one line. Click it to
   open it, and use the arrow in its band to hide it again. A zone that is over with something not done stays
@@ -180,7 +182,7 @@ the start time the whole screen (all screens, if you have several) shows the tas
 
 ![Full-screen alert](images/fullscreen-alert.webp)
 
-- **Got It** (always there), **Snooze**, **Open Task**, **Mark as Done**.
+- **Got It** (always there), **Snooze**, **Open Task**, **Mark as Done**. The small arrow beside **Snooze** opens more choices: 5, 15 or 30 minutes, 1 hour, or **After the Next Prayer**.
 - **One note at random:** write several notes separated by `;` (for example `Drink water; Stretch; Breathe`)
   and tick *Show One Note at Random*. Each alert shows one note, and all are used before any repeats.
 - A few presses right after it appears are ignored on purpose, so typing cannot close it by accident.

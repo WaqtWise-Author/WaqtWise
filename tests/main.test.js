@@ -937,7 +937,7 @@ test('The preload script exposes only the expected functions', () => {
   };
   delete require.cache[require.resolve('../src/main/preload.js')];
   require('../src/main/preload.js');
-  assert.deepEqual(Object.keys(exposed.api).sort(), ['call', 'exportData', 'importData', 'on', 'previewAlert', 'ready', 'testNotification']);
+  assert.deepEqual(Object.keys(exposed.api).sort(), ['call', 'exportData', 'getPauseState', 'importData', 'on', 'previewAlert', 'ready', 'resumePause', 'testNotification']);
   exposed.api.call('getDay', '2030-01-10');
   assert.deepEqual(sent[0], ['svc', 'getDay', ['2030-01-10']]);
 });

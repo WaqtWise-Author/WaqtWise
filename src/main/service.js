@@ -145,6 +145,7 @@ class PlannerService {
 
   // Even when saving fails, the change is kept in memory (the banner offers "Try Again"), so the window must still redraw.
   changed() {
+    this.changeSerial = (this.changeSerial || 0) + 1;
     try {
       this.persist();
     } finally {
@@ -224,6 +225,7 @@ const MIXINS = [
   require('./planner/history').HistoryMethods,
   require('./planner/free-tasks').FreeTaskMethods,
   require('./planner/routines').RoutineMethods,
+  require('./planner/undo').UndoMethods,
 ];
 for (const mixin of MIXINS) {
   for (const name of Object.getOwnPropertyNames(mixin.prototype)) {
@@ -236,7 +238,7 @@ const PUBLIC_METHODS = [
   'bootstrap', 'getDay', 'getStats', 'getUpcoming', 'getMissed', 'dismissMissed', 'clearMissed', 'newTaskDefaults', 'getTaskForEdit', 'previewForm', 'saveTask',
   'getReferenceChoices', 'getDeleteImpact', 'getAlertPreset', 'deleteTask', 'setDone', 'duplicateTask', 'getSettings', 'saveSettings', 'addCategory', 'updateCategory',
   'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
-  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone',
+  'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone', 'undoDelete',
   'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 

@@ -283,7 +283,8 @@
           day.isCurrentDay
             ? h('div', { class: 'stat-card plain' },
               h('div', { class: 'stat-label', text: T('In Progress') }),
-              h('div', { class: 'stat-text', text: day.inProgress.length ? day.inProgress.join(T(', ')) : '—' }))
+              h('div', { class: 'stat-text', text: day.inProgress.length ? day.inProgress.join(T(', ')) : '—' }),
+              day.freeHint ? h('div', { class: 'stat-hint', text: day.freeHint }) : null)
             : null)),
       strip);
   }
@@ -428,6 +429,28 @@
       } }),
       h('button', { class: 'btn small', type: 'button', id: 'save-export', text: T('Export a Copy'), onclick: () => WW.exportData() }));
     banner.hidden = false;
+  };
+
+  // ---- Bar: reminders or routines are paused (from the tray menu) -----------------------------------------------------
+
+  WW.refreshPauseBanner = async function refreshPauseBanner(state) {
+    const banner = document.getElementById('pause-banner');
+    if (!banner) return;
+    try {
+      state = state || await window.api.getPauseState();
+    } catch (error) {
+      return;
+    }
+    const rows = [];
+    const row = (kind, text) => h('div', { class: 'pause-row', 'data-kind': kind },
+      h('span', { class: 'pause-text', text }),
+      h('button', { class: 'btn small', type: 'button', id: `pause-resume-${kind}`, text: kind === 'routines' ? T('Resume Routines') : T('Resume Reminders'),
+        onclick: async () => { try { await WW.refreshPauseBanner(await window.api.resumePause(kind)); } catch (error) { WW.toast(error.message, 'error'); } } }));
+    if (state && state.reminders) rows.push(row('reminders', T('Reminders Paused Until {time}', { time: state.reminders.label })));
+    if (state && state.routines) rows.push(row('routines', T('Routines Paused Until {time}', { time: state.routines.label })));
+    clear(banner);
+    banner.hidden = rows.length === 0;
+    if (rows.length) banner.append(...rows);
   };
 
   // ---- Bell and menu ----------------------------------------------------------------------------------------------
@@ -783,6 +806,7 @@
 
     refreshBell();
     WW.refreshSaveBanner();
+    WW.refreshPauseBanner();
     // While the window is hidden in the tray nothing is redrawn; when it comes back the page is refreshed at once.
     setInterval(() => { if (!document.hidden) WW.refreshSaveBanner(); }, 15000);
     if (!WW.state.settings.welcomeShown) WW.showWelcome();
@@ -804,6 +828,7 @@
       window.api.on('show-daily', () => {
         if (!anyDialogOpen() && WW.state.settings && WW.state.settings.welcomeShown) { WW.state.view = 'daily'; WW.state.dayKey = WW.state.todayKey || WW.state.dayKey; WW.refreshDay(); }
       });
+      window.api.on('pause-changed', (state) => WW.refreshPauseBanner(state));
       window.api.on('show-routines', () => { if (!anyDialogOpen()) WW.showRoutines(); });
       window.api.on('open-task', ({ taskId, dateKey }) => {
         if (taskId && dateKey) WW.openTaskDetails({ taskId, dateKey });

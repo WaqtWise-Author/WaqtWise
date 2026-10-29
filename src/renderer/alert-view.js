@@ -35,6 +35,8 @@
 
   // state: { item, remaining, appearance, snoozeMinutes, guardActive }
   // handlers (optional): { dismiss, snooze, done, open } - called with no arguments
+  let snoozeChoicesOpen = false; // the row of other snooze lengths is open (kept across redraws)
+
   function render(root, state, handlers) {
     const { item, appearance: a } = state;
     const frame = h('div', { class: 'alert-frame' });
@@ -73,16 +75,26 @@
     if (a.show.priority && item.priority) chips.push(h('span', { class: 'chip', text: T('{priority} priority', { priority: T(item.priority) }) }));
     if (chips.length) parts.push(h('div', { class: 'alert-info' }, chips));
 
-    const act = (key) => () => { if (handlers && handlers[key] && !state.guardActive) handlers[key](); };
-    const button = (label, key, primary) =>
-      h('button', { type: 'button', class: primary ? 'primary' : '', text: label, disabled: state.guardActive, onclick: act(key), dataset: { action: key } });
+    const act = (key, option) => () => { if (handlers && handlers[key] && !state.guardActive) handlers[key](option); };
+    const button = (label, key, primary, option) =>
+      h('button', { type: 'button', class: primary ? 'primary' : '', text: label, disabled: state.guardActive, onclick: act(key, option), dataset: option === undefined ? { action: key } : { action: key, option: String(option) } });
     // "Got It" is always shown; the others follow the choice in Settings.
     const shown = a.buttons || { snooze: true, open: true, done: true };
     parts.push(h('div', { class: 'alert-actions' },
       button(T('Got It'), 'dismiss', true),
       shown.snooze ? button(TP(state.snoozeMinutes, 'Snooze {n} minute', 'Snooze {n} minutes'), 'snooze', false) : null,
+      shown.snooze ? h('button', { type: 'button', class: 'snooze-more', text: '▾', title: T('More Snooze Options'), 'aria-label': T('More Snooze Options'), 'aria-expanded': String(snoozeChoicesOpen), disabled: state.guardActive, onclick: () => { snoozeChoicesOpen = !snoozeChoicesOpen; if (handlers && handlers.redraw) handlers.redraw(); }, dataset: { more: 'snooze' } }) : null,
       shown.open ? button(item.kind === 'routine' ? T('Open Routines') : T('Open Task'), 'open', false) : null,
       shown.done ? button(T('Mark as Done'), 'done', false) : null));
+
+    if (shown.snooze && snoozeChoicesOpen) {
+      parts.push(h('div', { class: 'alert-actions snooze-choices' },
+        button(T('5 Minutes'), 'snooze', false, 5),
+        button(T('15 Minutes'), 'snooze', false, 15),
+        button(T('30 Minutes'), 'snooze', false, 30),
+        button(T('1 Hour'), 'snooze', false, 60),
+        button(T('After the Next Prayer'), 'snooze', false, 'prayer')));
+    }
 
     if (state.remaining > 0) {
       parts.push(h('div', { class: 'alert-more', text: TP(state.remaining, '{n} more task starting now', '{n} more tasks starting now') }));

@@ -49,7 +49,7 @@ const TABLE = {
 // ahead or behind do not fail just because a date is missing from the table above.
 (function fillAutumnDays() {
   const { addDaysToKey } = require('../src/core/time');
-  for (let key = '2026-09-25'; key <= '2026-10-25'; key = addDaysToKey(key, 1)) {
+  for (let key = '2026-09-25'; key <= '2027-12-31'; key = addDaysToKey(key, 1)) {
     if (!TABLE[key]) TABLE[key] = day(key, '05:08', '11:46', '15:10', '17:55', '19:15');
   }
 })();

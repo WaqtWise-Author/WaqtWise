@@ -7,5 +7,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('alertApi', {
   onRender: (callback) => ipcRenderer.on('alert-render', (event, state) => callback(state)),
   ready: () => ipcRenderer.send('alert-ready'),
-  action: (type, itemId) => ipcRenderer.send('alert-action', { type, itemId }),
+  action: (type, itemId, option) => ipcRenderer.send('alert-action', option === undefined ? { type, itemId } : { type, itemId, option }),
 });

@@ -135,10 +135,11 @@ class RoutineMethods {
 
   deleteRoutine({ id }) {
     this.findRoutine(id);
+    const token = this.beginUndo();
     this.data.routines = this.data.routines.filter((x) => x.id !== id);
     if (this.data.noteRotation) delete this.data.noteRotation[`routine:${id}`];
     this.changed();
-    return { ok: true };
+    return { ok: true, undoId: this.endUndo(token) };
   }
 
   setRoutineEnabled({ id, enabled }) {

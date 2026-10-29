@@ -5,7 +5,7 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['data-changed', 'missed', 'open-task', 'show-daily', 'show-routines'];
+const EVENTS = ['data-changed', 'missed', 'open-task', 'show-daily', 'show-routines', 'pause-changed'];
 
 contextBridge.exposeInMainWorld('api', {
   call: (method, ...args) => ipcRenderer.invoke('svc', method, args),
@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('api', {
   importData: () => ipcRenderer.invoke('import-data'),
   testNotification: () => ipcRenderer.invoke('test-notification'),
   previewAlert: () => ipcRenderer.invoke('preview-alert'),
+  getPauseState: () => ipcRenderer.invoke('pause-state'),
+  resumePause: (kind) => ipcRenderer.invoke('resume-pause', kind),
   on: (channel, callback) => {
     if (!EVENTS.includes(channel)) return;
     ipcRenderer.on(channel, (event, payload) => callback(payload));

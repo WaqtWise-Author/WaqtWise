@@ -24,6 +24,7 @@ const { FileStore } = require('./store');
 const { ReminderEngine } = require('../core/reminder-engine');
 const { RoutineEngine } = require('../core/routine-engine');
 const { formatTime12 } = require('../core/time');
+const { isValidSnoozeOption } = require('../core/snooze');
 const { createElectronNotifier, findActionUrlInArgv, APP_ID, PROTOCOL } = require('./toast');
 const { createTray } = require('./tray');
 const { createAlertManager, isValidAction } = require('./alert-window');
@@ -60,7 +61,7 @@ function log(...args) {
 function sendToWindow(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed() && rendererReady) {
     mainWindow.webContents.send(channel, payload);
-  } else if (channel !== 'data-changed') {
+  } else if (channel !== 'data-changed' && channel !== 'pause-changed') {
     pendingEvents.push({ channel, payload });
   }
 }
@@ -269,7 +270,14 @@ function pausedLabel(kind) {
   return t(forRoutines ? 'Routines Paused Until {time}' : 'Reminders Paused Until {time}', { time: formatTime12(new Date(pauses[kind].until)) });
 }
 
+// What the window shows in its "paused" bar: { reminders: { until, label } | null, routines: { until, label } | null }.
+function pauseState() {
+  const one = (kind) => (isPaused(kind) ? { until: pauses[kind].until, label: formatTime12(new Date(pauses[kind].until)) } : null);
+  return { reminders: one('reminders'), routines: one('routines') };
+}
+
 function refreshTrayTooltip() {
+  sendToWindow('pause-changed', pauseState());
   if (!trayController) return;
   const parts = ['reminders', 'routines'].filter(isPaused).map(pausedLabel);
   trayController.setTooltip(['WaqtWise', ...parts].join(' · '));
@@ -379,8 +387,8 @@ function startAlerts() {
 }
 
 // A button on the full-screen reminder was pressed.
-function handleAlertAction(sender, { type, itemId }) {
-  if (!alertManager || !alertManager.owns(sender) || !isValidAction(type)) return;
+function handleAlertAction(sender, { type, itemId, option }) {
+  if (!alertManager || !alertManager.owns(sender) || !isValidAction(type) || !isValidSnoozeOption(option)) return;
   const item = alertManager.find(itemId);
   if (!item) return;
   alertManager.remove(itemId); // closes the screens when it was the last one
@@ -388,13 +396,13 @@ function handleAlertAction(sender, { type, itemId }) {
   const sample = item.taskId === '__sample__'; // the preview from Settings does nothing for real
   if (item.kind === 'routine') {
     const target = { routineId: item.routineId, dateKey: item.dateKey, slot: item.slot };
-    if (type === 'snooze') routineEngine.handleAction({ type: 'snooze', ...target, fullScreen: true });
+    if (type === 'snooze') routineEngine.handleAction({ type: 'snooze', ...target, fullScreen: true, option });
     else if (type === 'done') routineEngine.handleAction({ type: 'done', ...target });
     else if (type === 'open') handleAction({ type: 'open-routines' });
     return;
   }
   if (type === 'snooze' && !sample) {
-    engine.handleAction({ type: 'snooze', taskId: item.taskId, dateKey: item.dateKey, fullScreen: true });
+    engine.handleAction({ type: 'snooze', taskId: item.taskId, dateKey: item.dateKey, fullScreen: true, option });
   } else if (type === 'done' && !sample) {
     engine.handleAction({ type: 'done', taskId: item.taskId, dateKey: item.dateKey });
   } else if (type === 'open' && !sample) {
@@ -541,6 +549,18 @@ function registerIpc() {
       actions: [],
     });
     return { ok: true };
+  });
+
+  ipcMain.handle('pause-state', async (event) => {
+    refuseOutsiders(event);
+    return pauseState();
+  });
+
+  ipcMain.handle('resume-pause', async (event, kind) => {
+    refuseOutsiders(event);
+    if (kind !== 'reminders' && kind !== 'routines') throw new Error(t('Unknown request.'));
+    resumeFor(kind);
+    return pauseState();
   });
 
   ipcMain.handle('preview-alert', async (event) => {
