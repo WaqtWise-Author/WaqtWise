@@ -1,7 +1,7 @@
 {
   "name": "waqtwise",
   "productName": "WaqtWise",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "WaqtWise - a daily planner that divides your day into five zones by the prayer times (Windows)",
   "private": true,
   "author": "The WaqtWise authors",

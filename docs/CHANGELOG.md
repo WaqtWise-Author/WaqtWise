@@ -3,6 +3,15 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.2.0
+
+New
+- **Undo after delete**: deleting a task, a free task, a routine or the done free tasks shows an **Undo** button for 8 seconds. It works only until something else changes.
+- **Paused banner**: while reminders or routines are paused from the tray, a bar at the top of the window says until when, with a **Resume** button.
+- **Smart snooze**: the full-screen alert has a small arrow beside Snooze with more choices: 5 minutes, 15 minutes, 30 minutes, 1 hour, or **After the Next Prayer** (20 minutes after its call). The Snooze button itself still uses the length from Settings.
+- **Free-time hint**: on today, when nothing is running, the *In Progress* card says how long you are free before the next task or zone ("You have 40 min free before Asr."), if it is at least 10 minutes.
+- **Version in Settings**: Settings -> Application shows the version of the app you are running.
+
 ## 1.1.0
 
 New
@@ -13,10 +22,6 @@ New
 - **Notification a few minutes early** (per routine): the notification can come 0 to 120 minutes before each time (exact minutes, no hours). The full-screen alert stays on the exact time.
 - **Silent while chosen tasks run** (per routine): choose tasks; a routine time that falls while one of them is running does not ring (a task already ticked as done does not count).
 - **Tray menu**: right-click now shows the next task that has not started yet, **Pause Reminders** (the tasks in the zones) and **Pause Routines**, each for 30 minutes, 1 hour, 2 hours, or until the next Fajr (what falls inside is skipped, the tooltip shows when it ends, **Resume** ends it early; not saved when the app closes), then Open / Show, Hide / Minimize and Exit.
-- **Undo after delete**: deleting a task, a free task, a routine or the done free tasks shows an **Undo** button for 8 seconds. It works only until something else changes.
-- **Paused banner**: while reminders or routines are paused from the tray, a bar at the top of the window says until when, with a **Resume** button.
-- **Smart snooze**: the full-screen alert has a small arrow beside Snooze with more choices: 5 minutes, 15 minutes, 30 minutes, 1 hour, or **After the Next Prayer** (20 minutes after its call). The Snooze button itself still uses the length from Settings.
-- **Free-time hint**: on today, when nothing is running, the *In Progress* card says how long you are free before the next task or zone ("You have 40 min free before Asr."), if it is at least 10 minutes.
 - **Roomier routine card**: a summary line (done, silent, missed, next), a progress bar, and a timeline of the day with the silent tasks drawn as bands; the long list of times and the silent tasks open on request (*Show All Times*, *Silent During N Tasks*).
 - **Title Case** for buttons, headings, labels and menu items in the app, the guides and the website (full sentences keep normal capitals).
 - **No ticking the future**: a task on a day that has not come yet (tomorrow or later) can no longer be marked done (its circle is greyed out and the app refuses); a routine time that has not come yet cannot be ticked either. Taking a tick back always works.

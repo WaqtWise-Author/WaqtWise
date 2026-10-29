@@ -490,6 +490,27 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForSelector('.overlay', { state: 'detached' });
     assert.ok(!(await page.textContent('#view')).includes('Tahajjud'));
   });
+  await step('after a delete an Undo button shows for a few seconds, and it brings the task back', async () => {
+    await page.waitForSelector('.toast.has-action .toast-action');
+    assert.match(await page.textContent('.toast.has-action'), /Task Deleted/);
+    await page.click('.toast.has-action:last-of-type .toast-action'); // the newest one (an older delete's button may still be on screen, and only the latest delete can be undone)
+    await page.waitForFunction(() => document.querySelector('#view').textContent.includes('Tahajjud'));
+    assert.ok(await page.$('.toast:has-text("Restored")'));
+    await openEdit(page, taskRow(page, 'Tahajjud'));
+    await page.click('.dialog-footer .btn.danger');
+    await page.waitForSelector('text=Delete "Tahajjud"?');
+    await page.click('.overlay:last-child .btn.danger');
+    await page.waitForSelector('.overlay', { state: 'detached' });
+    assert.ok(!(await page.textContent('#view')).includes('Tahajjud'));
+  });
+  await step('a bar at the top says until when reminders or routines are paused, and Resume ends it', async () => {
+    assert.equal(await page.isHidden('#pause-banner'), true);
+    await page.evaluate(() => { window.__paused = { reminders: { until: 1, label: '2:30 PM' }, routines: null }; window.__handlers['pause-changed'](window.__paused); });
+    await page.waitForSelector('#pause-banner:not([hidden])');
+    assert.match(await page.textContent('#pause-banner'), /Reminders Paused Until 2:30 PM/);
+    await page.click('#pause-resume-reminders');
+    await page.waitForSelector('#pause-banner', { state: 'hidden' });
+  });
   await step('duplicate', async () => {
     await openEdit(page, taskRow(page, 'Exercise'));
     await page.click('.dialog-footer .btn:text-is("Duplicate")');

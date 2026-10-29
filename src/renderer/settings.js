@@ -554,6 +554,7 @@
 
       section(T('Application'),
         h('div', { class: 'settings-grid' },
+          row(T('Version'), h('div', { class: 'app-version', text: `WaqtWise ${WW.state.version || ''}` })),
           row(T('Start with Windows'), toggle(T('Start WaqtWise when Windows starts (in the tray)'), s.startWithWindows, (v) => save({ startWithWindows: v }))),
           row(T('Background Message'), toggle(T('Show the "still running in the background" message'), s.showBackgroundMessage, (v) => save({ showBackgroundMessage: v }), T('Shown once, the next time the window is closed. Closing the window keeps WaqtWise running in the tray so reminders keep working.'))),
           row(T('Theme'), theme),

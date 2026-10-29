@@ -23,6 +23,7 @@
   "For 1 Hour": "لمدة ساعة",
   "For 2 Hours": "لمدة ساعتين",
   "Until the Next Fajr": "حتى الفجر القادم",
+  "Version": "الإصدار",
   "5 Minutes": "٥ دقائق",
   "15 Minutes": "١٥ دقيقة",
   "30 Minutes": "٣٠ دقيقة",

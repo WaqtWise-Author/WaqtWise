@@ -611,6 +611,7 @@ function start() {
     try {
       service = new PlannerService({
         store,
+        version: app.getVersion(),
         onDataChanged: () => {
           sendToWindow('data-changed');
           if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer

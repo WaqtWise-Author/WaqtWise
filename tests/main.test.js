@@ -36,6 +36,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
   };
 
   fake.app = {
+    getVersion: () => require('../package.json').version,
     isPackaged: packaged,
     setAppUserModelId: (id) => { fake.appId = id; },
     requestSingleInstanceLock: () => lock,

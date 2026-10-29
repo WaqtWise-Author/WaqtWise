@@ -35,7 +35,7 @@ to the file (and a `SHA256SUMS.txt` file). To compare it:
    PowerShell window here*).
 2. Run (change the name to match your file):
    ```
-   Get-FileHash .\WaqtWise-Setup-1.1.0.exe -Algorithm SHA256
+   Get-FileHash .\WaqtWise-Setup-1.2.0.exe -Algorithm SHA256
    ```
 3. The long value in the **Hash** column must be **identical** to the one on the Releases page. If it is
    different, do not run the file; download it again.

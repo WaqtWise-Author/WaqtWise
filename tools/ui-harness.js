@@ -27,6 +27,7 @@ function createService(options = {}) {
   let counter = 0;
   const service = new PlannerService({
     store: new MemoryStore(),
+    version: require('../package.json').version,
     now: () => options.now || at('2026-10-04', '10:00'),
     newId: () => `t${++counter}`,
     providerFactory: () => exampleProvider,
@@ -58,6 +59,8 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
       importData: async () => ({ canceled: true }),
       testNotification: async () => { window.__exports.push('test-notification'); return { ok: true }; },
       previewAlert: async () => { window.__exports.push('preview-alert'); return { ok: true }; },
+      getPauseState: async () => ({ reminders: null, routines: null }),
+      resumePause: async () => ({ reminders: null, routines: null }),
       on: (channel, cb) => { (window.__handlers = window.__handlers || {})[channel] = cb; },
     };
   }, keepSplash ? null : 300);

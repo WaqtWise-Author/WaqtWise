@@ -38,6 +38,7 @@ class PlannerService {
   // deps: { store, now, newId, providerFactory, onDataChanged(), onSettingsChanged(settings) }
   constructor(deps) {
     this.store = deps.store;
+    this.version = deps.version || ''; // the app's version, given by the main process (Electron knows it from package.json)
     this.now = deps.now || (() => new Date());
     this.newId = deps.newId || (() => crypto.randomUUID());
     this.random = deps.random || Math.random;
@@ -175,6 +176,7 @@ class PlannerService {
       methods: METHOD_KEYS.map((key) => ({ key, label: t(METHOD_LABELS[key]) })),
       currentPlanningDayKey: currentPlanningDayKey(this.provider(), this.now()),
       city: this.cityInfo(),
+      version: this.version,
       loadNotes: copy(this.store.loadNotes || []),
     };
   }

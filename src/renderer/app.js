@@ -639,7 +639,7 @@
   WW.reloadEverything = reloadEverything;
   async function reloadEverything() {
     const boot = await WW.call('bootstrap');
-    Object.assign(WW.state, { settings: boot.settings, categories: boot.categories, cities: boot.cities, countries: boot.countries, methods: boot.methods, city: boot.city, todayKey: boot.currentPlanningDayKey });
+    Object.assign(WW.state, { settings: boot.settings, categories: boot.categories, cities: boot.cities, countries: boot.countries, methods: boot.methods, city: boot.city, version: boot.version, todayKey: boot.currentPlanningDayKey });
     WW.applyLanguage(boot.settings.language);
     const add = document.getElementById('add-btn');
     if (add) clear(add).append(WW.icon('plus', 16, 2.6), T('New Task'));
