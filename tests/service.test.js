@@ -648,7 +648,7 @@ test('getDay: names the tasks that conflict, marks the overlapping stretch, and 
   assert.equal(service.getDay('2026-10-05').dayNowPct, null);
 });
 
-test('The week strip lists Sunday to Saturday with today marked and each day\'s progress', () => {
+test('The day strip shows three days before and after the chosen day, with today marked and each day\'s progress', () => {
   const { service } = makeService();
   const { taskId } = service.saveTask({ mode: 'create', form: form({ title: 'A', date: '2026-10-06' }) });
   service.saveTask({ mode: 'create', form: form({ title: 'B', date: '2026-10-06', start: fixed('09:00') }) });
@@ -657,6 +657,9 @@ test('The week strip lists Sunday to Saturday with today marked and each day\'s 
   const { week } = service.getDay('2026-10-07');
   assert.deepEqual(week.days.map((d) => d.weekday), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   assert.deepEqual(week.days.map((d) => d.day), [4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(week.days[3].key, '2026-10-07', 'the chosen day is always in the middle');
+  assert.equal(service.getDay('2026-10-08').week.days[3].isSelected, true);
+  assert.equal(service.getDay('2026-10-08').week.days[0].key, '2026-10-05', 'one day later: every card moves one place');
   assert.deepEqual(week.days.filter((d) => d.isToday).map((d) => d.key), [DAY]);
   assert.deepEqual(week.days.filter((d) => d.isSelected).map((d) => d.key), ['2026-10-07']);
   const tue = week.days[2];
@@ -668,16 +671,12 @@ test('The week strip lists Sunday to Saturday with today marked and each day\'s 
   assert.match(week.days[1].label, /no tasks/);
 });
 
-test('First day of the week: the strip, the statistics and validation', () => {
+test('First day of the week: the statistics and validation (the day strip does not use it)', () => {
   const { service } = makeService();
-  assert.equal(service.getDay('2026-10-07').week.days[0].weekday, 'Sun');
   service.saveSettings({ weekStart: 6 });
-  const sat = service.getDay('2026-10-07').week;
-  assert.deepEqual(sat.days.map((d) => d.weekday), ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
-  assert.equal(sat.days[0].key, '2026-10-03');
-  assert.match(sat.days[1].label, /^Today, Sunday/);
+  assert.deepEqual(service.getDay('2026-10-07').week.days.map((d) => d.weekday), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   assert.equal(service.getStats({ range: 'week', anchorKey: DAY }).rangeStartKey, '2026-10-03');
   service.saveSettings({ weekStart: 1 });
-  assert.deepEqual(service.getDay('2026-10-04').week.days.map((d) => d.weekday), ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+  assert.equal(service.getStats({ range: 'week', anchorKey: DAY }).rangeStartKey, '2026-09-28');
   assert.throws(() => service.saveSettings({ weekStart: 3 }), /first day of the week/);
 });

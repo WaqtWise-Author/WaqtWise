@@ -216,7 +216,13 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 4'));
     await page.click('button[aria-label="Next Day"]');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
-    assert.ok(await page.$('.week-strip.step-next'), 'the strip is animated while stepping');
+    const middle = () => page.locator('.week-chips .day-chip.on').evaluate((el) => [...el.parentNode.children].indexOf(el));
+    assert.equal(await middle(), 3, 'the chosen day stays in the middle');
+    await page.click('button[aria-label="Next Day"]');
+    assert.ok(await page.evaluate(() => document.querySelector('.week-chips .day-chip').getAnimations().length > 0), 'the cards slide one place');
+    assert.equal(await middle(), 3, 'still in the middle after another step');
+    await page.click('button[aria-label="Previous Day"]');
+    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
     // Holding the arrow keeps stepping, at a steady speed, and stops when the button is let go
     const box = await page.locator('button[aria-label="Next Day"]').boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -783,13 +789,14 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#drawer .drawer-item:has-text("Settings")');
     await page.waitForSelector('.settings-section');
   });
-  await step('first day of the week: the day cards start from the chosen day', async () => {
+  await step('first day of the week: it changes the weeks in Statistics, and the day cards stay centred on the chosen day', async () => {
     assert.equal(await page.inputValue('select[aria-label="First Day of the Week"]'), '0');
     await page.selectOption('select[aria-label="First Day of the Week"]', '6');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Daily View")');
     await page.waitForSelector('.day-chip');
-    assert.deepEqual(await page.$$eval('.day-chip .day-chip-wd', (els) => els.map((e) => e.textContent)), ['SAT', 'TODAY', 'MON', 'TUE', 'WED', 'THU', 'FRI']);
+    assert.deepEqual(await page.$$eval('.day-chip .day-chip-wd', (els) => els.map((e) => e.textContent)), ['THU', 'FRI', 'SAT', 'TODAY', 'MON', 'TUE', 'WED']);
+    assert.equal(await page.locator('.week-chips .day-chip.on').evaluate((el) => [...el.parentNode.children].indexOf(el)), 3, 'the chosen day is in the middle');
     await page.click('button[aria-label="Next Day"]');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
     assert.equal(await page.locator('.day-chip.on .day-chip-wd').textContent(), 'MON');

@@ -242,6 +242,10 @@ main { width: 100%; margin: 0; padding: 6px clamp(16px, 3vw, 56px) 64px; }
   width: auto !important; height: var(--ctl-h-lg); padding: 0 14px; border-radius: var(--r-ctl-lg); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: var(--fs-sm);
 }
 .week-strip { display: flex; align-items: center; gap: 8px; }
+.week-chips { display: flex; gap: 8px; overflow: hidden; padding: 3px; margin: -3px; }
+.day-chip { position: relative; flex: 0 0 auto; }
+.day-chip-fade { position: absolute; inset: -1px; border-radius: inherit; background: var(--accent); pointer-events: none; z-index: 0; }
+.day-chip > span:not(.day-chip-fade) { position: relative; z-index: 1; }
 .icon-btn.sm { width: 36px; height: 36px; border-radius: 11px; }
 .day-chip {
   width: 68px; height: 78px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
@@ -387,19 +391,6 @@ main { width: 100%; margin: 0; padding: 6px clamp(16px, 3vw, 56px) 64px; }
   .splash, .splash * { animation: none !important; transition: none !important; }
 }
 
-/* ---- Stepping through the days: the strip slides in from the side the new day is on, and the chosen day pops ---- */
-.week-strip { --step-dx: 18px; --step-ms: 200ms; }
-html[dir='rtl'] .week-strip { --step-dx: -18px; }
-@keyframes day-step-next { from { opacity: 0.35; transform: translateX(var(--step-dx)); } to { opacity: 1; transform: none; } }
-@keyframes day-step-prev { from { opacity: 0.35; transform: translateX(calc(var(--step-dx) * -1)); } to { opacity: 1; transform: none; } }
-@keyframes day-pop { 0% { transform: scale(0.88); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
-.week-strip.step-next .day-chip { animation: day-step-next var(--step-ms) ease-out both; }
-.week-strip.step-prev .day-chip { animation: day-step-prev var(--step-ms) ease-out both; }
-.week-strip.step-next .day-chip.on, .week-strip.step-prev .day-chip.on { animation: day-pop calc(var(--step-ms) + 60ms) ease-out both; }
-.week-strip.step-next ~ *, .week-strip.step-prev ~ * { animation: none; }
-.day-head .day-title { transition: opacity 0.15s; }
-@media (prefers-reduced-motion: reduce) {
-  .week-strip .day-chip { animation: none !important; }
 }
 
 .welcome { position: fixed; inset: 0; z-index: 90; display: flex; background: var(--bg); overflow-y: auto; }

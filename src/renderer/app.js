@@ -361,6 +361,30 @@
 
   for (const type of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(type, stopHolding);
 
+  // The cards slide one place: the chosen day stays in the middle and the others move past it.
+  // The new strip is drawn in its final place and every card starts one place away, then glides to where it belongs.
+  function slideStrip(root, step) {
+    const box = root.querySelector('.week-chips');
+    const chips = box ? Array.from(box.children) : [];
+    if (chips.length < 3 || !box.animate) return;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    const slot = chips[1].offsetLeft - chips[0].offsetLeft; // one card plus the gap (negative when the page runs right to left)
+    const fromX = step.dir * slot;
+    const timing = { duration: step.ms, easing: 'cubic-bezier(0.22, 0.8, 0.3, 1)', fill: 'backwards' };
+    chips.forEach((chip, i) => {
+      chip.animate([{ transform: `translateX(${fromX}px)` }, { transform: 'translateX(0)' }], timing);
+      const entering = i === (step.dir > 0 ? chips.length - 1 : 0); // the card that comes in from the edge
+      if (entering) chip.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+    });
+    const left = chips[(chips.length >> 1) - step.dir];
+    if (left) {
+      const fade = h('span', { class: 'day-chip-fade', 'aria-hidden': 'true' });
+      left.appendChild(fade);
+      fade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: step.ms, easing: 'ease-out', fill: 'forwards' }).onfinish = () => fade.remove();
+    }
+  }
+
   function renderDay() {
     const day = WW.state.day;
     const memory = focusMemory();
@@ -393,13 +417,14 @@
           h('div', { class: 'day-actions' },
             h('button', { class: 'btn', text: T('Today'), onclick: () => WW.showDay(WW.state.todayKey || day.currentPlanningDayKey) }),
             picker)),
-        h('div', { class: `week-strip${step ? (step.dir > 0 ? ' step-next' : ' step-prev') : ''}`, role: 'group', 'aria-label': T('Days of This Week'), style: step ? { '--step-ms': `${step.ms}ms` } : {} },
+        h('div', { class: 'week-strip', role: 'group', 'aria-label': T('Days of This Week') },
           stepButton(-1, T('Previous Day')),
-          ...week.days.map(chip),
+          h('div', { class: 'week-chips' }, week.days.map(chip)),
           stepButton(1, T('Next Day')))),
       heroCard(day),
       h('div', { class: 'zones' }, day.zones.map((z) => zoneSection(z, day))));
     restoreFocus(memory);
+    if (step) slideStrip(root, step);
     if (WW.state.focusStep) {
       const arrow = root.querySelector(`.step-btn[data-step="${WW.state.focusStep}"]`);
       WW.state.focusStep = 0;

@@ -80,7 +80,7 @@ if it is 1 a.m., you are still in the previous day's last zone, and the app show
 
 The main screen shows one day: the zones from top to bottom, with tasks inside them.
 
-- **Top bar:** the date (also in the Hijri calendar), arrows and a week strip to move between days, **Today**,
+- **Top bar:** the date (also in the Hijri calendar), arrows and a strip of days to move between days (the chosen day stays in the middle; the arrows move one day, and holding one keeps going), **Today**,
   the day's completion ring, the missed-reminders bell, the light/dark button and **+ New task**.
 - **Each zone:** its start and end time, a time bar that shows the tasks and the free space, the planned time,
   the free time left, and the zone's completion ring.

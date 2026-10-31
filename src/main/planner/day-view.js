@@ -255,11 +255,12 @@ class DayViewMethods {
     };
   }
 
-  // The seven days of the week (from the first day chosen in Settings) around a planning day, for the strip at the top of the Daily View.
+  // Seven days with the chosen planning day in the middle (three before it, three after it), for the strip at the top of the Daily View.
+  // The strip does not depend on the first day of the week: stepping a day moves all the cards and the chosen one stays in the middle.
   weekStrip(planningKey, currentKey) {
     const provider = this.provider();
     const options = this.recurrenceOptions();
-    const first = addDaysToKey(planningKey, -((weekdayOfKey(planningKey) - this.weekStart() + 7) % 7));
+    const first = addDaysToKey(planningKey, -3);
     const chipName = (wd) => (getLanguage() === 'en' ? weekdayShort(wd) : weekdayLong(wd));
     const days = [];
     for (let i = 0; i < 7; i++) {
