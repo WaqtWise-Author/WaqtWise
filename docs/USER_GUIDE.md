@@ -220,6 +220,8 @@ The charts (use **Manage** to show, hide or reorder them):
 | Most Late Tasks | Which tasks are done late and by how much on average |
 | Lateness by Zone and Category | Average delay in each |
 | Lateness Over Time | Average delay per day, week or month |
+| Prayer Time Over Time | A line chart: at what time one prayer (choose it) falls on each day of the range, with the earliest, the latest and the change |
+| Zone Length Over Time | A line chart: how long one zone (choose it) lasts on each day, as **Total Length** (prayer to prayer) or **Free Time** (minus your tasks) |
 | Routines | For each routine: the share of its times done, the current streak, the last days as small squares, and the time you miss most often |
 
 Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
@@ -257,7 +259,7 @@ Changing it can move such tasks to other weeks.
 
 - Everything is stored **only on your computer**, in the app's data folder
   (`%APPDATA%\WaqtWise`, files `data.json` and `state.json`). WaqtWise does not use the network.
-- **Export Data** (menu → Export data, or Settings → Data) saves a backup file. **Import Data** restores one;
+- **Export Data** (Settings → Data) saves a backup file. **Import Data** restores one;
   it replaces what is in the app, so export first if unsure. Backups also carry the saved statistics, so they
   move with you to another computer.
 - **Automatic backups:** one per day (the last 7 days) and one just before each import or restore (the last 5

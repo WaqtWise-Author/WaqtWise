@@ -86,7 +86,7 @@
       class: 'btn small', type: 'button', text: T('Preview'), 'aria-label': T('Preview the {label} sound', { label: label.toLowerCase() }),
       onclick: () => WW.sounds.play(id, volume),
     });
-    return h('div', {}, h('div', { class: 'row' }, select, slider, readout, preview), extra || null);
+    return h('div', {}, h('div', { class: 'row' }, select, slider, readout, preview), extra ? h('div', { class: 'sound-extra' }, extra) : null);
   }
 
   function soundsSection() {
@@ -576,6 +576,7 @@
           h('button', { class: 'btn', text: T('Export Data…'), onclick: () => WW.exportData() }),
           h('button', { class: 'btn', text: T('Import Data…'), onclick: () => WW.importData() }),
           h('button', { class: 'btn', text: T('Restore from Backup…'), onclick: () => WW.restoreBackup() })),
+        h('p', { class: 'hint', text: T('Export saves a backup file on this computer. Importing a backup replaces all tasks, categories and settings.') }),
         h('p', { class: 'hint', text: T('WaqtWise also keeps its own copies automatically: one per day for the last 7 days, and one before every import.') }))
     ];
     // The index row sticks just below the top bar, so it needs the bar's real height (it wraps on narrow windows).

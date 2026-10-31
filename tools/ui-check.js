@@ -211,9 +211,23 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal((await page.$$('.zone.current')).length, 0);
     // The 2 AM task belongs to Oct 4, so Oct 5 does not show it
     assert.ok(!(await page.textContent('#view')).includes('Night reading'));
-    await page.click('button[aria-label="Previous Week"]');
-    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('September 28'));
-    await page.click('button[aria-label="Next Week"]');
+    // The arrows move one day, not a week
+    await page.click('button[aria-label="Previous Day"]');
+    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 4'));
+    await page.click('button[aria-label="Next Day"]');
+    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
+    assert.ok(await page.$('.week-strip.step-next'), 'the strip is animated while stepping');
+    // Holding the arrow keeps stepping, at a steady speed, and stops when the button is let go
+    const box = await page.locator('button[aria-label="Next Day"]').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForFunction(() => /October (1[0-9]|2[0-9])/.test(document.querySelector('.day-title').textContent), null, { timeout: 8000 });
+    await page.mouse.up();
+    await page.waitForTimeout(700);
+    const stopped = await page.textContent('.day-title');
+    await page.waitForTimeout(700);
+    assert.equal(await page.textContent('.day-title'), stopped, 'letting go stops it');
+    await page.fill('input[aria-label="Jump to Date"]', '2026-10-05');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
     await page.click('button:text-is("Today")');
     await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 4'));
@@ -563,10 +577,10 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForTimeout(150);
     assert.equal(await page.getAttribute('#theme-btn', 'aria-label'), before);
   });
-  await step('side menu: Daily View, Statistics, Settings, Export data, Import data; Esc closes it', async () => {
+  await step('side menu: Daily View, Free To-Do List, Routines, Statistics, Settings (the data buttons are in Settings); Esc closes it', async () => {
     await page.click('#menu-btn');
     const items = await page.$$eval('#drawer .drawer-item', (els) => els.map((e) => e.textContent.trim()));
-    assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Statistics', 'Settings', 'Export Data…', 'Import Data…']);
+    assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Statistics', 'Settings']);
     await shot(page, 'drawer');
     await page.keyboard.press('Escape');
     assert.equal(await page.isHidden('#drawer'), true);
@@ -776,9 +790,9 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#drawer .drawer-item:has-text("Daily View")');
     await page.waitForSelector('.day-chip');
     assert.deepEqual(await page.$$eval('.day-chip .day-chip-wd', (els) => els.map((e) => e.textContent)), ['SAT', 'TODAY', 'MON', 'TUE', 'WED', 'THU', 'FRI']);
-    await page.click('button[aria-label="Next Week"]');
-    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 11'));
-    assert.equal(await page.locator('.day-chip.on .day-chip-wd').textContent(), 'SUN');
+    await page.click('button[aria-label="Next Day"]');
+    await page.waitForFunction(() => document.querySelector('.day-title').textContent.includes('October 5'));
+    assert.equal(await page.locator('.day-chip.on .day-chip-wd').textContent(), 'MON');
     await page.click('#menu-btn');
     await page.click('#drawer .drawer-item:has-text("Settings")');
     await page.waitForSelector('.settings-section');
@@ -1295,6 +1309,47 @@ async function setTime(page, hour, minute, ampm) {
     await sApp.browser.close();
   });
 
+  await step('Statistics: two line charts show a prayer time and a zone length over the range, one choice at a time', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '15:20') });
+    svc.saveTask({ mode: 'create', form: { title: 'Study', start: { mode: 'fixed', time: '08:00' }, durationMinutes: 60, date: null,
+      recurrence: { startDate: '2026-10-01', frequency: 'daily', interval: 1 }, reminders: { enabled: false, offsets: [] }, priority: 'Medium', categoryId: 'cat-study', notes: '' } });
+    const lc = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 1500 });
+    const p = lc.page;
+    await p.click('#menu-btn');
+    await p.click('.drawer-item:has-text("Statistics")');
+    await p.waitForSelector('.stats-grid');
+    // Day range: one point cannot make a line
+    await p.click('.stats-seg button[data-range="day"]');
+    await p.waitForSelector('#prayertimes-none');
+    assert.ok(await p.$('#zonelength-none'));
+    await p.click('.stats-seg button[data-range="month"]');
+    await p.waitForSelector('#prayertimes-chart');
+    assert.equal((await p.$$('#prayertimes-chart .lc-line')).length, 1);
+    assert.equal((await p.$$('#prayertimes-chart .lc-hit')).length, 10, 'a point for each day so far');
+    assert.equal(await p.$eval('.prayertimes-card .trend-chip.on', (b) => b.textContent), 'Fajr');
+    const firstLine = () => p.$eval('#prayertimes-chart .lc-line', (l) => l.getAttribute('points'));
+    const before = await firstLine();
+    await p.click('.prayertimes-card .trend-chip[data-id="isha"]');
+    await p.waitForFunction(() => document.querySelector('.prayertimes-card .trend-chip.on').textContent === 'Isha');
+    assert.ok(await p.$('.prayertimes-card .trend-chip.on:focus'), 'the focus stays on the chosen button');
+    assert.ok(await p.$('#prayertimes-change'));
+    assert.match(await p.textContent('.prayertimes-card .trend-summary'), /Earliest/);
+    // Zone length: total, then free time (the daily Study task takes an hour out of the first zone)
+    assert.equal(await p.$eval('.zonelength-card .trend-chip.on', (b) => b.textContent), 'Fajr → Dhuhr');
+    const total = await p.$eval('#zonelength-chart .lc-hit title', (t) => t.textContent);
+    await p.click('.zonelength-card .trend-chip[data-id="free"]');
+    await p.waitForFunction(() => document.querySelector('.zonelength-card .trend-chip.on[data-id="free"]'));
+    const free = await p.$eval('#zonelength-chart .lc-hit title', (t) => t.textContent);
+    assert.notEqual(total, free, 'free time is shorter than the whole zone');
+    await p.click('.zonelength-card .trend-chip[data-id="2"]');
+    await p.waitForFunction(() => document.querySelector('.zonelength-card .trend-chip.on[data-id="2"]'));
+    assert.match(await p.textContent('.zonelength-card .trend-note'), /Free Time is the length/);
+    await shot(p, 'stats-trends');
+    assert.deepEqual(realErrors(lc.errors), []);
+    assert.ok(before.length > 10);
+    await lc.browser.close();
+  });
   await step('Statistics: Manage adds, removes and re-orders the charts, and the choice is saved', async () => {
     const { at } = require('./ui-harness');
     const svc = createService({ now: at('2026-10-10', '15:20') });
@@ -1306,17 +1361,17 @@ async function setTime(page, hour, minute, ampm) {
     await mp.click('#menu-btn');
     await mp.click('.drawer-item:has-text("Statistics")');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 10);
+    assert.equal((await sections()).length, 12);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
 
     await mp.click('#stats-manage');
     await mp.waitForSelector('.manage-row');
-    assert.equal((await mp.$$('.manage-row')).length, 15);
+    assert.equal((await mp.$$('.manage-row')).length, 17);
     await mp.click('button[aria-label="Remove Needs attention"]');
     await mp.click('button[aria-label="Remove By Zone"]');
     await mp.click('button[aria-label="Remove Current Streak"]');
     await mp.waitForFunction(() => document.querySelectorAll('.stats-card.kpi').length === 4);
-    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
+    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines']);
     assert.equal((await sections()).includes('Needs attention'), false);
     assert.equal((await sections()).includes('By Zone'), false);
     assert.match(await mp.textContent('.manage-title >> nth=1'), /Available to add \(3\)/);
@@ -1324,8 +1379,8 @@ async function setTime(page, hour, minute, ampm) {
 
     await mp.click('button[aria-label="Move Completion Trend up"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:nth-child(2)').getAttribute('aria-label') === 'Completion Trend');
-    assert.deepEqual(await sections(), ['Done Versus Planned', 'Completion Trend', 'Calendar Heat Map', 'By Category', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Routines']);
-    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'routines']);
+    assert.deepEqual(await sections(), ['Done Versus Planned', 'Completion Trend', 'Calendar Heat Map', 'By Category', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines']);
+    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines']);
     await mp.click('button[aria-label="Add By Zone"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:last-child').getAttribute('aria-label') === 'By Zone');
 
@@ -1342,13 +1397,13 @@ async function setTime(page, hour, minute, ampm) {
 
     // Removing everything leaves a hint, and the reset button brings it all back.
     await mp.click('#stats-manage');
-    for (const id of ['Done vs Planned', 'Completion Rate', 'Tasks Done', 'Planned Time', 'Calendar Heat Map', 'Completion Trend', 'By Category', 'By Zone', 'Done on Time', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Routines']) {
+    for (const id of ['Done vs Planned', 'Completion Rate', 'Tasks Done', 'Planned Time', 'Calendar Heat Map', 'Completion Trend', 'By Category', 'By Zone', 'Done on Time', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines']) {
       await mp.click(`button[aria-label="Remove ${id}"]`);
     }
     await mp.waitForSelector('#stats-nothing');
     await mp.click('#manage-reset');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 10);
+    assert.equal((await sections()).length, 12);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
     assert.deepEqual(realErrors(m.errors), []);
     await m.browser.close();

@@ -59,6 +59,8 @@ const STATS_CHARTS = [
   { id: 'lateness', title: 'Most Late Tasks', about: 'Which tasks are done late, and by how much on average' },
   { id: 'lateby', title: 'Lateness by Zone and Category', about: 'Average Delay in Each Zone and Category' },
   { id: 'latetrend', title: 'Lateness Over Time', about: 'Average delay in each day, week or month' },
+  { id: 'prayertimes', title: 'Prayer Time Over Time', about: 'At what time a prayer falls, day by day' },
+  { id: 'zonelength', title: 'Zone Length Over Time', about: 'How long a zone lasts, day by day, in total or as free time' },
   { id: 'routines', title: 'Routines', about: 'How steadily you keep each routine, with its streak' },
 ];
 const STATS_CHART_IDS = STATS_CHARTS.map((c) => c.id);

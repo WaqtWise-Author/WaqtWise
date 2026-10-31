@@ -666,8 +666,6 @@ test('The week strip lists Sunday to Saturday with today marked and each day\'s 
   assert.match(tue.label, /Tuesday .*1 of 2 done/);
   assert.match(week.days[0].label, /^Today, Sunday/);
   assert.match(week.days[1].label, /no tasks/);
-  assert.equal(week.prevKey, '2026-09-30');
-  assert.equal(week.nextKey, '2026-10-14');
 });
 
 test('First day of the week: the strip, the statistics and validation', () => {

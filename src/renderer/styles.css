@@ -387,6 +387,21 @@ main { width: 100%; margin: 0; padding: 6px clamp(16px, 3vw, 56px) 64px; }
   .splash, .splash * { animation: none !important; transition: none !important; }
 }
 
+/* ---- Stepping through the days: the strip slides in from the side the new day is on, and the chosen day pops ---- */
+.week-strip { --step-dx: 18px; --step-ms: 200ms; }
+html[dir='rtl'] .week-strip { --step-dx: -18px; }
+@keyframes day-step-next { from { opacity: 0.35; transform: translateX(var(--step-dx)); } to { opacity: 1; transform: none; } }
+@keyframes day-step-prev { from { opacity: 0.35; transform: translateX(calc(var(--step-dx) * -1)); } to { opacity: 1; transform: none; } }
+@keyframes day-pop { 0% { transform: scale(0.88); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.week-strip.step-next .day-chip { animation: day-step-next var(--step-ms) ease-out both; }
+.week-strip.step-prev .day-chip { animation: day-step-prev var(--step-ms) ease-out both; }
+.week-strip.step-next .day-chip.on, .week-strip.step-prev .day-chip.on { animation: day-pop calc(var(--step-ms) + 60ms) ease-out both; }
+.week-strip.step-next ~ *, .week-strip.step-prev ~ * { animation: none; }
+.day-head .day-title { transition: opacity 0.15s; }
+@media (prefers-reduced-motion: reduce) {
+  .week-strip .day-chip { animation: none !important; }
+}
+
 .welcome { position: fixed; inset: 0; z-index: 90; display: flex; background: var(--bg); overflow-y: auto; }
 .welcome-brand {
   flex: 0 0 47%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 48px;
@@ -424,7 +439,10 @@ main { width: 100%; margin: 0; padding: 6px clamp(16px, 3vw, 56px) 64px; }
 .dialog-message { margin: 0 0 12px; }
 .choice { display: flex; align-items: center; gap: 10px; padding: 8px 4px; cursor: pointer; }
 .choice.disabled { opacity: 0.5; cursor: not-allowed; }
-.hint { color: var(--text-soft); font-size: var(--fs-sm); margin: 6px 0 0; }
+.hint { color: var(--text-soft); font-size: var(--fs-sm); margin: 8px 0 0; line-height: 1.55; word-spacing: 0.08em; }
+.sound-extra { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+.sound-extra .onoff-label { word-spacing: 0.08em; }
+.sound-extra .hint { margin-top: 6px; }
 
 /* ---- Forms ---- */
 .field { margin-bottom: 16px; }
@@ -548,6 +566,26 @@ input[type='color'] { width: 44px; height: var(--ctl-h); padding: 3px; border: 1
 .stats-grid > .bars-card, .stats-grid > .heat-card, .stats-grid > .trend-card { flex: 1 1 560px; }
 .stats-grid > .bars-card { flex-grow: 2; }
 .stats-grid > .zones-card { flex: 1 1 360px; }
+.stats-grid > .trend-card { flex: 1 1 100%; }
+.trend-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.trend-chip { border: 1px solid var(--border); background: var(--chip); color: var(--text); font: inherit; font-size: var(--fs-xs); font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.trend-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.trend-top { margin-top: 14px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; }
+.trend-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+.trend-top .trend-summary { margin: 0; }
+.trend-pill { font-size: var(--fs-xs); padding: 5px 12px; border-radius: 999px; background: var(--chip); border: 1px solid var(--border); unicode-bidi: plaintext; }
+.trend-pill.change { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bg); font-weight: 700; }
+.trend-note { font-size: var(--fs-xs); color: var(--text-soft); margin-top: 4px; }
+.trend-card .stats-none { padding-top: 18px; }
+.line-chart { display: block; width: 100%; height: auto; margin-top: 8px; direction: ltr; }
+.line-chart .lc-grid { stroke: var(--border); stroke-width: 1; }
+.line-chart .lc-ylabel, .line-chart .lc-xlabel { fill: var(--text-soft); font-size: var(--fs-xs); }
+.line-chart .lc-area { fill-opacity: 0.1; stroke: none; }
+.line-chart .lc-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.line-chart .lc-end { fill: var(--surface); stroke-width: 2.5; }
+.line-chart .lc-endlabel { fill: var(--text); font-size: var(--fs-xs); font-weight: 700; }
+.line-chart .lc-hit { fill: transparent; }
+.line-chart .lc-hit:hover { fill: var(--accent); fill-opacity: 0.35; }
 
 .stats-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 18px; }
 .stats-card.kpi { padding: 20px 24px; }

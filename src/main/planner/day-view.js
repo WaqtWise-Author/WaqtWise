@@ -7,7 +7,7 @@ const { t, tp, getLanguage, weekdayShort, weekdayLong, monthLong } = require('..
 const core = require('../../core');
 
 const {
-  localCategoryName, occurrencesForPlanningDay, getOccurrences, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
+  localCategoryName, occurrencesForPlanningDay, getOccurrences, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, computePrayerTrends, resolveCity, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
 } = core;
 
 // The first non-empty line of a note, cut short for a task row.
@@ -280,7 +280,7 @@ class DayViewMethods {
         label: `${key === currentKey ? t('Today, ') : ''}${weekdayLong(wd)} ${formatKeyShort(key)}${t(', ')}${list.length ? t('{done} of {total} done', { done, total: list.length }) : t('no tasks')}`,
       });
     }
-    return { days, prevKey: addDaysToKey(planningKey, -7), nextKey: addDaysToKey(planningKey, 7) };
+    return { days };
   }
 
   // The Statistics screen. query: { range: 'day'|'week'|'month'|'year'|'custom', anchorKey, fromKey, toKey }.
@@ -299,6 +299,23 @@ class DayViewMethods {
     });
     // The routines card (kept apart from the task numbers): the same range, worked out from the routines' own ticks.
     stats.routineStats = computeRoutineStats(this.data.routines || [], { fromKey: stats.rangeStartKey, toKey: stats.rangeEndKey }, this.now());
+    // The two line charts: prayer times and zone lengths over the range (the city's own clock, the tasks as they are now).
+    const provider = this.provider();
+    const { timeZone } = resolveCity(this.settings);
+    const clockParts = timeZone ? new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : null;
+    const minutesOfDay = (date) => {
+      if (!clockParts) return date.getHours() * 60 + date.getMinutes();
+      const [h, m] = clockParts.format(date).split(':').map(Number);
+      return h * 60 + m;
+    };
+    const options = this.recurrenceOptions();
+    stats.prayerTrends = computePrayerTrends({
+      provider,
+      fromKey: stats.rangeStartKey,
+      toKey: stats.rangeEndKey,
+      minutesOfDay,
+      layoutFor: (key) => computeDayLayout(provider, key, occurrencesForPlanningDay(provider, this.data.tasks, key, options)),
+    });
     return stats;
   }
 

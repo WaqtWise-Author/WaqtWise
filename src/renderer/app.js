@@ -304,10 +304,69 @@
     if (target) target.focus({ preventScroll: true });
   }
 
+  // ---- the arrows beside the week strip: one day at a time, and holding the button keeps going -------------------------
+
+  const STEP_FIRST_MS = 420; // how long the button is held before it starts repeating
+  const STEP_SLOW_MS = 230; // the gap between repeated steps at first ...
+  const STEP_FAST_MS = 120; // ... and after a while
+  const hold = { dir: 0, timer: null, count: 0 };
+
+  function addDaysToKey(key, n) {
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d + n));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  }
+
+  // Moves the selected day by one. The key comes from the day that was asked for last, so quick repeats never skip or repeat a day.
+  function stepDay(dir, ms) {
+    const from = WW.state.dayKey || (WW.state.day && WW.state.day.planningDayKey);
+    if (!from) return;
+    WW.state.step = { dir, ms: ms || STEP_SLOW_MS };
+    WW.showDay(addDaysToKey(from, dir));
+  }
+
+  function stopHolding() {
+    hold.dir = 0;
+    clearTimeout(hold.timer);
+    hold.timer = null;
+  }
+
+  function holdTick() {
+    if (!hold.dir) return;
+    hold.count += 1;
+    const ms = hold.count > 6 ? STEP_FAST_MS : STEP_SLOW_MS;
+    stepDay(hold.dir, ms);
+    hold.timer = setTimeout(holdTick, ms);
+  }
+
+  function stepButton(dir, label) {
+    return h('button', {
+      class: 'icon-btn sm step-btn', type: 'button', 'aria-label': label, title: label, 'data-step': String(dir),
+      // A mouse or finger: one step at once, and more while it stays down. (The page is redrawn after each step, so the button
+      // that was pressed is replaced; the release is caught on the whole document below.)
+      onpointerdown: (e) => {
+        if (e.button !== undefined && e.button !== 0) return;
+        stopHolding();
+        hold.dir = dir;
+        hold.count = 0;
+        stepDay(dir, STEP_SLOW_MS);
+        hold.timer = setTimeout(holdTick, STEP_FIRST_MS);
+      },
+      // The keyboard (Enter or Space) clicks with no pointer: one step, and the focus stays on the arrow.
+      onclick: (e) => {
+        if (e.detail === 0) { WW.state.focusStep = dir; stepDay(dir, STEP_SLOW_MS); }
+      },
+    }, WW.icon(WW.arrowIcon(dir < 0 ? 'prev' : 'next'), 18, 2.2));
+  }
+
+  for (const type of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(type, stopHolding);
+
   function renderDay() {
     const day = WW.state.day;
     const memory = focusMemory();
     const root = clear(view());
+    const step = WW.state.step;
+    WW.state.step = null;
 
     const picker = h('input', {
       type: 'date', value: day.planningDayKey, 'aria-label': T('Jump to Date'),
@@ -334,13 +393,18 @@
           h('div', { class: 'day-actions' },
             h('button', { class: 'btn', text: T('Today'), onclick: () => WW.showDay(WW.state.todayKey || day.currentPlanningDayKey) }),
             picker)),
-        h('div', { class: 'week-strip', role: 'group', 'aria-label': T('Days of This Week') },
-          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Previous Week'), onclick: () => WW.showDay(week.prevKey) }, WW.icon(WW.arrowIcon('prev'), 18, 2.2)),
+        h('div', { class: `week-strip${step ? (step.dir > 0 ? ' step-next' : ' step-prev') : ''}`, role: 'group', 'aria-label': T('Days of This Week'), style: step ? { '--step-ms': `${step.ms}ms` } : {} },
+          stepButton(-1, T('Previous Day')),
           ...week.days.map(chip),
-          h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': T('Next Week'), onclick: () => WW.showDay(week.nextKey) }, WW.icon(WW.arrowIcon('next'), 18, 2.2)))),
+          stepButton(1, T('Next Day')))),
       heroCard(day),
       h('div', { class: 'zones' }, day.zones.map((z) => zoneSection(z, day))));
     restoreFocus(memory);
+    if (WW.state.focusStep) {
+      const arrow = root.querySelector(`.step-btn[data-step="${WW.state.focusStep}"]`);
+      WW.state.focusStep = 0;
+      if (arrow) arrow.focus({ preventScroll: true });
+    }
   }
 
   // Only the newest request may draw: an older answer that arrives late must not replace the day the person chose.
@@ -540,12 +604,7 @@
       item('check', T('Free To-Do List') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
       item('bell', T('Routines'), () => WW.showRoutines(), WW.state.view === 'routines'),
       item('chart', T('Statistics'), () => WW.showStats({ range: 'week' }), WW.state.view === 'stats'),
-      item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'),
-      h('div', { class: 'drawer-sep' }),
-      h('div', { class: 'drawer-label', text: T('YOUR DATA') }),
-      item('export', T('Export Data…'), () => WW.exportData()),
-      item('import', T('Import Data…'), () => WW.importData()),
-      h('p', { class: 'drawer-note', text: T('Export saves a backup file on this computer. Importing a backup replaces all tasks, categories and settings.') }));
+      item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'));
     drawer.hidden = false;
     document.getElementById('scrim').hidden = false;
     document.getElementById('menu-btn').setAttribute('aria-expanded', 'true');

@@ -31,10 +31,12 @@
     ['lateness', T('Most Late Tasks'), T('Which tasks are done late, and by how much on average')],
     ['lateby', T('Lateness by Zone and Category'), T('Average Delay in Each Zone and Category')],
     ['latetrend', T('Lateness Over Time'), T('Average delay in each day, week or month')],
+    ['prayertimes', T('Prayer Time Over Time'), T('At what time a prayer falls, day by day')],
+    ['zonelength', T('Zone Length Over Time'), T('How long a zone lasts, day by day, in total or as free time')],
     ['routines', T('Routines'), T('How steadily you keep each routine, with its streak')],
   ];
   const CHARTS = { map: (f) => CHARTS_DEF().map(f), find: (f) => CHARTS_DEF().find(f) };
-  const local = { query: { range: 'week' }, showAllLate: false };
+  const local = { query: { range: 'week' }, showAllLate: false, prayer: 'fajr', zone: 1, metric: 'total' };
 
   const shade = (pct) => `color-mix(in srgb, var(--accent) ${Math.round(14 + pct * 0.86)}%, var(--surface))`;
 
@@ -330,6 +332,97 @@
           h('div', {}, h('div', { class: 'bl-name', text: i % stride === 0 ? it.label : '' }), h('div', { class: 'bl-ratio', text: '' }))))));
   }
 
+
+  // ---- prayer times and zone lengths over time (two line charts) ---------------------------------------------------
+
+  const LC = { w: 1020, h: 262, left: 70, right: 40, top: 20, bottom: 220 };
+
+  // series: { points: [{ label, title, value, valueLabel }], axis: { low, high, ticks: [{ value, label }] } }
+  function lineChart(series, { color, aria, id }) {
+    const n = series.points.length;
+    const { low, high } = series.axis;
+    const x = (i) => LC.left + ((LC.w - LC.left - LC.right) * i) / (n - 1);
+    const y = (v) => LC.bottom - ((v - low) / (high - low || 1)) * (LC.bottom - LC.top);
+    const line = series.points.map((p, i) => `${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
+    const stride = Math.max(1, Math.ceil(n / 10));
+    const hits = n <= 62 ? series.points.map((p, i) =>
+      svg('circle', { class: 'lc-hit', cx: x(i).toFixed(1), cy: y(p.value).toFixed(1), r: n > 31 ? 5 : 8, 'data-i': i }, svg('title', {}, `${p.title}: ${p.valueLabel}`))) : [];
+    const last = n - 1;
+    return svg('svg', { class: 'line-chart', id, viewBox: `0 0 ${LC.w} ${LC.h}`, role: 'img', 'aria-label': aria },
+      ...series.axis.ticks.map((tk) => svg('line', { class: 'lc-grid', x1: LC.left - 8, x2: LC.w - LC.right + 10, y1: y(tk.value).toFixed(1), y2: y(tk.value).toFixed(1) })),
+      ...series.axis.ticks.map((tk) => svg('text', { class: 'lc-ylabel', x: LC.left - 14, y: (y(tk.value) + 4).toFixed(1), 'text-anchor': 'end' }, tk.label)),
+      svg('polygon', { class: 'lc-area', points: `${x(0)},${LC.bottom + 10} ${line} ${x(last).toFixed(1)},${LC.bottom + 10}`, fill: color }),
+      svg('polyline', { class: 'lc-line', points: line, stroke: color }),
+      ...[0, last].map((i) => svg('circle', { class: 'lc-end', cx: x(i).toFixed(1), cy: y(series.points[i].value).toFixed(1), r: 5, stroke: color })),
+      svg('text', { class: 'lc-endlabel', x: (x(0) + 8).toFixed(1), y: (y(series.points[0].value) - 12).toFixed(1), 'text-anchor': 'start' }, series.points[0].valueLabel),
+      svg('text', { class: 'lc-endlabel', x: (x(last) - 4).toFixed(1), y: (y(series.points[last].value) - 12).toFixed(1), 'text-anchor': 'end' }, series.points[last].valueLabel),
+      ...hits,
+      ...series.points.map((p, i) => (i % stride === 0 ? svg('text', { class: 'lc-xlabel', x: x(i).toFixed(1), y: LC.h - 8, 'text-anchor': 'middle' }, p.label) : null)));
+  }
+
+  // The row of choices above a chart: one button for each, the chosen one is "on".
+  function chipRow(items, chosen, label, pick) {
+    return h('div', { class: 'trend-chips', role: 'group', 'aria-label': label }, items.map(([id, text]) =>
+      h('button', { type: 'button', class: `trend-chip ${id === chosen ? 'on' : ''}`, 'aria-pressed': String(id === chosen), 'data-id': String(id), text, onclick: () => pick(id) })));
+  }
+
+  function bucketNote(trends) {
+    if (trends.bucket === 'week') return T('Each point is the average of one week.');
+    if (trends.bucket === 'month') return T('Each point is the average of one month.');
+    return '';
+  }
+
+  function summaryChips(series, words) {
+    const change = series.change === 0 ? T('No change over the range') : (series.change > 0 ? words.more : words.less).replace('{time}', series.changeLabel);
+    return h('div', { class: 'trend-summary' },
+      h('span', { class: 'trend-pill' }, h('b', { text: words.low }), ` ${series.lowest.valueLabel} · ${series.lowest.title}`),
+      h('span', { class: 'trend-pill' }, h('b', { text: words.high }), ` ${series.highest.valueLabel} · ${series.highest.title}`),
+      h('span', { class: 'trend-pill change', id: words.changeId, text: change }));
+  }
+
+  // Redraws only the card that was clicked (its choices live in `local`), and gives the focus back to the button.
+  function redrawCard(builder, data, selector, chosenId) {
+    const old = document.querySelector(selector);
+    if (!old) return;
+    const fresh = builder(data);
+    old.replaceWith(fresh);
+    const again = fresh.querySelector(`.trend-chip[data-id="${chosenId}"]`) || fresh.querySelector('.trend-chip.on');
+    if (again) again.focus();
+  }
+
+  function trendNone(id) {
+    return h('div', { class: 'stats-none', id, text: T('Choose Week, Month or Year to see how this changes over time.') });
+  }
+
+  function prayerTimesCard(data) {
+    const trends = data.prayerTrends;
+    const prayer = trends.prayers.find((p) => p.id === local.prayer) || trends.prayers[0];
+    return h('section', { class: 'stats-card trend-card prayertimes-card', 'aria-label': T('Prayer Time Over Time') },
+      h('div', { class: 'stats-card-head' },
+        h('div', {}, h('h2', { text: T('Prayer Time Over Time') }), h('div', { class: 'sub', text: T('At what time the chosen prayer falls, day by day') })),
+        chipRow(trends.prayers.map((p) => [p.id, p.name]), prayer.id, T('Prayer'), (id) => { local.prayer = id; redrawCard(prayerTimesCard, data, '.prayertimes-card', id); })),
+      trends.single ? trendNone('prayertimes-none') : h('div', {},
+        summaryChips(prayer, { low: T('Earliest'), high: T('Latest'), more: T('{time} later over the range'), less: T('{time} earlier over the range'), changeId: 'prayertimes-change' }),
+        lineChart(prayer, { color: 'var(--accent)', id: 'prayertimes-chart', aria: T('{name}: {first} on the first day, {last} on the last day', { name: prayer.name, first: prayer.points[0].valueLabel, last: prayer.points[prayer.points.length - 1].valueLabel }) }),
+        bucketNote(trends) ? h('div', { class: 'trend-note', text: bucketNote(trends) }) : null));
+  }
+
+  function zoneLengthCard(data) {
+    const trends = data.prayerTrends;
+    const zone = trends.zones.find((z) => z.index === local.zone) || trends.zones[0];
+    const series = local.metric === 'free' ? zone.free : zone.total;
+    return h('section', { class: 'stats-card trend-card zonelength-card', 'aria-label': T('Zone Length Over Time') },
+      h('div', { class: 'stats-card-head' },
+        h('div', {}, h('h2', { text: T('Zone Length Over Time') }), h('div', { class: 'sub', text: T('How long the chosen zone lasts, day by day (prayer to prayer)') })),
+        chipRow(trends.zones.map((z) => [z.index, z.name]), zone.index, T('Zone'), (id) => { local.zone = id; redrawCard(zoneLengthCard, data, '.zonelength-card', id); })),
+      trends.single ? trendNone('zonelength-none') : h('div', {},
+        h('div', { class: 'trend-top' },
+          summaryChips(series, { low: T('Shortest'), high: T('Longest'), more: T('{time} longer over the range'), less: T('{time} shorter over the range'), changeId: 'zonelength-change' }),
+          chipRow([['total', T('Total Length')], ['free', T('Free Time')]], local.metric, T('Measure'), (id) => { local.metric = id; redrawCard(zoneLengthCard, data, '.zonelength-card', id); })),
+        lineChart(series, { color: 'var(--gold)', id: 'zonelength-chart', aria: T('{name}: {first} on the first day, {last} on the last day', { name: zone.name, first: series.points[0].valueLabel, last: series.points[series.points.length - 1].valueLabel }) }),
+        h('div', { class: 'trend-note', text: (local.metric === 'free' ? T('Free Time is the length of the zone minus the time your tasks take.') : T('Total Length is the whole stretch from one prayer to the next.')) + (bucketNote(trends) ? ` ${bucketNote(trends)}` : '') })));
+  }
+
   // ---- routines -----------------------------------------------------------------------------------------
 
   function routinesCard(data) {
@@ -367,7 +460,7 @@
     const root = clear(document.getElementById('view'));
     const chosen = WW.state.settings.statsCharts;
     const kpiIds = chosen.filter((id) => id.startsWith('kpi-'));
-    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard, routines: routinesCard };
+    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard, prayertimes: prayerTimesCard, zonelength: zoneLengthCard, routines: routinesCard };
     const cards = chosen.filter((id) => builders[id]);
     root.append(
       header(data),

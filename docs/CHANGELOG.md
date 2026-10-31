@@ -10,6 +10,10 @@ New
 - **Paused banner**: while reminders or routines are paused from the tray, a bar at the top of the window says until when, with a **Resume** button.
 - **Smart snooze**: the full-screen alert has a small arrow beside Snooze with more choices: 5 minutes, 15 minutes, 30 minutes, 1 hour, or **After the Next Prayer** (20 minutes after its call). The Snooze button itself still uses the length from Settings.
 - **Free-time hint**: on today, when nothing is running, the *In Progress* card says how long you are free before the next task or zone ("You have 40 min free before Asr."), if it is at least 10 minutes.
+- **Two new line charts in Statistics** (Statistics -> Manage -> *Prayer Time Over Time* and *Zone Length Over Time*; they are not shown until you add them): the first shows at what time one prayer (you choose it) falls on each day of the chosen range; the second shows how long one zone lasts on each day, as total length or as free time. Both show the earliest and latest value and how much changed; a range of more than 62 days is averaged by week, and one of more than 400 days by month.
+- **Day arrows move one day**: the arrows beside the week strip now go back or forward one day (not a week), with a short slide animation; holding the button keeps going at a steady speed (faster after a few days) and stops when you let go. The keyboard works too (Enter or Space).
+- **Side menu is shorter**: *Export Data…* and *Import Data…* (and their note) are only in Settings → Data now.
+- **Settings → Sounds**: more room around the repeat switch and the hints, and wider spaces between words in hints.
 - **Version in Settings**: Settings -> Application shows the version of the app you are running.
 
 ## 1.1.0
