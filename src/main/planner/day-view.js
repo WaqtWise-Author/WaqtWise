@@ -50,6 +50,22 @@ class DayViewMethods {
     return (next || candidates[1]).getTime();
   }
 
+  // The start of the next prayer after now (Fajr, Dhuhr, Asr, Maghrib or Isha), in milliseconds.
+  nextPrayerMs() {
+    const nowMs = this.now().getTime();
+    const provider = this.provider();
+    const today = dateKey(this.now());
+    let best = null;
+    for (const key of [today, addDaysToKey(today, 1)]) {
+      const times = provider(key);
+      for (const name of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+        const ms = times[name] && times[name].getTime();
+        if (ms > nowMs && (best === null || ms < best)) best = ms;
+      }
+    }
+    return best === null ? this.nextFajrMs() : best;
+  }
+
   // ---- the Daily View -----------------------------------------------------------------------------------
 
   hijriLabel(key) {
@@ -300,23 +316,27 @@ class DayViewMethods {
     });
     // The routines card (kept apart from the task numbers): the same range, worked out from the routines' own ticks.
     stats.routineStats = computeRoutineStats(this.data.routines || [], { fromKey: stats.rangeStartKey, toKey: stats.rangeEndKey }, this.now());
-    // The two line charts: prayer times and zone lengths over the range (the city's own clock, the tasks as they are now).
-    const provider = this.provider();
-    const { timeZone } = resolveCity(this.settings);
-    const clockParts = timeZone ? new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : null;
-    const minutesOfDay = (date) => {
-      if (!clockParts) return date.getHours() * 60 + date.getMinutes();
-      const [h, m] = clockParts.format(date).split(':').map(Number);
-      return h * 60 + m;
-    };
-    const options = this.recurrenceOptions();
-    stats.prayerTrends = computePrayerTrends({
-      provider,
-      fromKey: stats.rangeStartKey,
-      toKey: stats.rangeEndKey,
-      minutesOfDay,
-      layoutFor: (key) => computeDayLayout(provider, key, occurrencesForPlanningDay(provider, this.data.tasks, key, options)),
-    });
+    // Only when one of the two line charts is shown: they walk through every day of the range.
+    const shown = this.settings.statsCharts || [];
+    if (shown.includes('prayertimes') || shown.includes('zonelength')) {
+      // The two line charts: prayer times and zone lengths over the range (the city's own clock, the tasks as they are now).
+      const provider = this.provider();
+      const { timeZone } = resolveCity(this.settings);
+      const clockParts = timeZone ? new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : null;
+      const minutesOfDay = (date) => {
+        if (!clockParts) return date.getHours() * 60 + date.getMinutes();
+        const [h, m] = clockParts.format(date).split(':').map(Number);
+        return h * 60 + m;
+      };
+      const options = this.recurrenceOptions();
+      stats.prayerTrends = computePrayerTrends({
+        provider,
+        fromKey: stats.rangeStartKey,
+        toKey: stats.rangeEndKey,
+        minutesOfDay,
+        layoutFor: (key) => computeDayLayout(provider, key, occurrencesForPlanningDay(provider, this.data.tasks, key, options)),
+      });
+    }
     return stats;
   }
 

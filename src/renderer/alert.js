@@ -65,6 +65,7 @@
     if (item && (first || item.id !== lastItemId)) {
       guardUntil = performance.now() + next.guardMs;
       lastItemId = item.id;
+      if (WW.AlertView.closeSnoozeChoices) WW.AlertView.closeSnoozeChoices(); // the row of other snooze lengths starts closed for each alert
     }
     draw();
   });

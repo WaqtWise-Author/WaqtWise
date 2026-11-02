@@ -310,14 +310,26 @@ function nextTaskLine() {
   return t('Next Task: {title} · {when}', { title, when: next.when });
 }
 
+// `kind` is 'reminders', 'routines' or 'all' (both at once).
 function pauseChoices(kind) {
-  const minutes = (n) => () => pauseFor(kind, service.now().getTime() + n * 60000);
+  const kinds = kind === 'all' ? ['reminders', 'routines'] : [kind];
+  const pause = (until) => () => kinds.forEach((k) => pauseFor(k, until()));
+  const minutes = (n) => pause(() => service.now().getTime() + n * 60000);
   return [
     { id: `pause-${kind}-30`, label: t('For 30 Minutes'), click: minutes(30) },
     { id: `pause-${kind}-60`, label: t('For 1 Hour'), click: minutes(60) },
     { id: `pause-${kind}-120`, label: t('For 2 Hours'), click: minutes(120) },
-    { id: `pause-${kind}-fajr`, label: t('Until the Next Fajr'), click: () => pauseFor(kind, service.nextFajrMs()) },
+    { id: `pause-${kind}-prayer`, label: t('Until the Next Prayer'), click: pause(() => service.nextPrayerMs()) },
+    { id: `pause-${kind}-fajr`, label: t('Until the Next Fajr'), click: pause(() => service.nextFajrMs()) },
   ];
+}
+
+// "Pause All" pauses reminders and routines together; once both are paused it becomes "Resume All".
+function pauseAllItem() {
+  if (isPaused('reminders') && isPaused('routines')) {
+    return { id: 'resume-all', label: t('Resume All'), click: () => { resumeFor('reminders'); resumeFor('routines'); } };
+  }
+  return { id: 'pause-all', label: t('Pause All'), submenu: pauseChoices('all') };
 }
 
 // While paused the item turns into "paused until ..." and "Resume"; otherwise it is the list of pause lengths.
@@ -338,6 +350,7 @@ function trayActions() {
     { id: 'next', label: nextTaskLine(), enabled: false },
     ...pauseItems('reminders'),
     ...pauseItems('routines'),
+    pauseAllItem(),
     { id: 'open', label: t('Open / Show'), separatorBefore: true, click: showWindow },
     { id: 'hide', label: t('Hide / Minimize'), click: hideWindow },
     { id: 'exit', label: t('Exit'), separatorBefore: true, click: confirmExit },

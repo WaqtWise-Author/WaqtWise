@@ -375,7 +375,7 @@ test('Tray: tooltip, icon, and the menu (next task, pause, open, hide, exit)', a
     assert.ok(fs.existsSync(path.join(path.dirname(tray.image.path), f)), `${f} exists`);
   }
   // The 16x16 size of the file itself is checked in packaging.test.js.
-  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'Pause Routines', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
+  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'Pause Routines', 'Pause All', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
 
   const win = app.win();
   win.emit('ready-to-show');
@@ -988,7 +988,7 @@ test('Tray: Pause Reminders silences the tasks until it is resumed, and leaves r
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'First', start: { mode: 'fixed', time: '23:00' } }) });
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'Second', start: { mode: 'fixed', time: '23:30' } }) });
   const pause = trayItem(app, 'Pause Reminders');
-  assert.deepEqual(pause.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Fajr']);
+  assert.deepEqual(pause.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Prayer', 'Until the Next Fajr']);
   pause.submenu[1].click();
   assert.match(app.trays[0].tooltip, /^WaqtWise · Reminders Paused Until /);
   const labels = trayMenu(app).map((i) => i.label || i.type);
@@ -1036,5 +1036,19 @@ test('Tray: Pause Routines silences only the routines; Pause Reminders only the 
   tick(23, 30);
   assert.deepEqual(shown(), ['task', 'routine'], 'now the routine rings and the task side is paused');
   assert.equal(app.notifications.length, 2);
+  app.cleanup();
+});
+
+test('Tray: Pause All pauses reminders and routines together, "Until the Next Prayer" ends at the next prayer, Resume All ends both', async () => {
+  const app = await launch();
+  const all = trayItem(app, 'Pause All');
+  assert.deepEqual(all.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Prayer', 'Until the Next Fajr']);
+  all.submenu[3].click();
+  const labels = trayMenu(app).map((i) => i.label || i.type);
+  assert.ok(labels.includes('Resume Reminders') && labels.includes('Resume Routines') && labels.includes('Resume All') && !labels.includes('Pause All'));
+  assert.match(app.trays[0].tooltip, /Reminders Paused Until .*Routines Paused Until /);
+  trayItem(app, 'Resume All').click();
+  assert.equal(app.trays[0].tooltip, 'WaqtWise');
+  assert.ok(trayMenu(app).some((i) => i.label === 'Pause All'));
   app.cleanup();
 });

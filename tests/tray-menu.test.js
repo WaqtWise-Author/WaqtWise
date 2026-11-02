@@ -49,3 +49,12 @@ test('the end of the Planning Day is the next Fajr', () => {
   const night = service(at(DAY, '02:00'));
   assert.equal(night.nextFajrMs(), at(DAY, '05:05').getTime(), 'after midnight it is the Fajr of the same day');
 });
+
+test('the next prayer is the nearest prayer start after now, tomorrow\'s Fajr after Isha', () => {
+  const s = service(at(DAY, '10:00'));
+  const ms = s.nextPrayerMs();
+  assert.ok(ms > at(DAY, '10:00').getTime() && ms < at('2026-10-05', '05:06').getTime());
+  assert.ok(ms <= s.nextFajrMs());
+  const late = service(at(DAY, '23:50'));
+  assert.equal(late.nextPrayerMs(), late.nextFajrMs(), 'after Isha the next prayer is the next Fajr');
+});

@@ -359,7 +359,9 @@
     }, WW.icon(WW.arrowIcon(dir < 0 ? 'prev' : 'next'), 18, 2.2));
   }
 
-  for (const type of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(type, stopHolding);
+  for (const type of ['pointerup', 'pointercancel', 'blur', 'dragstart', 'contextmenu']) window.addEventListener(type, stopHolding);
+  // A button let go outside the window sends no release: when the pointer moves with no button down, stop.
+  window.addEventListener('pointermove', (e) => { if (hold.dir && e.buttons === 0 && e.pointerType === 'mouse') stopHolding(); });
 
   // The cards slide one place: the chosen day stays in the middle and the others move past it.
   // The new strip is drawn in its final place and every card starts one place away, then glides to where it belongs.

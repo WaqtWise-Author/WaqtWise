@@ -14,6 +14,7 @@ New
 - **Day arrows move one day**: the strip of days at the top of the Daily View now has the chosen day always in the middle with three days on each side; the arrows beside it go back or forward one day (not a week), and all the cards slide one place while the chosen one stays in the middle (the strip no longer depends on *First Day of the Week*); holding the button keeps going at a steady speed (faster after a few days) and stops when you let go. The keyboard works too (Enter or Space).
 - **Side menu is shorter**: *Export Data…* and *Import Data…* (and their note) are only in Settings → Data now.
 - **Settings → Sounds**: more room around the repeat switch and the hints, and wider spaces between words in hints.
+- **Review fixes**: the two line charts are only worked out while they are shown (opening Statistics is quicker when they are not); the snooze choices row starts closed for each alert; holding a day arrow stops when the button is let go outside the window.
 - **Version in Settings**: Settings -> Application shows the version of the app you are running.
 
 ## 1.1.0
@@ -25,6 +26,7 @@ New
 - **Stay Quiet During Prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.
 - **Notification a few minutes early** (per routine): the notification can come 0 to 120 minutes before each time (exact minutes, no hours). The full-screen alert stays on the exact time.
 - **Silent while chosen tasks run** (per routine): choose tasks; a routine time that falls while one of them is running does not ring (a task already ticked as done does not count).
+- **Tray pause: Until the Next Prayer and Pause All**: both pause menus now also offer **Until the Next Prayer** (before Until the Next Fajr), and a new **Pause All** item pauses reminders and routines together with the same five choices (**Resume All** once both are paused).
 - **Tray menu**: right-click now shows the next task that has not started yet, **Pause Reminders** (the tasks in the zones) and **Pause Routines**, each for 30 minutes, 1 hour, 2 hours, or until the next Fajr (what falls inside is skipped, the tooltip shows when it ends, **Resume** ends it early; not saved when the app closes), then Open / Show, Hide / Minimize and Exit.
 - **Roomier routine card**: a summary line (done, silent, missed, next), a progress bar, and a timeline of the day with the silent tasks drawn as bands; the long list of times and the silent tasks open on request (*Show All Times*, *Silent During N Tasks*).
 - **Title Case** for buttons, headings, labels and menu items in the app, the guides and the website (full sentences keep normal capitals).

@@ -57,6 +57,8 @@ test('Trends: the service gives them with the statistics, and free time follows 
   assert.ok(service.getSettings().statsCharts.includes('prayertimes'));
   assert.ok(service.getSettings().statsCharts.includes('zonelength'));
   assert.equal(service.getStats({ range: 'day' }).prayerTrends.single, true);
+  service.saveSettings({ statsCharts: ['bars'] });
+  assert.equal(service.getStats({ range: 'week' }).prayerTrends, undefined, 'not worked out while neither line chart is shown');
 });
 
 test('Trends: a year of data is quick', () => {

@@ -110,5 +110,5 @@
     return { stage, frame };
   }
 
-  WW.AlertView = { render, applyAppearance };
+  WW.AlertView = { render, applyAppearance, closeSnoozeChoices: () => { snoozeChoicesOpen = false; } };
 })();

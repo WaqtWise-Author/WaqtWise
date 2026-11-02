@@ -483,7 +483,7 @@
         WW.toast(error.message, 'error');
       }
       draw();
-      WW.renderStats();
+      await WW.showStats(); // asks for the numbers again: the two line charts are only worked out while they are shown
     };
     function draw() {
       const shown = WW.state.settings.statsCharts.slice();
