@@ -87,7 +87,7 @@
     const choices = await WW.call('getReferenceChoices', { taskId: options.taskId || null });
 
     const dlg = WW.openDialog({ title: isEdit ? T('Edit Task') : T('New Task'), wide: true });
-    const errorsBox = h('div', { class: 'errors', hidden: true });
+    const errorsBox = WW.errorBox();
     const startBox = h('div');
     const startReadout = h('div', { class: 'readout' });
     const startWarning = h('div', { class: 'note start-warning', hidden: true });
@@ -133,10 +133,9 @@
       renderRuleSummary(p.rule);
     }, 120);
 
-    function showErrors(messages) {
-      clear(errorsBox);
-      errorsBox.hidden = messages.length === 0;
-      messages.forEach((m) => errorsBox.appendChild(h('div', { text: m })));
+    // field (optional): the input the first message is about (marked as invalid for screen readers).
+    function showErrors(messages, field) {
+      WW.showFormErrors(errorsBox, messages, field);
     }
 
     function changed() {
@@ -495,25 +494,33 @@
     );
 
     // ---- buttons ----
+    // Save, Delete and Duplicate run one at a time: while one is working the three buttons are disabled,
+    // so a quick double click cannot add the task twice.
     const saveBtn = h('button', { class: 'btn primary', text: T('Save') });
-    if (isEdit) {
-      dlg.footer.append(
-        h('button', { class: 'btn danger', text: T('Delete'), onclick: onDelete }),
-        h('button', { class: 'btn', text: T('Duplicate'), onclick: onDuplicate }),
-        h('span', { class: 'spacer' })
-      );
-    }
+    const deleteBtn = isEdit ? h('button', { class: 'btn danger', text: T('Delete') }) : null;
+    const duplicateBtn = isEdit ? h('button', { class: 'btn', text: T('Duplicate') }) : null;
+    const actionButtons = [saveBtn, deleteBtn, duplicateBtn];
+    if (isEdit) dlg.footer.append(deleteBtn, duplicateBtn, h('span', { class: 'spacer' }));
     dlg.footer.append(h('button', { class: 'btn', text: T('Cancel'), onclick: () => dlg.close() }), saveBtn);
 
     async function onSave() {
       f.title = titleInput.value;
-      const p = await WW.call('previewForm', f, { taskId: options.taskId || null });
+      let p;
+      try {
+        p = await WW.call('previewForm', f, { taskId: options.taskId || null });
+      } catch (error) {
+        showErrors([error.message]);
+        errorsBox.focus();
+        return;
+      }
       const problems = p.errors.slice();
-      if (f.title.trim() === '') problems.unshift(T('Please enter a title'));
+      const noTitle = f.title.trim() === '';
+      if (noTitle) problems.unshift(T('Please enter a title'));
       if (problems.length) {
-        showErrors(problems);
+        showErrors(problems, noTitle ? titleInput : null);
         dlg.body.scrollTop = 0;
         errorsBox.scrollIntoView({ block: 'nearest' });
+        if (noTitle) titleInput.focus(); else errorsBox.focus({ preventScroll: true });
         return;
       }
       let scope = 'all';
@@ -534,7 +541,11 @@
         saveBtn.disabled = false;
       }
     }
-    saveBtn.addEventListener('click', onSave);
+    saveBtn.addEventListener('click', WW.oneAtATime(onSave, actionButtons));
+    if (isEdit) {
+      deleteBtn.addEventListener('click', WW.oneAtATime(onDelete, actionButtons));
+      duplicateBtn.addEventListener('click', WW.oneAtATime(onDuplicate, actionButtons));
+    }
 
     async function onDelete() {
       let scope = 'all';

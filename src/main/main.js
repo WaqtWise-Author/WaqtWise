@@ -14,6 +14,7 @@
 const { t } = require('../core/i18n');
 require('../core/i18n-ar');
 const path = require('path');
+const { fileURLToPath } = require('url');
 const fs = require('fs');
 const {
   app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu, nativeImage, powerMonitor, screen, nativeTheme, session,
@@ -122,7 +123,7 @@ function createWindow({ visible }) {
     },
   });
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  mainWindow.loadFile(PAGES.main);
 
   mainWindow.once('ready-to-show', () => {
     if (showOnReady && mainWindow && !mainWindow.isDestroyed()) {
@@ -385,7 +386,7 @@ function startAlerts() {
     BrowserWindow,
     screen,
     preloadPath: path.join(__dirname, 'alert-preload.js'),
-    pagePath: path.join(__dirname, '..', 'renderer', 'alert.html'),
+    pagePath: PAGES.alert,
     getConfig: () => service.getAlertConfig(),
     onAbandoned: (left) => {
       const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine'); // a routine time that was not answered is just skipped
@@ -503,11 +504,36 @@ function applyStartWithWindows(settings) {
 
 // Only the app's own window may use the service, the file dialogs and the other requests below.
 // (The full-screen reminder windows have their own two messages, checked by the alert manager.)
+// The two pages of the app, as files. A request counts only when it comes from the top of the expected window showing
+// exactly this file (not a frame inside it, and not another local file that happens to have the same name).
+const PAGES = {
+  main: path.join(__dirname, '..', 'renderer', 'index.html'),
+  alert: path.join(__dirname, '..', 'renderer', 'alert.html'),
+};
+function sameFile(a, b) {
+  const x = path.normalize(a);
+  const y = path.normalize(b);
+  return process.platform === 'win32' ? x.toLowerCase() === y.toLowerCase() : x === y;
+}
+function fromPage(event, file) {
+  const frame = event && event.senderFrame;
+  if (!frame || frame.parent) return false;
+  const url = frame.url;
+  if (typeof url !== 'string' || !url.startsWith('file://')) return false;
+  let shown;
+  try {
+    shown = fileURLToPath(url.split(/[?#]/)[0]);
+  } catch (error) {
+    return false;
+  }
+  return sameFile(shown, file);
+}
 function fromMainWindow(event) {
   if (!event || !mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) return false;
-  const url = event.senderFrame && event.senderFrame.url;
-  if (typeof url !== 'string' || !url.startsWith('file://')) return false;
-  return /\/renderer\/index\.html(?:[?#].*)?$/.test(url);
+  return fromPage(event, PAGES.main);
+}
+function fromAlertWindow(event) {
+  return Boolean(event && alertManager && alertManager.owns(event.sender) && fromPage(event, PAGES.alert));
 }
 
 function refuseOutsiders(event) {
@@ -583,10 +609,10 @@ function registerIpc() {
   });
 
   ipcMain.on('alert-ready', (event) => {
-    if (alertManager && alertManager.owns(event.sender)) alertManager.sendTo(event.sender);
+    if (fromAlertWindow(event)) alertManager.sendTo(event.sender);
   });
   ipcMain.on('alert-action', (event, message) => {
-    if (message && typeof message === 'object') handleAlertAction(event.sender, message);
+    if (fromAlertWindow(event) && message && typeof message === 'object') handleAlertAction(event.sender, message);
   });
 
   ipcMain.on('renderer-ready', (event) => {

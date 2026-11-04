@@ -36,11 +36,13 @@
   // state: { item, remaining, appearance, snoozeMinutes, guardActive }
   // handlers (optional): { dismiss, snooze, done, open } - called with no arguments
   let snoozeChoicesOpen = false; // the row of other snooze lengths is open (kept across redraws)
+  let watcher = null; // the one ResizeObserver that refits the title; the old one is let go before each redraw
 
   function render(root, state, handlers) {
     const { item, appearance: a } = state;
     const frame = h('div', { class: 'alert-frame' });
-    const stage = h('div', { class: 'alert-stage', role: 'alertdialog', 'aria-label': T('Reminder: {title}', { title: item.title }) });
+    const stage = h('div', { class: 'alert-stage', role: 'alertdialog', 'aria-modal': handlers ? 'true' : undefined, // the preview in Settings is not modal
+      'aria-label': T('Reminder: {title}', { title: item.title }) });
     applyAppearance(stage, a);
 
     const name = h('h1', { class: 'alert-name', text: item.title });
@@ -83,12 +85,12 @@
     parts.push(h('div', { class: 'alert-actions' },
       button(T('Got It'), 'dismiss', true),
       shown.snooze ? button(TP(state.snoozeMinutes, 'Snooze {n} minute', 'Snooze {n} minutes'), 'snooze', false) : null,
-      shown.snooze ? h('button', { type: 'button', class: 'snooze-more', text: '▾', title: T('More Snooze Options'), 'aria-label': T('More Snooze Options'), 'aria-expanded': String(snoozeChoicesOpen), disabled: state.guardActive, onclick: () => { snoozeChoicesOpen = !snoozeChoicesOpen; if (handlers && handlers.redraw) handlers.redraw(); }, dataset: { more: 'snooze' } }) : null,
+      shown.snooze ? h('button', { type: 'button', class: 'snooze-more', text: '▾', title: T('More Snooze Options'), 'aria-label': T('More Snooze Options'), 'aria-expanded': String(snoozeChoicesOpen), 'aria-controls': 'alert-snooze-choices', disabled: state.guardActive, onclick: () => { snoozeChoicesOpen = !snoozeChoicesOpen; if (handlers && handlers.redraw) handlers.redraw(); }, dataset: { more: 'snooze' } }) : null,
       shown.open ? button(item.kind === 'routine' ? T('Open Routines') : T('Open Task'), 'open', false) : null,
       shown.done ? button(T('Mark as Done'), 'done', false) : null));
 
     if (shown.snooze && snoozeChoicesOpen) {
-      parts.push(h('div', { class: 'alert-actions snooze-choices' },
+      parts.push(h('div', { class: 'alert-actions snooze-choices', id: 'alert-snooze-choices' },
         button(T('5 Minutes'), 'snooze', false, 5),
         button(T('15 Minutes'), 'snooze', false, 15),
         button(T('30 Minutes'), 'snooze', false, 30),
@@ -103,10 +105,15 @@
     stage.append(...parts);
     frame.appendChild(stage);
     clear(root).appendChild(frame);
-    const refit = () => fitTitle(name, a.name.size);
+    if (watcher) { watcher.disconnect(); watcher = null; }
+    // Only the title on screen is refitted (a redraw replaces it; the old one is no longer measured).
+    const refit = () => { if (name.isConnected) fitTitle(name, a.name.size); };
     refit();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
-    if (window.ResizeObserver) new ResizeObserver(refit).observe(frame);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit).catch(() => {});
+    if (window.ResizeObserver) {
+      watcher = new ResizeObserver(refit);
+      watcher.observe(frame);
+    }
     return { stage, frame };
   }
 

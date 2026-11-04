@@ -10,10 +10,16 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const Module = require('module');
+const { pathToFileURL } = require('url');
 
 const { at } = require('./helpers');
 
 const MAIN_PATH = require.resolve('../src/main/main.js');
+
+// A message from a full-screen reminder window (the top of the page, showing alert.html).
+function alertEvent(win) {
+  return { sender: win.webContents, senderFrame: { url: pathToFileURL(win.file).href, parent: null } };
+}
 
 // ---- Stand-ins ------------------------------------------------------------------------------------------
 
@@ -115,7 +121,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
   // A call from the app's own window: the tests leave the event out (or pass {}) and get this one.
   fake.mainEvent = () => {
     const win = fake.windows.filter((w) => !w.destroyed && /index\.html$/.test(String(w.file))).pop();
-    return { sender: win && win.webContents, senderFrame: { url: 'file:///app/src/renderer/index.html' } };
+    return { sender: win && win.webContents, senderFrame: { url: win ? pathToFileURL(win.file).href : 'file:///none', parent: null } };
   };
   const asMainWindow = (fn) => (event, ...rest) => fn(event && event.sender ? event : fake.mainEvent(), ...rest);
   fake.ipcMain = {
@@ -547,7 +553,10 @@ test('Requests from anything other than the app window are refused', async () =>
   const other = { sender: { id: 'some other page' }, senderFrame: { url: 'file:///app/src/renderer/index.html' } };
   const wrongPage = { sender: app.win().webContents, senderFrame: { url: 'https://example.com/index.html' } };
   const noFrame = { sender: app.win().webContents };
-  for (const event of [other, wrongPage, noFrame]) {
+  // The right window, but a frame inside the page, or a local file elsewhere with the same name
+  const subFrame = { sender: app.win().webContents, senderFrame: { url: pathToFileURL(app.win().file).href, parent: {} } };
+  const lookAlike = { sender: app.win().webContents, senderFrame: { url: 'file:///tmp/renderer/index.html', parent: null } };
+  for (const event of [other, wrongPage, noFrame, subFrame, lookAlike]) {
     await assert.rejects(() => app.ipc.svc(event, 'bootstrap', []), /Unknown request/);
     await assert.rejects(() => app.ipc['export-data'](event), /Unknown request/);
     await assert.rejects(() => app.ipc['import-data'](event), /Unknown request/);
@@ -684,7 +693,7 @@ test('Full-screen alert: the page is told what to show (title, notes, times, zon
   app.fire(11, 59, 50);
   app.fire(12, 0, 0);
   const win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   const [channel, state] = win.sent.find(([c]) => c === 'alert-render');
   assert.equal(channel, 'alert-render');
   assert.equal(state.items.length, 1);
@@ -714,7 +723,7 @@ test('Full-screen alert: only one screen rings, and the sound comes from Setting
   const wins = app.alertWindows();
   assert.ok(wins.length >= 1);
   const states = wins.map((w) => {
-    app.ipcOn['alert-ready']({ sender: w.webContents });
+    app.ipcOn['alert-ready'](alertEvent(w));
     return w.sent.find(([c]) => c === 'alert-render')[1];
   });
   assert.deepEqual(states.map((st) => st.soundHere), wins.map((_, i) => i === 0), 'only the first window rings');
@@ -740,21 +749,27 @@ test('Full-screen alert buttons: Got it, Mark as Done, Snooze, Open task', async
   app.fire(11, 59, 50);
   app.fire(12, 0, 0);
   const win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   const itemId = win.sent.find(([c]) => c === 'alert-render')[1].items[0].id;
 
   // Someone else (the main window) cannot press the alert's buttons
-  app.ipcOn['alert-action']({ sender: app.win().webContents }, { type: 'done', itemId });
+  app.ipcOn['alert-action'](alertEvent(app.win()), { type: 'done', itemId });
   assert.equal(app.alertWindows().length, 1);
   // Unknown button / unknown task: ignored
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'format-disk', itemId });
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId: 'nope' });
-  app.ipcOn['alert-action']({ sender: win.webContents }, null);
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'format-disk', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'done', itemId: 'nope' });
+  app.ipcOn['alert-action'](alertEvent(win), null);
+  assert.equal(app.alertWindows().length, 1);
+  assert.equal(app.dataFile().tasks[0].completions['2030-01-10'], undefined);
+  // The right window but not the alert page itself (a frame inside it, or another page): ignored
+  app.ipcOn['alert-action']({ sender: win.webContents, senderFrame: { url: pathToFileURL(win.file).href, parent: {} } }, { type: 'done', itemId });
+  app.ipcOn['alert-action']({ sender: win.webContents, senderFrame: { url: 'file:///tmp/renderer/alert.html', parent: null } }, { type: 'done', itemId });
+  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId });
   assert.equal(app.alertWindows().length, 1);
   assert.equal(app.dataFile().tasks[0].completions['2030-01-10'], undefined);
 
   // Snooze: the alert closes, and a snooze that will come back as an alert is stored
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'snooze', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'snooze', itemId });
   assert.equal(app.alertWindows().length, 0);
   const snoozed = app.dataFile().reminderState.snoozed;
   assert.equal(snoozed.length, 1);
@@ -771,9 +786,9 @@ test('Full-screen alert: Mark as Done completes the task; Open task opens the ap
   app.fire(11, 59, 50);
   app.fire(12, 0, 0);
   let win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   let itemId = win.sent.find(([c]) => c === 'alert-render')[1].items[0].id;
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'done', itemId });
   assert.equal(app.alertWindows().length, 0);
   assert.equal(app.dataFile().tasks[0].completions['2030-01-10'], true);
 
@@ -782,11 +797,11 @@ test('Full-screen alert: Mark as Done completes the task; Open task opens the ap
   app.fire(12, 59, 50);
   app.fire(13, 0, 0);
   win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   itemId = win.sent.filter(([c]) => c === 'alert-render').pop()[1].items[0].id;
   const mainWin = app.win();
   mainWin.visible = false;
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'open', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'open', itemId });
   assert.equal(mainWin.visible, true, 'the main window is brought up');
   const open = mainWin.sent.filter(([c]) => c === 'open-task').pop();
   assert.equal(open[1].dateKey, '2030-01-10');
@@ -797,9 +812,9 @@ test('Full-screen alert: Mark as Done completes the task; Open task opens the ap
   app.fire(13, 59, 50);
   app.fire(14, 0, 0);
   win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   itemId = win.sent.filter(([c]) => c === 'alert-render').pop()[1].items[0].id;
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'dismiss', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'dismiss', itemId });
   assert.equal(app.alertWindows().length, 0);
   assert.equal(app.dataFile().tasks.find((t) => t.title === 'Three').completions['2030-01-10'], undefined);
   app.cleanup();
@@ -813,17 +828,17 @@ test('Full-screen alert: tasks starting together queue up on the same screens', 
   app.fire(12, 0, 0);
   assert.equal(app.alertWindows().length, 2, 'still just one window per screen');
   const [a, b] = app.alertWindows();
-  app.ipcOn['alert-ready']({ sender: a.webContents });
+  app.ipcOn['alert-ready'](alertEvent(a));
   const queue = a.sent.filter(([c]) => c === 'alert-render').pop()[1].items;
   assert.equal(queue.length, 2);
 
-  app.ipcOn['alert-action']({ sender: b.webContents }, { type: 'dismiss', itemId: queue[0].id }); // pressed on the other screen
+  app.ipcOn['alert-action'](alertEvent(b), { type: 'dismiss', itemId: queue[0].id }); // pressed on the other screen
   assert.equal(app.alertWindows().length, 2, 'the next task appears');
   const next = a.sent.filter(([c]) => c === 'alert-render').pop()[1];
   assert.deepEqual(next.items.map((i) => i.title), [queue[1].title]);
   assert.equal(next.guardMs, 700, 'a short pause before the next one can be pressed');
 
-  app.ipcOn['alert-action']({ sender: a.webContents }, { type: 'dismiss', itemId: queue[1].id });
+  app.ipcOn['alert-action'](alertEvent(a), { type: 'dismiss', itemId: queue[1].id });
   assert.equal(app.alertWindows().length, 0);
   app.cleanup();
 });
@@ -861,7 +876,7 @@ test('Full-screen alert: the look chosen in Settings is what the page receives',
   app.fire(12, 0, 0);
   const win = app.alertWindows()[0];
   assert.equal(win.options.backgroundColor, '#112233', 'no white flash before the page loads');
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   const { appearance } = win.sent.find(([c]) => c === 'alert-render')[1];
   assert.equal(appearance.backgroundColor, '#112233');
   assert.equal(appearance.name.size, 120);
@@ -876,10 +891,10 @@ test('Full-screen alert: the Preview button shows the real thing with an example
   const result = await app.ipc['preview-alert']();
   assert.equal(result.ok, true);
   const win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   const item = win.sent.find(([c]) => c === 'alert-render')[1].items[0];
   assert.equal(item.taskId, '__sample__');
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId: item.id });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'done', itemId: item.id });
   assert.equal(app.alertWindows().length, 0);
   assert.equal(app.dataFile().tasks.length, 0);
   assert.equal(app.dataFile().reminderState.snoozed.length, 0);
@@ -976,9 +991,9 @@ test('Full-screen alert: a button, or the app closing it itself, adds nothing to
   app.fire(11, 59, 50);
   app.fire(12, 0, 0);
   const win = app.alertWindows()[0];
-  app.ipcOn['alert-ready']({ sender: win.webContents });
+  app.ipcOn['alert-ready'](alertEvent(win));
   const itemId = win.sent.find(([c]) => c === 'alert-render')[1].items[0].id;
-  app.ipcOn['alert-action']({ sender: win.webContents }, { type: 'done', itemId });
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'done', itemId });
   assert.equal((await app.svc('getMissed')).length, 0, 'a button press is an answer');
   app.cleanup();
 });

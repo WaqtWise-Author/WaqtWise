@@ -12,6 +12,7 @@
   let guardTimer = null;
   let lastSoundSeq = 0;
   let ringing = null; // the sound that is playing now
+  let languageShown = null; // the language the page is drawn in now
 
   function stopSound() {
     if (ringing) ringing.stop();
@@ -51,7 +52,8 @@
   window.alertApi.onRender((next) => {
     const first = !state;
     state = next;
-    if (WW.applyLanguage && next.language !== WW.getLanguageCode) { WW.applyLanguage(next.language || 'en'); WW.getLanguageCode = next.language; }
+    // The language (and with it the direction of the page, right to left for Arabic) follows the app's setting.
+    if (WW.applyLanguage && next.language !== languageShown) { WW.applyLanguage(next.language || 'en'); languageShown = next.language; }
     const item = current();
     // Ring once for each arrival of tasks (and only on one screen, even when several are covered).
     if (next.soundSeq !== lastSoundSeq) {
@@ -70,7 +72,8 @@
     draw();
   });
 
-  // Keyboard: Enter or Escape = "Got It", once the short pause is over.
+  // Keyboard, once the short pause is over: Escape = "Got It". Enter presses the button that has the focus
+  // ("Got It" has it when the alert appears).
   document.addEventListener('keydown', (event) => {
     const item = current();
     if (!item || performance.now() < guardUntil) return;

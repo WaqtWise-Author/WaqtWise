@@ -3,6 +3,15 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.2.1
+
+Fixes (from the review of 4 Nov 2026)
+- **No double saves**: a quick double click on *Save*, *Duplicate*, *Delete* or *Mark as Done* (in the task form and the task details) does the job once; the buttons wait while it works. Holding Enter in the quick add of the Free To-Do list adds the task once.
+- **No old screen over the new one**: when one screen (Free To-Do List, Routines, Statistics) is slow to load and you move to another one, the late answer is ignored instead of drawing the old screen.
+- **Keyboard and screen readers**: the side menu keeps Tab inside while it is open and gives the focus back to the menu button when it closes; the missed-reminders list moves the focus into the list, says it is open, gives the focus back to the bell on Esc, and its items are real buttons; form problems are read out by screen readers, the empty title is marked and gets the focus; the page behind the start-up splash cannot be reached with Tab from the very first moment.
+- **Full-screen alert**: it no longer collects size watchers when it redraws; it is marked as modal for screen readers; the arrow beside Snooze says which row it opens.
+- **Safety**: the main window and the full-screen alert windows accept requests only from the top of their own page file (exact file, not a frame inside it and not another file of the same name).
+
 ## 1.2.0
 
 New

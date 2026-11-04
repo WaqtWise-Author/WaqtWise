@@ -22,7 +22,7 @@
     const f = item ? await call('getRoutineForEdit', { id: item.id }) : await call('newRoutineDefaults');
     if (!f) return;
     const dlg = WW.openDialog({ title: item ? T('Edit Routine') : T('Add Routine'), wide: true });
-    const errors = h('div', { class: 'errors', hidden: true });
+    const errors = WW.errorBox();
     const title = h('input', { type: 'text', id: 'rf-title', value: f.title, maxlength: '200', placeholder: T('For example: Drink water'), autocomplete: 'off' });
     const category = h('select', { id: 'rf-category', onchange: (e) => { f.categoryId = e.target.value || null; } },
       h('option', { value: '', text: T('No Category') }),
@@ -114,7 +114,8 @@
       f.hours = Math.max(0, Math.floor(Number(hours.value) || 0));
       f.minutes = Math.max(0, Math.floor(Number(minutes.value) || 0));
       f.notifyBefore = Math.max(0, Math.floor(Number(before.value) || 0));
-      if (f.title.trim() === '') { errors.hidden = false; errors.textContent = T('Please enter a title'); return; }
+      if (f.title.trim() === '') { WW.showFormErrors(errors, [T('Please enter a title')], title); title.focus(); return; }
+      if (save.disabled) return;
       save.disabled = true;
       try {
         await WW.call('saveRoutine', { id: item ? item.id : null, form: f });
@@ -122,8 +123,8 @@
         WW.toast(item ? T('Routine Saved') : T('Routine Added'));
         WW.showRoutines();
       } catch (error) {
-        errors.hidden = false;
-        errors.textContent = error.message;
+        WW.showFormErrors(errors, [error.message]);
+        errors.focus();
         save.disabled = false;
       }
     });
@@ -286,11 +287,14 @@
   }
 
   WW.showRoutines = async function showRoutines() {
+    const seq = WW.nextView();
     try {
       const keepScroll = WW.state.view === 'routines';
       const scrollY = window.scrollY;
       WW.state.view = 'routines';
-      WW.state.routines = await WW.call('getRoutines');
+      const routines = await WW.call('getRoutines');
+      if (!WW.isLatestView(seq)) return;
+      WW.state.routines = routines;
       renderRoutines();
       if (keepScroll) window.scrollTo(0, scrollY);
     } catch (error) {

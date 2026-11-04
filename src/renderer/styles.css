@@ -198,6 +198,8 @@ body { padding-top: 32px; }
 .popover h3 { margin: 6px 8px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-soft); }
 .upcoming-item { padding: 8px 10px; border-radius: 10px; cursor: pointer; }
 .upcoming-item:hover { background: var(--surface-2); }
+button.upcoming-item { display: block; width: 100%; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; }
+.upcoming-item .when, .upcoming-item .what { display: block; }
 .upcoming-item .when { font-weight: 600; }
 .upcoming-item .what { color: var(--text-soft); font-size: var(--fs-sm); }
 

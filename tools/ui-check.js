@@ -93,7 +93,12 @@ async function setTime(page, hour, minute, ampm) {
     await p.waitForTimeout(400);
     assert.equal(await p.isVisible('#splash'), true, 'still there after a click and key presses');
     assert.equal(await p.$('.dialog'), null, 'the keys did not reach the page behind it');
+    await p.keyboard.press('Tab');
+    await p.keyboard.press('Tab');
+    assert.equal(await p.evaluate(() => document.querySelector('.topbar').inert), true, 'the page behind the splash cannot be reached');
+    assert.equal(await p.evaluate(() => Boolean(document.activeElement && document.activeElement.closest('.topbar, #view'))), false, 'Tab does not go behind the splash');
     await p.waitForSelector('#splash', { state: 'detached', timeout: 6000 });
+    assert.equal(await p.evaluate(() => document.querySelector('.topbar').inert), false, 'the page can be used once the splash is gone');
     const shownFor = await p.evaluate(() => performance.now());
     assert.ok(shownFor >= 2900, `the splash lasted ${Math.round(shownFor)} ms`);
     await app.browser.close();
@@ -297,6 +302,10 @@ async function setTime(page, hour, minute, ampm) {
     const text = await page.textContent('.errors');
     assert.match(text, /Please enter a title/);
     assert.match(text, /Duration/);
+    assert.equal(await page.getAttribute('.errors', 'role'), 'alert', 'a screen reader reads the problems out');
+    assert.equal(await page.getAttribute('#f-title', 'aria-invalid'), 'true', 'the empty title is marked');
+    assert.equal(await page.getAttribute('#f-title', 'aria-describedby'), await page.getAttribute('.errors', 'id'));
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'f-title', 'the keyboard is put on the field to fix');
     assert.equal(service.data.tasks.length, before);
     await page.keyboard.press('Escape');
     await page.waitForSelector('.dialog', { state: 'detached' });
@@ -546,6 +555,27 @@ async function setTime(page, hour, minute, ampm) {
     assert.ok((await rowTexts(page, 1)).includes('قراءة القرآن'));
   });
 
+  await step('a quick double click on Save adds the task once (the buttons wait while it saves)', async () => {
+    await page.click('#add-btn');
+    await page.fill('#f-title', 'Only Once');
+    await page.dblclick('.dialog-footer .btn.primary');
+    await page.waitForSelector('.dialog', { state: 'detached' });
+    await page.waitForTimeout(300);
+    assert.equal(service.data.tasks.filter((t) => t.title === 'Only Once').length, 1);
+    const row = taskRow(page, 'Only Once');
+    await row.click();
+    await page.waitForSelector('#details-duplicate');
+    await page.dblclick('#details-duplicate');
+    await page.waitForSelector('.dialog', { state: 'detached' });
+    await page.waitForTimeout(300);
+    assert.equal(service.data.tasks.filter((t) => t.title === 'Only Once (copy)').length, 1, 'Duplicate twice quickly makes one copy');
+    for (const title of ['Only Once (copy)', 'Only Once']) {
+      const t = service.data.tasks.find((x) => x.title === title);
+      service.deleteTask({ taskId: t.id, scope: 'all' });
+    }
+    await page.evaluate(() => window.WW.afterChange());
+  });
+
   console.log('Bell, menu, missed reminders');
   await step('bell is dim with no missed reminders, then shows a red count and lists them', async () => {
     assert.equal(await page.locator('#bell-btn.bell-empty').count(), 1);
@@ -553,7 +583,11 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('#bell-btn');
     await page.waitForSelector('#bell-panel:not([hidden])');
     assert.match(await page.textContent('#bell-panel'), /No missed reminders/);
-    await page.click('#bell-btn');
+    assert.equal(await page.getAttribute('#bell-btn', 'aria-expanded'), 'true');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.isHidden('#bell-panel'), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'bell-btn', 'Esc puts the focus back on the bell');
+    assert.equal(await page.getAttribute('#bell-btn', 'aria-expanded'), 'false');
     service.addMissed([{ taskId: 't2', dateKey: '2026-10-04', title: 'Study SQL', start: new Date('2026-10-04T05:00:00Z'), zoneName: 'Fajr → Dhuhr', alreadyStarted: true }]);
     await page.evaluate(() => window.__handlers['data-changed']());
     await page.waitForSelector('#bell-btn .bell-badge');
@@ -561,6 +595,8 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(await page.locator('#bell-btn.bell-empty').count(), 0);
     await page.click('#bell-btn');
     await page.waitForSelector('#bell-panel:not([hidden]) .upcoming-item');
+    assert.equal(await page.evaluate(() => document.activeElement.classList.contains('upcoming-item')), true, 'the focus moves into the list');
+    assert.equal(await page.evaluate(() => document.querySelector('#bell-panel .upcoming-item').tagName), 'BUTTON');
     await shot(page, 'bell');
     await page.click('#bell-panel .upcoming-item');
     await page.waitForSelector('#details-edit');
@@ -588,9 +624,34 @@ async function setTime(page, hour, minute, ampm) {
     const items = await page.$$eval('#drawer .drawer-item', (els) => els.map((e) => e.textContent.trim()));
     assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Statistics', 'Settings']);
     await shot(page, 'drawer');
+    assert.equal(await page.getAttribute('#menu-btn', 'aria-controls'), 'drawer');
+    assert.equal(await page.evaluate(() => document.activeElement.classList.contains('drawer-item')), true, 'the focus moves into the menu');
+    for (let i = 0; i < 9; i += 1) await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.getElementById('drawer').contains(document.activeElement)), true, 'Tab stays inside the menu');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.evaluate(() => document.getElementById('drawer').contains(document.activeElement)), true, 'Shift+Tab stays inside the menu');
     await page.keyboard.press('Escape');
     assert.equal(await page.isHidden('#drawer'), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'menu-btn', 'Esc puts the focus back on the menu button');
   });
+  await step('a slow answer for one screen never paints over the screen chosen after it', async () => {
+    await page.evaluate(() => {
+      const real = window.api.call;
+      window.__realCall = real;
+      window.api.call = (method, ...args) => (['getFreeTasks', 'getRoutines', 'getStats'].includes(method)
+        ? new Promise((resolve) => setTimeout(() => resolve(real(method, ...args)), 500))
+        : real(method, ...args));
+    });
+    for (const open of ['showFree', 'showRoutines', 'showStats']) {
+      await page.evaluate((name) => { window.WW[name](name === 'showStats' ? { range: 'week' } : undefined); window.WW.showDaily(); }, open);
+      await page.waitForTimeout(800);
+      assert.equal(await page.evaluate(() => window.WW.state.view), 'daily', `${open} came late and was ignored`);
+      assert.ok(await page.$('.zone'), 'the Daily View is still on screen');
+      assert.equal(await page.$('#free-quick, #routine-add, #stats-range-label'), null, `no part of ${open} was drawn`);
+    }
+    await page.evaluate(() => { window.api.call = window.__realCall; });
+  });
+
   console.log('Free To-Do list and task details');
   await step('the Free To-Do list: empty at first, quick add with Enter, add with details', async () => {
     await page.click('#menu-btn');

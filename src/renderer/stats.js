@@ -514,12 +514,15 @@
 
   // query: { range, anchorKey, fromKey, toKey }. Without a query the last one is used again (a refresh).
   WW.showStats = async function showStats(query) {
+    const seq = WW.nextView();
     try {
       const keepScroll = WW.state.view === 'stats' && !query;
       const scrollY = window.scrollY;
       if (query) { local.query = query; local.showAllLate = false; }
       WW.state.view = 'stats';
-      WW.state.stats = await WW.call('getStats', local.query);
+      const stats = await WW.call('getStats', local.query);
+      if (!WW.isLatestView(seq)) return;
+      WW.state.stats = stats;
       // Remember the resolved dates so the next step (Month, Custom, ...) starts from what is on screen.
       WW.renderStats();
       if (keepScroll) window.scrollTo(0, scrollY);

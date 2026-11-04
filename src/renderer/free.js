@@ -28,7 +28,7 @@
       ? { title: item.title, notes: item.notes, priority: item.priority, categoryId: item.categoryId, durationMinutes: item.durationMinutes }
       : { title: '', notes: '', priority: 'Medium', categoryId: null, durationMinutes: null };
     const dlg = WW.openDialog({ title: item ? T('Edit Free Task') : T('Add Free Task') });
-    const errors = h('div', { class: 'errors', hidden: true });
+    const errors = WW.errorBox();
     const title = h('input', { type: 'text', id: 'ff-title', value: f.title, maxlength: '200', placeholder: T('What do you want to do?'), autocomplete: 'off' });
     const priority = h('select', { id: 'ff-priority', onchange: (e) => { f.priority = e.target.value; } },
       ['Low', 'Medium', 'High'].map((p) => h('option', { value: p, text: T(p), selected: f.priority === p })));
@@ -51,7 +51,8 @@
     save.addEventListener('click', async () => {
       f.title = title.value;
       f.durationMinutes = duration.value === '' ? null : Number(duration.value);
-      if (f.title.trim() === '') { errors.hidden = false; errors.textContent = T('Please enter a title'); return; }
+      if (f.title.trim() === '') { WW.showFormErrors(errors, [T('Please enter a title')], title); title.focus(); return; }
+      if (save.disabled) return;
       save.disabled = true;
       try {
         await WW.call('saveFreeTask', { id: item ? item.id : null, form: f });
@@ -59,8 +60,8 @@
         WW.toast(item ? T('Task Saved') : T('Task Added'));
         refresh();
       } catch (error) {
-        errors.hidden = false;
-        errors.textContent = error.message;
+        WW.showFormErrors(errors, [error.message]);
+        errors.focus();
         save.disabled = false;
       }
     });
@@ -120,12 +121,13 @@
     const root = clear(document.getElementById('view'));
 
     const quick = h('input', { type: 'text', id: 'free-quick', maxlength: '200', placeholder: T('Type a task and press Enter…'), 'aria-label': T('New Free Task'), autocomplete: 'off' });
-    const quickAdd = async () => {
+    // One at a time: holding Enter down or pressing it twice quickly adds the task once.
+    const quickAdd = WW.oneAtATime(async () => {
       const text = quick.value.trim();
       if (text === '') { openFreeForm(null); return; }
       if (await call('saveFreeTask', { id: null, form: { title: text } })) { quick.value = ''; await refresh(); const again = document.getElementById('free-quick'); if (again) again.focus(); }
-    };
-    quick.addEventListener('keydown', (e) => { if (e.key === 'Enter') quickAdd(); });
+    });
+    quick.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.repeat) quickAdd(); });
 
     root.append(
       h('div', { class: 'day-head' },
@@ -144,11 +146,14 @@
   }
 
   WW.showFree = async function showFree() {
+    const seq = WW.nextView();
     try {
       const keepScroll = WW.state.view === 'free';
       const scrollY = window.scrollY;
       WW.state.view = 'free';
-      WW.state.free = await WW.call('getFreeTasks');
+      const free = await WW.call('getFreeTasks');
+      if (!WW.isLatestView(seq)) return;
+      WW.state.free = free;
       renderFree();
       if (keepScroll) window.scrollTo(0, scrollY);
     } catch (error) {
@@ -207,9 +212,11 @@
       d.notes ? h('div', { class: 'details-notes' }, h('div', { class: 'details-label', text: T('Notes') }), h('div', { class: 'details-notes-text', text: d.notes })) : null);
 
     const after = () => { dlg.close(); WW.afterChange(); };
-    const guard = async (fn) => { try { await fn(); } catch (error) { WW.toast(error.message, 'error'); } };
+    // Delete, Duplicate and Done run one at a time (a double click does the job once); the buttons wait while one works.
+    const footerButtons = () => [...dlg.footer.querySelectorAll('button')];
+    const guard = (fn) => WW.oneAtATime(async () => { try { await fn(); } catch (error) { WW.toast(error.message, 'error'); } }, footerButtons);
     put(dlg.footer,
-      h('button', { class: 'btn danger', type: 'button', id: 'details-delete', text: T('Delete'), onclick: () => guard(async () => {
+      h('button', { class: 'btn danger', type: 'button', id: 'details-delete', text: T('Delete'), onclick: guard(async () => {
         let scope = 'all';
         if (d.isRecurring) {
           dlg.box.hidden = true;
@@ -231,12 +238,12 @@
         WW.toastUndo(T('Task Deleted'), deleted.undoId, WW.afterChange);
         after();
       }) }),
-      h('button', { class: 'btn', type: 'button', id: 'details-duplicate', text: T('Duplicate'), onclick: () => guard(async () => {
+      h('button', { class: 'btn', type: 'button', id: 'details-duplicate', text: T('Duplicate'), onclick: guard(async () => {
         await WW.call('duplicateTask', { taskId });
         WW.toast(T('Task Duplicated'));
         after();
       }) }),
-      h('button', { class: 'btn', type: 'button', id: 'details-done', disabled: Boolean(d.future && !d.done), text: d.done ? T('Mark as Not Done') : T('Mark as Done'), onclick: () => guard(async () => {
+      h('button', { class: 'btn', type: 'button', id: 'details-done', disabled: Boolean(d.future && !d.done), text: d.done ? T('Mark as Not Done') : T('Mark as Done'), onclick: guard(async () => {
         await WW.call('setDone', { taskId, dateKey, done: !d.done });
         if (!d.done && WW.state.settings) WW.sounds.play(WW.state.settings.doneSound, WW.state.settings.doneSoundVolume);
         after();

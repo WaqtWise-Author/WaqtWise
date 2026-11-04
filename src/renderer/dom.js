@@ -104,6 +104,69 @@
     }
   };
 
+  // Only the newest screen may draw. Every screen (Daily, Free, Routines, Pomodoro, Statistics, Settings) takes a number
+  // before it asks the main process for its data, and draws only if no other screen was asked for in the meantime.
+  // So a slow answer can never paint an old screen over the one the person moved to.
+  let viewSeq = 0;
+  WW.nextView = () => ++viewSeq;
+  WW.isLatestView = (seq) => seq === viewSeq;
+
+  // Runs `fn` once at a time: a second click while the first is still working does nothing, and the given buttons
+  // stay disabled until it has finished (so a double click cannot save, duplicate or delete twice).
+  // `buttons` is a list of buttons, or a function that returns it.
+  WW.oneAtATime = function oneAtATime(fn, buttons) {
+    let running = false;
+    return async (...args) => {
+      if (running) return undefined;
+      running = true;
+      const list = ((typeof buttons === 'function' ? buttons() : buttons) || []).filter(Boolean);
+      const was = list.map((b) => b.disabled);
+      list.forEach((b) => { b.disabled = true; });
+      try {
+        return await fn(...args);
+      } finally {
+        running = false;
+        list.forEach((b, i) => { if (b.isConnected) b.disabled = was[i]; });
+      }
+    };
+  };
+
+  // Keeps Tab inside `box` (a dialog, the side menu): from the last control it goes back to the first, and the other way round.
+  WW.keepTabInside = function keepTabInside(box, event) {
+    const isTab = event.key === 'Tab';
+    if (!isTab) return;
+    const items = Array.from(box.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter((el) => !el.disabled && el.offsetParent !== null);
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!box.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+    else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
+
+  // The box at the top of a form that lists what is wrong. A screen reader reads it out when it changes, and the field
+  // it is about (when there is one) is marked as invalid and points to it.
+  let errorBoxCount = 0;
+  WW.errorBox = function errorBox() {
+    errorBoxCount += 1;
+    return WW.h('div', { class: 'errors', id: `form-errors-${errorBoxCount}`, role: 'alert', tabindex: '-1', hidden: true });
+  };
+  // messages: a list of texts (empty hides the box). field (optional): the input the first message is about.
+  WW.showFormErrors = function showFormErrors(box, messages, field) {
+    WW.clear(box);
+    box.hidden = messages.length === 0;
+    messages.forEach((m) => box.appendChild(WW.h('div', { text: m })));
+    for (const el of box.parentNode ? box.parentNode.querySelectorAll('[aria-invalid="true"]') : []) {
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('aria-describedby');
+    }
+    if (field && messages.length) {
+      field.setAttribute('aria-invalid', 'true');
+      field.setAttribute('aria-describedby', box.id);
+    }
+  };
+
   WW.debounce = function debounce(fn, ms) {
     let timer = null;
     return (...args) => {
@@ -193,17 +256,8 @@
         close();
         return;
       }
-      // Tab stays inside the dialog: from the last control it goes back to the first, and the other way round.
-      if (event.key === 'Tab') {
-        const items = Array.from(box.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-          .filter((el) => !el.disabled && el.offsetParent !== null);
-        if (items.length === 0) return;
-        const first = items[0];
-        const last = items[items.length - 1];
-        if (!box.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
-        else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-      }
+      // Tab stays inside the dialog.
+      WW.keepTabInside(box, event);
     }
     closeBtn.addEventListener('click', () => close());
     overlay.addEventListener('mousedown', (event) => {

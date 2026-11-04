@@ -435,9 +435,8 @@
   }
 
   // Only the newest request may draw: an older answer that arrives late must not replace the day the person chose.
-  let showSeq = 0;
   WW.showDay = async function showDay(key) {
-    const seq = ++showSeq;
+    const seq = WW.nextView();
     try {
       // Redrawing the same day (ticking a task, a background refresh) must not throw the page back to the top.
       const keepScroll = WW.state.view === 'daily' && WW.state.dayKey === key;
@@ -445,7 +444,7 @@
       WW.state.view = 'daily';
       WW.state.dayKey = key;
       const day = await WW.call('getDay', key);
-      if (seq !== showSeq) return;
+      if (!WW.isLatestView(seq)) return;
       WW.state.day = day;
       WW.state.todayKey = day.currentPlanningDayKey;
       renderDay();
@@ -466,6 +465,7 @@
   };
 
   WW.showSettings = function showSettings() {
+    WW.nextView();
     WW.state.view = 'settings';
     WW.renderSettings();
     window.scrollTo(0, 0);
@@ -546,8 +546,15 @@
 
   // ---- Bell and menu ----------------------------------------------------------------------------------------------
 
-  function closePopovers() {
-    document.getElementById('bell-panel').hidden = true;
+  // restoreFocus: put the keyboard focus back on the bell (Escape), when it was inside the list.
+  function closePopovers(restoreFocus) {
+    const panel = document.getElementById('bell-panel');
+    const bell = document.getElementById('bell-btn');
+    const wasOpen = !panel.hidden;
+    const focusInside = panel.contains(document.activeElement);
+    panel.hidden = true;
+    if (bell) bell.setAttribute('aria-expanded', 'false');
+    if (wasOpen && (restoreFocus || focusInside) && bell) bell.focus();
   }
 
   // The bell shows reminders that were missed while the computer was off or asleep.
@@ -594,8 +601,8 @@
       }) : null));
     if (list.length === 0) panel.appendChild(h('div', { class: 'empty-zone', text: T('No missed reminders.') }));
     list.forEach((r) =>
-      panel.appendChild(h('div', {
-        class: 'upcoming-item', role: 'button', tabindex: '0',
+      panel.appendChild(h('button', {
+        class: 'upcoming-item', type: 'button',
         onclick: async () => {
           closePopovers();
           try { await WW.call('dismissMissed', { taskId: r.taskId, dateKey: r.dateKey }); } catch (error) { /* the task may be gone */ }
@@ -603,15 +610,24 @@
           WW.openTaskDetails({ taskId: r.taskId, dateKey: r.dateKey });
         },
       },
-        h('div', { class: 'when', text: r.title }),
-        h('div', { class: 'what', text: `${r.alreadyStarted ? T('Started') : T('Was due')} ${r.whenLabel} · ${r.zoneName}` }))));
+        h('span', { class: 'when', text: r.title }),
+        h('span', { class: 'what', text: `${r.alreadyStarted ? T('Started') : T('Was due')} ${r.whenLabel} · ${r.zoneName}` }))));
     panel.hidden = false;
+    document.getElementById('bell-btn').setAttribute('aria-expanded', 'true');
+    // The keyboard moves into the list, to its first missed reminder (or "Clear All").
+    const first = panel.querySelector('.upcoming-item') || panel.querySelector('button');
+    if (first) first.focus();
   }
 
+  // When the side menu closes, the keyboard focus goes back to the menu button (it was on a button that is now hidden).
   function closeDrawer() {
-    document.getElementById('drawer').hidden = true;
+    const drawer = document.getElementById('drawer');
+    const wasOpen = !drawer.hidden;
+    drawer.hidden = true;
     document.getElementById('scrim').hidden = true;
-    document.getElementById('menu-btn').setAttribute('aria-expanded', 'false');
+    const button = document.getElementById('menu-btn');
+    button.setAttribute('aria-expanded', 'false');
+    if (wasOpen) button.focus({ preventScroll: true });
   }
 
   async function openDrawer() {
@@ -842,16 +858,25 @@
   const SPLASH_MS = Number.isFinite(window.WW_SPLASH_MS) ? window.WW_SPLASH_MS : 3000; // the checks in tools/ui-check.js shorten it
   function ignoreWhileSplash(event) { event.preventDefault(); event.stopPropagation(); }
   const splashStarted = Date.now();
+  // From the very first moment (also while the data is still loading) key presses are swallowed and the page behind
+  // the splash cannot be reached with Tab, so nothing behind it can be triggered by accident.
+  const splashBehind = document.getElementById('splash')
+    ? [...document.body.children].filter((el) => el.tagName !== 'SCRIPT' && el.id !== 'splash' && !el.inert)
+    : [];
+  if (splashBehind.length) {
+    splashBehind.forEach((el) => { el.inert = true; });
+    document.addEventListener('keydown', ignoreWhileSplash, true);
+    document.addEventListener('keyup', ignoreWhileSplash, true);
+  }
   function hideSplash() {
     const splash = document.getElementById('splash');
     if (!splash || splash.dataset.leaving) return;
     splash.dataset.leaving = '1';
-    // While it shows, key presses are swallowed so nothing behind it can be triggered by accident.
-    document.addEventListener('keydown', ignoreWhileSplash, true);
-    document.addEventListener('keyup', ignoreWhileSplash, true);
     const leave = () => {
       document.removeEventListener('keydown', ignoreWhileSplash, true);
       document.removeEventListener('keyup', ignoreWhileSplash, true);
+      // The welcome screen (first start) keeps its own parts of the page inert until a city is chosen.
+      if (!document.querySelector('.welcome')) splashBehind.forEach((el) => { el.inert = false; });
       splash.classList.add('hide');
       setTimeout(() => splash.remove(), 500);
     };
@@ -870,7 +895,9 @@
 
     document.getElementById('menu-btn').addEventListener('click', (e) => { e.stopPropagation(); openDrawer(); });
     document.getElementById('scrim').addEventListener('click', closeDrawer);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDrawer(); closePopovers(); } });
+    // Tab stays inside the side menu while it is open (it covers the page like a dialog).
+    document.getElementById('drawer').addEventListener('keydown', (e) => WW.keepTabInside(e.currentTarget, e));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDrawer(); closePopovers(true); } });
     document.getElementById('theme-btn').addEventListener('click', toggleTheme);
     document.getElementById('bell-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleBell(); });
     document.getElementById('add-btn').addEventListener('click', () => {
