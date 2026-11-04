@@ -83,6 +83,20 @@ A routine repeats several times a day inside a time window (for example "every 2
 
 `from` and `to` are 24-hour clock times (if `to` is earlier than `from` the window runs past midnight); the times are `from`, `from + everyMinutes`, … up to and including `to`. `weekdays` are the days the window starts on (0 = Sunday). `quietAfterPrayerMinutes` (0 to 60, 0 = off): a time that falls from a prayer's call until that many minutes later rings when that period ends. `notifyBeforeMinutes` (0 to 120): the notification comes that many minutes before each time (the full-screen alert stays exact). `skipDuringTasks`: ids of tasks (up to 20); a time that falls while one of them is running does not ring. `randomNotes`: the full-screen alert shows one of the notes (separated by `;`) each time. `completions` lists, for each date, the times already ticked as minutes after midnight (kept for 400 days). `routineState` (what already rang, snoozed reminders) is only in `data.json`, not in the export file.
 
+## Pomodoro (1.3.0)
+
+A Pomodoro is a pair of lengths for focused work: a focus part and a break, with an optional long break after every few rounds. They live in `pomodoros` (at most 50); the focus time that was done is in `pomodoroLog`. Files without them (made by older versions) load with empty lists. Both are part of the export file.
+
+```json
+{ "id": "…", "title": "Study", "focusMinutes": 25, "breakMinutes": 5,
+  "longBreak": { "enabled": true, "minutes": 15, "every": 4 },
+  "alert": "fullScreen|notification", "holdAtPrayer": true, "createdAt": "2026-11-04T08:00:00.000Z" }
+```
+
+`focusMinutes` 1 to 240, `breakMinutes` and `longBreak.minutes` 1 to 120, `longBreak.every` 2 to 12 rounds. `alert` says how the person is told that a part is over. `holdAtPrayer`: the timer stops when a prayer time comes while it runs.
+
+`pomodoroLog` = `[{ "pomodoroId": "…", "dateKey": "2026-11-04", "minutes": 25, "complete": true, "at": "2026-11-04T09:25:00.000Z" }]`: one entry for each focus part that ended (`complete` true) or was skipped or stopped early (`complete` false, with the whole minutes done; nothing is written for less than a minute). Only the last 400 days are kept. The running timer itself is not saved (closing the app stops it).
+
 ## Free Task
 
 The Free To-Do list holds tasks that have no time yet. It has no reminders, no zone and no statistics. When a free task is scheduled it becomes a normal task and leaves the list. A file without `freeTasks` (made by an older version) loads with an empty list.

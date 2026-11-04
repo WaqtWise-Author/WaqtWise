@@ -489,6 +489,7 @@
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
     else if (WW.state.view === 'routines') await WW.showRoutines();
+    else if (WW.state.view === 'pomodoro') await WW.showPomodoro();
   };
 
   // ---- Banner: the data could not be saved -----------------------------------------------------------------------
@@ -634,10 +635,10 @@
     closePopovers();
     if (WW.refreshFreeCount) await WW.refreshFreeCount();
     const drawer = document.getElementById('drawer');
-    const item = (icon, label, fn, active) => h('button', {
+    const item = (icon, label, fn, active, extra) => h('button', {
       class: `drawer-item ${active ? 'active' : ''}`, type: 'button',
       onclick: () => { closeDrawer(); fn(); },
-    }, WW.icon(icon, 20, 1.9), label);
+    }, WW.icon(icon, 20, 1.9), label, extra || null);
     clear(drawer).append(
       h('div', { class: 'drawer-head' },
         h('img', { class: 'app-logo', src: 'logo.png', alt: '' }),
@@ -646,6 +647,8 @@
       item('calendar', T('Daily View'), () => WW.showDaily(), WW.state.view === 'daily'),
       item('check', T('Free To-Do List') + (WW.state.freeCount ? ` (${WW.state.freeCount})` : ''), () => WW.showFree(), WW.state.view === 'free'),
       item('bell', T('Routines'), () => WW.showRoutines(), WW.state.view === 'routines'),
+      item('timer', T('Pomodoro'), () => WW.showPomodoro(), WW.state.view === 'pomodoro',
+        h('bdi', { class: 'drawer-time', dir: 'ltr', 'data-pomo-menu': '1', text: WW.pomodoroMenuTime ? WW.pomodoroMenuTime() : '' })),
       item('chart', T('Statistics'), () => WW.showStats({ range: 'week' }), WW.state.view === 'stats'),
       item('gear', T('Settings'), () => WW.showSettings(), WW.state.view === 'settings'));
     drawer.hidden = false;
@@ -751,7 +754,9 @@
     else if (WW.state.view === 'stats') await WW.showStats();
     else if (WW.state.view === 'free') await WW.showFree();
     else if (WW.state.view === 'routines') await WW.showRoutines();
+    else if (WW.state.view === 'pomodoro') await WW.showPomodoro();
     else await WW.showDay(WW.state.todayKey);
+    if (WW.setPomodoroTimer) WW.setPomodoroTimer(await WW.call('getPomodoroTimer').catch(() => null));
     return boot;
   }
 
@@ -900,6 +905,7 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDrawer(); closePopovers(true); } });
     document.getElementById('theme-btn').addEventListener('click', toggleTheme);
     document.getElementById('bell-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleBell(); });
+    document.getElementById('pomodoro-chip').addEventListener('click', () => { closePopovers(); WW.showPomodoro(); });
     document.getElementById('add-btn').addEventListener('click', () => {
       closePopovers();
       WW.openTaskForm({ mode: 'create', defaultKey: WW.state.dayKey || WW.state.todayKey });
@@ -943,6 +949,12 @@
       });
       window.api.on('pause-changed', (state) => WW.refreshPauseBanner(state));
       window.api.on('show-routines', () => { if (!anyDialogOpen()) WW.showRoutines(); });
+      window.api.on('show-pomodoro', () => { if (!anyDialogOpen()) WW.showPomodoro(); });
+      // The Pomodoro timer changed (a part ended, the tray or the full-screen alert pressed a button).
+      window.api.on('pomodoro-changed', (view) => {
+        WW.setPomodoroTimer(view);
+        if (WW.state.view === 'pomodoro' && !anyDialogOpen()) WW.showPomodoro();
+      });
       window.api.on('open-task', ({ taskId, dateKey }) => {
         if (taskId && dateKey) WW.openTaskDetails({ taskId, dateKey });
         else WW.showDay(WW.state.todayKey);

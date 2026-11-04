@@ -168,6 +168,21 @@ Routines are kept apart from your tasks: they do not appear in the five zones, b
 
 ![Routines](images/routines.webp)
 
+### Pomodoro
+
+For working in **focused sessions with breaks in between**. Open the menu and choose **Pomodoro**, then **Add Pomodoro**.
+You can make as many Pomodoros as you like (for example *Study* 25 / 5 and *Deep Work* 50 / 10), each with its own times.
+
+- **Name**, **Focus Time** (1 to 240 minutes) and **Short Break** (1 to 120 minutes). The small buttons under each box fill in the usual lengths.
+- **Long Break** (on or off): a longer rest (for example 15 minutes) after every few rounds (2 to 12; the classic is 4).
+- **When a Part Ends**: a **Full-Screen Alert** or a **Notification**, chosen for each Pomodoro. (The switches in Settings → Reminders and the pauses in the tray do not apply to Pomodoros: you start them yourself.)
+- **Stop the Timer at Prayer Time** (for each Pomodoro): when a prayer time comes while the timer runs, it stops, a notification says so, and it waits for you to **Resume** it. While a part runs, a line on the page says when the next prayer falls inside it.
+- Press **Start** on a Pomodoro. The page shows the time left in a ring, the round, and **Pause**, **Skip to Break** (or **Skip Break**) and **Stop**. The time left is also shown at the top of every screen and beside **Pomodoro** in the menu; the tray menu has **Pause Pomodoro** / **Resume Pomodoro** and **Stop Pomodoro**.
+- **The next part never starts by itself.** When a part ends you are told (as you chose), and you press **Start Break** or **Start Focus** when you are ready. After a focus part you can also choose **5 More Minutes of Focus**. **Later** on the alert just closes it; the timer waits.
+- Only one Pomodoro runs at a time: starting another one stops the first. The timer is not saved: closing the app stops it.
+
+The focus time you do (also the minutes of a part you skipped or stopped) is written down for **Statistics**: the **Pomodoro** card shows the total focus time of the range, the full sessions, a bar for each day and each Pomodoro (add it with **Manage** if you updated from an older version). Pomodoros and their focus time travel with export, import and backups.
+
 ## 8. Reminders and Full-Screen Alerts
 
 **Reminders (notifications).** New tasks have a reminder switched on. With no times added, it reminds you
@@ -223,6 +238,7 @@ The charts (use **Manage** to show, hide or reorder them):
 | Prayer Time Over Time | A line chart: at what time one prayer (choose it) falls on each day of the range, with the earliest, the latest and the change |
 | Zone Length Over Time | A line chart: how long one zone (choose it) lasts on each day, as **Total Length** (prayer to prayer) or **Free Time** (minus your tasks) |
 | Routines | For each routine: the share of its times done, the current streak, the last days as small squares, and the time you miss most often |
+| Pomodoro | The focus time of your Pomodoros in the range, the full sessions, a bar for each day, and the time of each Pomodoro |
 
 Statistics of days that are over are saved, so editing or deleting a task later does not change the past.
 A task counts as **late** if you tick it more than a chosen time after its start (Settings → Application →

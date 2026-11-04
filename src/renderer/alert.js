@@ -38,6 +38,8 @@
       snooze: (option) => { stopSound(); window.alertApi.action('snooze', item.id, option); },
       done: () => { stopSound(); window.alertApi.action('done', item.id); },
       open: () => { stopSound(); window.alertApi.action('open', item.id); },
+      next: () => { stopSound(); window.alertApi.action('next', item.id); },
+      stop: () => { stopSound(); window.alertApi.action('stop', item.id); },
       redraw: draw,
     });
     if (guardActive) {

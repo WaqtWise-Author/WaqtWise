@@ -7,7 +7,7 @@
 const { t } = require('../../core/i18n');
 const { copy } = require('./util');
 
-const KEPT = ['tasks', 'freeTasks', 'routines', 'noteRotation', 'statsHistory', 'missedReminders'];
+const KEPT = ['tasks', 'freeTasks', 'routines', 'pomodoros', 'pomodoroLog', 'noteRotation', 'statsHistory', 'missedReminders'];
 
 class UndoMethods {
   // Call before changing anything. Returns the token to give back to endUndo().

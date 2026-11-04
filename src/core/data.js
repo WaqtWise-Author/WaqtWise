@@ -3,13 +3,13 @@
 // The saved data and the export/import file format.
 //
 // Saved data (data.json in the user's profile folder):
-//   { version, settings, categories, tasks, freeTasks, routines, routineState, noteRotation, reminderState, missedReminders }
+//   { version, settings, categories, tasks, freeTasks, routines, routineState, pomodoros, pomodoroLog, noteRotation, reminderState, missedReminders }
 // (noteRotation: which of a task's several notes was shown last; it is NOT part of the export file.)
 // (missedReminders: reminders that came due while the computer was off or asleep and were not handled yet;
 //  they are shown on the bell and are NOT part of the export file.)
 //
 // Export file (documented in docs/DATA_FORMAT.md):
-//   { app: 'waqtwise', formatVersion: 1, exportedAt, settings, categories, tasks, freeTasks, routines, statsHistory }
+//   { app: 'waqtwise', formatVersion: 1, exportedAt, settings, categories, tasks, freeTasks, routines, pomodoros, pomodoroLog, statsHistory }
 //
 // Derived values (zones, end times, durations, occurrences, prayer times) are never saved.
 
@@ -19,6 +19,7 @@ const { validateTask, validateStart, validateDuration, validateReminders, PRIORI
 const { MAX_TASKS, MAX_FREE_TASKS, MAX_ROUTINES, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH, MAX_DATES_PER_TASK } = require('./limits');
 const { normalizeFreeTask } = require('./free-tasks');
 const { normalizeRoutine } = require('./routines');
+const { normalizePomodoro, normalizePomodoroLog, MAX_POMODOROS } = require('./pomodoro');
 const { emptyRoutineState, normalizeRoutineState } = require('./routine-engine');
 const { normalizeNoteRotation } = require('./random-notes');
 const { normalizeRule } = require('./recurrence');
@@ -54,6 +55,8 @@ function emptyData() {
     freeTasks: [],
     routines: [],
     routineState: emptyRoutineState(),
+    pomodoros: [],
+    pomodoroLog: [],
     noteRotation: {},
     reminderState: emptyState(),
     missedReminders: [],
@@ -267,6 +270,30 @@ function normalizeData(raw) {
   }
   const routineState = normalizeRoutineState(source.routineState).state;
 
+  // Pomodoros (1.3.0): files from older versions have none.
+  const pomodoros = [];
+  const pomodoroIds = new Set();
+  let rawPomodoros = Array.isArray(source.pomodoros) ? source.pomodoros : [];
+  if (rawPomodoros.length > MAX_POMODOROS) {
+    warnings.push(t('Only the first {n} Pomodoros were loaded', { n: MAX_POMODOROS }));
+    rawPomodoros = rawPomodoros.slice(0, MAX_POMODOROS);
+  }
+  for (const rawItem of rawPomodoros) {
+    const { pomodoro, error } = normalizePomodoro(rawItem);
+    const label = isPlainObject(rawItem) && rawItem.title ? `"${rawItem.title}"` : t('A Pomodoro');
+    if (error) {
+      warnings.push(t('{label} was skipped: {error}', { label, error }));
+      continue;
+    }
+    if (pomodoroIds.has(pomodoro.id)) {
+      warnings.push(t('{label} was skipped because its id is used twice', { label }));
+      continue;
+    }
+    pomodoroIds.add(pomodoro.id);
+    pomodoros.push(pomodoro);
+  }
+  const pomodoroLog = normalizePomodoroLog(source.pomodoroLog);
+
   const restored = normalizeState(source.reminderState);
   const reminderState = restored.state;
   if (restored.dropped > 0) warnings.push(t('Some saved reminder information was damaged and was reset'));
@@ -284,7 +311,7 @@ function normalizeData(raw) {
     .slice(-50);
 
   return {
-    data: { version: DATA_VERSION, settings, categories, tasks, freeTasks, routines, routineState, noteRotation: normalizeNoteRotation(source.noteRotation, new Set([...tasks.map((x) => x.id), ...routines.map((x) => `routine:${x.id}`)])), reminderState, missedReminders, statsHistory: normalizeStatsHistory(source.statsHistory) },
+    data: { version: DATA_VERSION, settings, categories, tasks, freeTasks, routines, routineState, pomodoros, pomodoroLog, noteRotation: normalizeNoteRotation(source.noteRotation, new Set([...tasks.map((x) => x.id), ...routines.map((x) => `routine:${x.id}`)])), reminderState, missedReminders, statsHistory: normalizeStatsHistory(source.statsHistory) },
     warnings,
   };
 }
@@ -299,6 +326,8 @@ function buildExport(data, now = new Date()) {
     tasks: data.tasks,
     freeTasks: data.freeTasks || [],
     routines: data.routines || [],
+    pomodoros: data.pomodoros || [],
+    pomodoroLog: data.pomodoroLog || [],
     statsHistory: data.statsHistory || { through: null, days: {} },
   };
 }

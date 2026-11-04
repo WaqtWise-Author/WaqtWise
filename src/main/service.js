@@ -46,6 +46,10 @@ class PlannerService {
     this.providerFactory = deps.providerFactory || defaultProviderFactory;
     this.onDataChanged = deps.onDataChanged || (() => {});
     this.onSettingsChanged = deps.onSettingsChanged || (() => {});
+    // Pomodoro timer (kept in memory only): every change, and each part that ends (see planner/pomodoros.js).
+    this.onPomodoroChanged = deps.onPomodoroChanged || (() => {});
+    this.onPomodoroSignal = deps.onPomodoroSignal || (() => {});
+    this.pomodoroTimer = null;
     this.data = this.store.load();
     this.providerCache = null;
     this.applyLanguage();
@@ -227,6 +231,7 @@ const MIXINS = [
   require('./planner/history').HistoryMethods,
   require('./planner/free-tasks').FreeTaskMethods,
   require('./planner/routines').RoutineMethods,
+  require('./planner/pomodoros').PomodoroMethods,
   require('./planner/undo').UndoMethods,
 ];
 for (const mixin of MIXINS) {
@@ -241,6 +246,7 @@ const PUBLIC_METHODS = [
   'getReferenceChoices', 'getDeleteImpact', 'getAlertPreset', 'deleteTask', 'setDone', 'duplicateTask', 'getSettings', 'saveSettings', 'addCategory', 'updateCategory',
   'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
   'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone', 'undoDelete',
+  'getPomodoros', 'newPomodoroDefaults', 'getPomodoroForEdit', 'savePomodoro', 'deletePomodoro', 'getPomodoroTimer', 'pomodoroAction',
   'getTaskDetails', 'getSaveStatus', 'retrySave',
 ];
 

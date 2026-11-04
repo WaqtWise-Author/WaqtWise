@@ -622,7 +622,7 @@ async function setTime(page, hour, minute, ampm) {
   await step('side menu: Daily View, Free To-Do List, Routines, Statistics, Settings (the data buttons are in Settings); Esc closes it', async () => {
     await page.click('#menu-btn');
     const items = await page.$$eval('#drawer .drawer-item', (els) => els.map((e) => e.textContent.trim()));
-    assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Statistics', 'Settings']);
+    assert.deepEqual(items, ['Daily View', 'Free To-Do List', 'Routines', 'Pomodoro', 'Statistics', 'Settings']);
     await shot(page, 'drawer');
     assert.equal(await page.getAttribute('#menu-btn', 'aria-controls'), 'drawer');
     assert.equal(await page.evaluate(() => document.activeElement.classList.contains('drawer-item')), true, 'the focus moves into the menu');
@@ -1429,17 +1429,17 @@ async function setTime(page, hour, minute, ampm) {
     await mp.click('#menu-btn');
     await mp.click('.drawer-item:has-text("Statistics")');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 12);
+    assert.equal((await sections()).length, 13);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
 
     await mp.click('#stats-manage');
     await mp.waitForSelector('.manage-row');
-    assert.equal((await mp.$$('.manage-row')).length, 17);
+    assert.equal((await mp.$$('.manage-row')).length, 18);
     await mp.click('button[aria-label="Remove Needs attention"]');
     await mp.click('button[aria-label="Remove By Zone"]');
     await mp.click('button[aria-label="Remove Current Streak"]');
     await mp.waitForFunction(() => document.querySelectorAll('.stats-card.kpi').length === 4);
-    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines']);
+    assert.deepEqual(svc.getSettings().statsCharts, ['kpi-rate', 'kpi-done', 'kpi-time', 'kpi-ontime', 'bars', 'heat', 'trend', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines', 'pomodoro']);
     assert.equal((await sections()).includes('Needs attention'), false);
     assert.equal((await sections()).includes('By Zone'), false);
     assert.match(await mp.textContent('.manage-title >> nth=1'), /Available to add \(3\)/);
@@ -1447,8 +1447,8 @@ async function setTime(page, hour, minute, ampm) {
 
     await mp.click('button[aria-label="Move Completion Trend up"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:nth-child(2)').getAttribute('aria-label') === 'Completion Trend');
-    assert.deepEqual(await sections(), ['Done Versus Planned', 'Completion Trend', 'Calendar Heat Map', 'By Category', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines']);
-    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines']);
+    assert.deepEqual(await sections(), ['Done Versus Planned', 'Completion Trend', 'Calendar Heat Map', 'By Category', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines', 'Pomodoro']);
+    assert.deepEqual(svc.getSettings().statsCharts.slice(4), ['bars', 'trend', 'heat', 'categories', 'lateness', 'lateby', 'latetrend', 'prayertimes', 'zonelength', 'routines', 'pomodoro']);
     await mp.click('button[aria-label="Add By Zone"]');
     await mp.waitForFunction(() => document.querySelector('.stats-grid > section:last-child').getAttribute('aria-label') === 'By Zone');
 
@@ -1465,14 +1465,118 @@ async function setTime(page, hour, minute, ampm) {
 
     // Removing everything leaves a hint, and the reset button brings it all back.
     await mp.click('#stats-manage');
-    for (const id of ['Done vs Planned', 'Completion Rate', 'Tasks Done', 'Planned Time', 'Calendar Heat Map', 'Completion Trend', 'By Category', 'By Zone', 'Done on Time', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines']) {
+    for (const id of ['Done vs Planned', 'Completion Rate', 'Tasks Done', 'Planned Time', 'Calendar Heat Map', 'Completion Trend', 'By Category', 'By Zone', 'Done on Time', 'Most Late Tasks', 'Lateness by Zone and Category', 'Lateness Over Time', 'Prayer Time Over Time', 'Zone Length Over Time', 'Routines', 'Pomodoro']) {
       await mp.click(`button[aria-label="Remove ${id}"]`);
     }
     await mp.waitForSelector('#stats-nothing');
     await mp.click('#manage-reset');
     await mp.waitForSelector('.stats-grid');
-    assert.equal((await sections()).length, 12);
+    assert.equal((await sections()).length, 13);
     assert.equal((await mp.$$('.stats-card.kpi')).length, 5);
+    assert.deepEqual(realErrors(m.errors), []);
+    await m.browser.close();
+  });
+
+  await step('Pomodoro: add one, start it, pause, skip to the break (it waits), start the break, stop; the top bar shows the time', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '09:00') });
+    const m = await openApp({ playwright, service: svc, executablePath, width: 1200, height: 1000 });
+    const mp = m.page;
+    await mp.click('#menu-btn');
+    await mp.click('.drawer-item:has-text("Pomodoro")');
+    await mp.waitForSelector('#pomodoro-empty');
+    assert.equal(await mp.isHidden('#pomodoro-chip'), true, 'no chip while nothing runs');
+    await mp.click('#pomodoro-add');
+    await mp.waitForSelector('#pf-title');
+    assert.equal(await mp.inputValue('#pf-focus'), '25');
+    assert.equal(await mp.inputValue('#pf-break'), '5');
+    assert.match(await mp.textContent('#pf-summary'), /4 rounds take about 2h 10m/);
+    // An empty name is refused and marked
+    await mp.click('#pf-save');
+    await mp.waitForSelector('.dialog .errors:not([hidden])');
+    assert.equal(await mp.getAttribute('#pf-title', 'aria-invalid'), 'true');
+    await mp.fill('#pf-title', 'Study');
+    await mp.click('.pomo-preset:text-is("50")');
+    assert.equal(await mp.inputValue('#pf-focus'), '50');
+    await mp.click('.pomo-preset:text-is("10")');
+    await mp.click('#pf-longbreak');
+    assert.equal(await mp.isHidden('.pomo-long-fields'), true, 'the long break fields hide when it is off');
+    assert.match(await mp.textContent('#pf-summary'), /One round \(focus and break\) takes 1h 0m/);
+    await mp.selectOption('#pf-alert', 'notification');
+    await mp.click('#pf-save');
+    await mp.waitForSelector('.dialog', { state: 'detached' });
+    await mp.waitForSelector('.pomo-card');
+    const saved = svc.data.pomodoros[0];
+    assert.deepEqual([saved.focusMinutes, saved.breakMinutes, saved.longBreak.enabled, saved.alert, saved.holdAtPrayer], [50, 10, false, 'notification', true]);
+    await shot(mp, 'pomodoro-list');
+
+    await mp.click('.pomo-card button:text-is("Start")');
+    await mp.waitForSelector('.pomo-run[data-status="running"]');
+    assert.equal(await mp.textContent('.pomo-time'), '50:00');
+    assert.equal(await mp.isVisible('#pomodoro-chip'), true, 'the chip shows on every screen');
+    assert.match(await mp.textContent('#pomodoro-chip'), /^Focus · \d+:\d\d$/);
+    assert.equal(await mp.isVisible('.pomo-card.running .pomo-running'), true);
+    await shot(mp, 'pomodoro-running');
+    await mp.click('#pomo-pause');
+    await mp.waitForSelector('.pomo-run[data-status="paused"]');
+    await mp.click('#pomo-resume');
+    await mp.waitForSelector('.pomo-run[data-status="running"]');
+    await mp.click('#pomo-skip');
+    await mp.waitForSelector('.pomo-run[data-status="waiting"]');
+    assert.match(await mp.textContent('.pomo-status'), /Focus done\. Start the break when you are ready\./);
+    assert.equal(await mp.isVisible('#pomo-extend'), true, '5 more minutes after a focus part');
+    await mp.click('#pomo-next');
+    await mp.waitForSelector('.pomo-run.break[data-status="running"]');
+    assert.equal(await mp.textContent('.pomo-time'), '10:00');
+    // The chip leads back to the page from another screen
+    await mp.click('#menu-btn');
+    await mp.click('.drawer-item:has-text("Daily View")');
+    await mp.waitForSelector('.zone');
+    assert.match(await mp.textContent('#pomodoro-chip'), /^Short Break · /);
+    await mp.click('#pomodoro-chip');
+    await mp.waitForSelector('.pomo-run');
+    await mp.click('#pomo-stop');
+    await mp.waitForSelector('.pomo-run', { state: 'detached' });
+    assert.equal(await mp.isHidden('#pomodoro-chip'), true);
+    assert.equal(svc.getPomodoroTimer(), null);
+    assert.deepEqual(realErrors(m.errors), []);
+    await m.browser.close();
+  });
+
+  await step('Pomodoro: the full-screen alert shows Start Break, 5 More Minutes, Later and Stop', async () => {
+    const alert = await openAlertPage({ playwright, executablePath });
+    const base = require('../src/core').DEFAULT_ALERT_APPEARANCE;
+    const p = alert.page;
+    const item = { id: 'pomodoro:p1:1', kind: 'pomodoro', taskId: 'pomodoro:p1', pomodoroId: 'p1', dateKey: '2026-10-04', title: 'Time for a Short Break', label: 'Focus Done · Round 2 of 4',
+      notes: 'Short Break: 5m\nStudy · Today: 2 sessions · 50m focused', next: 'break', canExtend: true, startLabel: '10:00 AM', endLabel: '', durationLabel: '', zoneName: '', zoneIndex: 0, categoryName: '', categoryColor: '', priority: '', snoozed: false };
+    await p.evaluate(([st]) => window.__render(st), [{ items: [item], appearance: base, snoozeMinutes: 7, guardMs: 0 }]);
+    await p.waitForSelector('.alert-actions button:not([disabled])');
+    assert.deepEqual(await p.$$eval('.alert-actions button', (els) => els.map((b) => [b.textContent, b.dataset.action, b.dataset.option || ''])), [
+      ['Start Break', 'next', ''], ['5 More Minutes of Focus', 'snooze', '5'], ['Later', 'dismiss', ''], ['Stop Pomodoro', 'stop', ''],
+    ]);
+    const text = await p.textContent('body');
+    for (const part of ['Focus Done · Round 2 of 4', 'Time for a Short Break', 'Short Break: 5m', '50m focused']) assert.ok(text.includes(part), `shows "${part}"`);
+    assert.equal(await p.evaluate(() => document.activeElement.dataset.action), 'next', 'Start Break has the focus (Enter starts it)');
+    await shot(p, 'alert-pomodoro');
+    await p.click('button[data-action="next"]');
+    assert.deepEqual(await p.evaluate(() => window.__actions.slice(-1)[0]), ['next', 'pomodoro:p1:1']);
+    await alert.browser.close();
+  });
+
+  await step('Statistics: the Pomodoro card shows the focus time of the range', async () => {
+    const { at } = require('./ui-harness');
+    const svc = createService({ now: at('2026-10-10', '15:20') });
+    const { id } = svc.savePomodoro({ form: { title: 'Study', focusMinutes: 25, breakMinutes: 5, longBreak: false, alert: 'notification', holdAtPrayer: false } });
+    svc.data.pomodoroLog = [{ pomodoroId: id, dateKey: '2026-10-08', minutes: 25, complete: true, at: '' }, { pomodoroId: id, dateKey: '2026-10-10', minutes: 40, complete: false, at: '' }];
+    const m = await openApp({ playwright, service: svc, executablePath, width: 1280, height: 1000 });
+    const mp = m.page;
+    await mp.click('#menu-btn');
+    await mp.click('.drawer-item:has-text("Statistics")');
+    await mp.waitForSelector('.pomodoro-card');
+    assert.equal(await mp.textContent('#pomodoro-sub'), '1h 5m focused · 1 full session');
+    assert.equal(await mp.$$eval('.pomodoro-card .pomo-days i', (els) => els.length), 7, 'a bar for each day of the week');
+    assert.match(await mp.textContent('.pomodoro-card .routine-stat'), /Study.*1h 5m/);
+    await shot(mp, 'stats-pomodoro');
     assert.deepEqual(realErrors(m.errors), []);
     await m.browser.close();
   });

@@ -7,7 +7,7 @@ const { t, tp, getLanguage, weekdayShort, weekdayLong, monthLong } = require('..
 const core = require('../../core');
 
 const {
-  localCategoryName, occurrencesForPlanningDay, getOccurrences, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, computePrayerTrends, resolveCity, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
+  localCategoryName, occurrencesForPlanningDay, getOccurrences, computeDayLayout, currentPlanningDayKey, remindersInWindow, reminderOffsets, computeStats, computeRoutineStats, computePomodoroStats, computePrayerTrends, resolveCity, describeStart, describeRule, normalizeRule, addDaysToKey, dateKey, formatTime12, formatDuration, formatKeyShort, weekdayOfKey, parseDateKey, isValidKey,
 } = core;
 
 // The first non-empty line of a note, cut short for a task row.
@@ -318,6 +318,10 @@ class DayViewMethods {
     stats.routineStats = computeRoutineStats(this.data.routines || [], { fromKey: stats.rangeStartKey, toKey: stats.rangeEndKey }, this.now());
     // Only when one of the two line charts is shown: they walk through every day of the range.
     const shown = this.settings.statsCharts || [];
+    // The Pomodoro card: focus time from the Pomodoro log, in the same range.
+    if (shown.includes('pomodoro')) {
+      stats.pomodoroStats = computePomodoroStats(this.data.pomodoros || [], this.data.pomodoroLog || [], { fromKey: stats.rangeStartKey, toKey: stats.rangeEndKey });
+    }
     if (shown.includes('prayertimes') || shown.includes('zonelength')) {
       // The two line charts: prayer times and zone lengths over the range (the city's own clock, the tasks as they are now).
       const provider = this.provider();

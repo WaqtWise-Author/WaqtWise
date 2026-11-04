@@ -3,6 +3,12 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.3.0
+
+New
+- **Pomodoro** (menu -> Pomodoro): work in focused sessions with breaks in between. Make as many Pomodoros as you like, each with its own **Focus Time** (1 to 240 minutes) and **Short Break** (1 to 120 minutes), an optional **Long Break** after every few rounds (on or off), how you are told that a part is over (**Full-Screen Alert** or **Notification**, for each Pomodoro), and whether the timer **stops at prayer time** (for each Pomodoro; it then waits for you to resume it). The next part never starts by itself: you press **Start Break** or **Start Focus** when you are ready (after a focus part also **5 More Minutes of Focus**). The page shows the time left in a ring with Pause, Skip and Stop; the time left is also at the top of every screen and beside Pomodoro in the menu, and the tray menu can pause, resume or stop it. One Pomodoro runs at a time; the timer is not saved when the app closes.
+- **Statistics: Pomodoro card** (on by default for new installs; add it with Manage after updating): the focus time of the range, the full sessions, a bar for each day and the time of each Pomodoro. Pomodoros and their focus time are saved with your data and travel with export, import and backups (`pomodoros`, `pomodoroLog`, see `docs/DATA_FORMAT.md`).
+
 ## 1.2.1
 
 Fixes (from the review of 4 Nov 2026)

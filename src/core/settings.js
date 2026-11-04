@@ -62,6 +62,7 @@ const STATS_CHARTS = [
   { id: 'prayertimes', title: 'Prayer Time Over Time', about: 'At what time a prayer falls, day by day' },
   { id: 'zonelength', title: 'Zone Length Over Time', about: 'How long a zone lasts, day by day, in total or as free time' },
   { id: 'routines', title: 'Routines', about: 'How steadily you keep each routine, with its streak' },
+  { id: 'pomodoro', title: 'Pomodoro', about: 'How much time you focused with your Pomodoros' },
 ];
 const STATS_CHART_IDS = STATS_CHARTS.map((c) => c.id);
 

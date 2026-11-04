@@ -12,7 +12,7 @@
 const GUARD_FIRST_MS = 1500; // buttons and keys ignored at first, so typing cannot dismiss it by accident
 const GUARD_NEXT_MS = 700; // shorter pause when the next task comes up
 
-const ACTIONS = ['dismiss', 'snooze', 'done', 'open'];
+const ACTIONS = ['dismiss', 'snooze', 'done', 'open', 'next', 'stop']; // next / stop: the Pomodoro alert (start the next part, stop the timer)
 
 function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getConfig, onAbandoned = () => {}, log = () => {} }) {
   let items = [];

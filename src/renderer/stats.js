@@ -34,6 +34,7 @@
     ['prayertimes', T('Prayer Time Over Time'), T('At what time a prayer falls, day by day')],
     ['zonelength', T('Zone Length Over Time'), T('How long a zone lasts, day by day, in total or as free time')],
     ['routines', T('Routines'), T('How steadily you keep each routine, with its streak')],
+    ['pomodoro', T('Pomodoro'), T('How much time you focused with your Pomodoros')],
   ];
   const CHARTS = { map: (f) => CHARTS_DEF().map(f), find: (f) => CHARTS_DEF().find(f) };
   const local = { query: { range: 'week' }, showAllLate: false, prayer: 'fajr', zone: 1, metric: 'total' };
@@ -446,6 +447,28 @@
       body);
   }
 
+  // ---- Pomodoro -----------------------------------------------------------------------------------------
+
+  function pomodoroCard(data) {
+    const r = data.pomodoroStats || { minutes: 0, sessions: 0, days: [], items: [] };
+    const most = Math.max(1, ...r.items.map((x) => x.minutes));
+    const dayMost = Math.max(1, ...r.days.map((d) => d.minutes));
+    const body = r.minutes === 0
+      ? h('div', { class: 'stats-none', id: 'pomodoro-none', text: T('No focus time in this range yet. Start a Pomodoro from the Pomodoro page.') })
+      : h('div', null,
+        r.days.length > 1 ? h('div', { class: 'pomo-days', role: 'img', 'aria-label': T('Focus time on each day of the range') }, r.days.map((d) =>
+          h('i', { class: d.minutes ? '' : 'none', title: `${d.key}: ${d.minutes ? formatMinutes(d.minutes) : T('{m}m', { m: 0 })}`, style: d.minutes ? { height: `${Math.max(6, Math.round((d.minutes / dayMost) * 100))}%` } : {} }))) : null,
+        h('div', { class: 'bars-list pomodoro-stats' }, r.items.map((x) =>
+          h('div', { class: 'routine-stat', 'data-id': x.id },
+            h('div', { class: 'row-top' }, h('span', { class: 'zone-label', text: x.title }), h('span', { text: formatMinutes(x.minutes) })),
+            h('div', { class: 'meter' }, h('div', { style: { width: `${Math.round((x.minutes / most) * 100)}%`, background: 'var(--accent)' } })),
+            h('div', { class: 'row-note', text: TP(x.sessions, '{n} full session', '{n} full sessions') })))));
+    return h('section', { class: 'stats-card pomodoro-card', 'aria-label': T('Pomodoro') },
+      h('h2', { text: T('Pomodoro') }),
+      h('div', { class: 'sub', id: 'pomodoro-sub', text: r.minutes === 0 ? T('How Much Time You Focused') : `${T('{time} focused', { time: formatMinutes(r.minutes) })} · ${TP(r.sessions, '{n} full session', '{n} full sessions')}` }),
+      body);
+  }
+
   function formatMinutes(m) {
     if (m === null || m === undefined) return '–';
     if (m === 0) return T('On Time');
@@ -460,7 +483,7 @@
     const root = clear(document.getElementById('view'));
     const chosen = WW.state.settings.statsCharts;
     const kpiIds = chosen.filter((id) => id.startsWith('kpi-'));
-    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard, prayertimes: prayerTimesCard, zonelength: zoneLengthCard, routines: routinesCard };
+    const builders = { bars: barsCard, zones: zonesCard, heat: heatCard, trend: trendCard, categories: categoriesCard, late: lateCard, lateness: latenessCard, lateby: latebyCard, latetrend: latetrendCard, prayertimes: prayerTimesCard, zonelength: zoneLengthCard, routines: routinesCard, pomodoro: pomodoroCard };
     const cards = chosen.filter((id) => builders[id]);
     root.append(
       header(data),

@@ -62,7 +62,7 @@ function log(...args) {
 function sendToWindow(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed() && rendererReady) {
     mainWindow.webContents.send(channel, payload);
-  } else if (channel !== 'data-changed' && channel !== 'pause-changed') {
+  } else if (channel !== 'data-changed' && channel !== 'pause-changed' && channel !== 'pomodoro-changed') {
     pendingEvents.push({ channel, payload });
   }
 }
@@ -281,6 +281,9 @@ function refreshTrayTooltip() {
   sendToWindow('pause-changed', pauseState());
   if (!trayController) return;
   const parts = ['reminders', 'routines'].filter(isPaused).map(pausedLabel);
+  const timer = service ? service.getPomodoroTimer() : null;
+  // (The tooltip is not redrawn every second, so it names the part without the time left.)
+  if (timer) parts.push(timer.status === 'running' ? t('Pomodoro: {part}', { part: timer.partName }) : pomodoroLine(timer));
   trayController.setTooltip(['WaqtWise', ...parts].join(' · '));
 }
 
@@ -299,6 +302,85 @@ function resumeFor(kind) {
   if (p.timer) clearTimeout(p.timer);
   p.timer = null;
   refreshTrayTooltip();
+}
+
+// ---- Pomodoro ----------------------------------------------------------------------------------------------------------------
+// The timer itself is in the service (see planner/pomodoros.js); here it gets a clock: one timeout aimed at the moment
+// the service asks for (the end of the part, or the next prayer when the Pomodoro stops for prayer).
+
+let pomodoroTimeout = null;
+
+function schedulePomodoro() {
+  if (pomodoroTimeout) clearTimeout(pomodoroTimeout);
+  pomodoroTimeout = null;
+  if (!service) return;
+  const due = service.pomodoroDueMs();
+  if (due === null) return;
+  pomodoroTimeout = setTimeout(() => {
+    pomodoroTimeout = null;
+    try {
+      service.pomodoroTick();
+    } catch (error) {
+      log('Pomodoro:', error);
+    }
+    schedulePomodoro();
+  }, Math.min(Math.max(0, due - service.now().getTime()) + 50, 2 ** 31 - 1));
+  if (pomodoroTimeout.unref) pomodoroTimeout.unref();
+}
+
+// A part ended (or the timer stopped for prayer): a full-screen alert or a notification, as the Pomodoro asks.
+function signalPomodoro(signal) {
+  if (signal.alert === 'fullScreen' && alertManager) {
+    alertManager.show([service.buildPomodoroAlertItem(signal)]);
+    return;
+  }
+  if (!notify) return;
+  notify({
+    kind: 'pomodoro',
+    id: `pomodoro-${Date.now()}`,
+    title: signal.title,
+    body: signal.lines.join('\n'),
+    lines: signal.lines,
+    silent: !service.getSettings().soundEnabled,
+    taskId: null,
+    dateKey: null,
+    actions: [],
+  });
+}
+
+function onPomodoroChanged(view) {
+  schedulePomodoro();
+  sendToWindow('pomodoro-changed', view);
+  refreshTrayTooltip();
+}
+
+// "Pomodoro: Focus 18:42" (or "Paused", or what comes next while it waits).
+function pomodoroLine(timer) {
+  if (timer.status === 'waiting') return t('Pomodoro: {part} Next', { part: timer.next ? timer.next.name : '' });
+  if (timer.status === 'paused') return t('Pomodoro: {part} Paused at {time}', { part: timer.partName, time: timer.remainingLabel });
+  return t('Pomodoro: {part} {time}', { part: timer.partName, time: timer.remainingLabel });
+}
+
+function pomodoroDo(action, extra) {
+  try {
+    service.pomodoroAction({ action, ...extra });
+  } catch (error) {
+    log('Pomodoro:', error);
+  }
+}
+
+// The Pomodoro lines of the tray menu: only while one is running (or waiting for its next part).
+function pomodoroItems() {
+  const timer = service.getPomodoroTimer();
+  if (!timer) return [];
+  const items = [{ id: 'pomodoro-now', label: pomodoroLine(timer), enabled: false, separatorBefore: true }];
+  if (timer.status === 'running') items.push({ id: 'pomodoro-pause', label: t('Pause Pomodoro'), click: () => pomodoroDo('pause') });
+  if (timer.status === 'paused') items.push({ id: 'pomodoro-resume', label: t('Resume Pomodoro'), click: () => pomodoroDo('resume') });
+  if (timer.status === 'waiting' && timer.next) {
+    items.push({ id: 'pomodoro-next', label: timer.next.part === 'focus' ? t('Start Focus') : t('Start Break'), click: () => pomodoroDo('next') });
+  }
+  items.push({ id: 'pomodoro-stop', label: t('Stop Pomodoro'), click: () => pomodoroDo('stop') });
+  return items;
 }
 
 // ---- Tray ----------------------------------------------------------------------------------------------------------------
@@ -349,6 +431,7 @@ function pauseItems(kind) {
 function trayActions() {
   return [
     { id: 'next', label: nextTaskLine(), enabled: false },
+    ...pomodoroItems(),
     ...pauseItems('reminders'),
     ...pauseItems('routines'),
     pauseAllItem(),
@@ -374,6 +457,7 @@ function handleAction(action) {
   showWindow();
   if (action.type === 'open') sendToWindow('show-daily', {});
   if (action.type === 'open-routines' || action.type === 'routines') sendToWindow('show-routines', {});
+  if (action.type === 'pomodoro') sendToWindow('show-pomodoro', {});
   if (action.type === 'open-task' && action.taskId && action.dateKey) {
     sendToWindow('open-task', { taskId: action.taskId, dateKey: action.dateKey });
   }
@@ -389,7 +473,7 @@ function startAlerts() {
     pagePath: PAGES.alert,
     getConfig: () => service.getAlertConfig(),
     onAbandoned: (left) => {
-      const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine'); // a routine time that was not answered is just skipped
+      const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine' && i.kind !== 'pomodoro'); // a routine time (or a Pomodoro alert) that was not answered is just skipped
       if (real.length === 0) return;
       service.addMissed(real.map((i) => ({ ...i, start: new Date(i.startMs), alreadyStarted: true })));
       sendToWindow('missed', real.map((i) => ({
@@ -408,6 +492,14 @@ function handleAlertAction(sender, { type, itemId, option }) {
   alertManager.remove(itemId); // closes the screens when it was the last one
 
   const sample = item.taskId === '__sample__'; // the preview from Settings does nothing for real
+  if (item.kind === 'pomodoro') {
+    if (type === 'next') pomodoroDo('next');
+    else if (type === 'snooze') pomodoroDo('extend', { minutes: Number.isInteger(option) ? option : undefined });
+    else if (type === 'stop') pomodoroDo('stop');
+    else if (type === 'open') handleAction({ type: 'pomodoro' });
+    return;
+  }
+  if (type === 'next' || type === 'stop') return; // only the Pomodoro alert has these
   if (item.kind === 'routine') {
     const target = { routineId: item.routineId, dateKey: item.dateKey, slot: item.slot };
     if (type === 'snooze') routineEngine.handleAction({ type: 'snooze', ...target, fullScreen: true, option });
@@ -470,6 +562,10 @@ function startEngine() {
 
 // After wake from sleep, unlock, or a clock / time zone change: recalculate and check at once.
 function onSystemChange() {
+  if (service) {
+    try { service.pomodoroTick(); } catch (error) { log('Pomodoro:', error); }
+    schedulePomodoro();
+  }
   if (engine) engine.onSystemChange();
   if (routineEngine) routineEngine.onSystemChange();
   sendToWindow('data-changed');
@@ -657,6 +753,8 @@ function start() {
           if (routineEngine) routineEngine.reschedule();
         },
         onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); refreshTrayTooltip(); },
+        onPomodoroChanged,
+        onPomodoroSignal: signalPomodoro,
       });
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
@@ -703,10 +801,11 @@ function start() {
   });
   app.on('will-quit', () => {
     for (const p of Object.values(pauses)) if (p.timer) clearTimeout(p.timer);
+    if (pomodoroTimeout) clearTimeout(pomodoroTimeout);
     if (trayController) trayController.destroy();
   });
 }
 
 start();
 
-module.exports = { handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine };
+module.exports = { handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine, getService: () => service };

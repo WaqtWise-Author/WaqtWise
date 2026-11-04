@@ -1067,3 +1067,86 @@ test('Tray: Pause All pauses reminders and routines together, "Until the Next Pr
   assert.ok(trayMenu(app).some((i) => i.label === 'Pause All'));
   app.cleanup();
 });
+
+// ---- Pomodoro (1.3.0) ---------------------------------------------------------------------------------------------
+
+const pomodoroForm = (extra = {}) => ({ title: 'Study', focusMinutes: 25, breakMinutes: 5, longBreak: false, longBreakMinutes: 15, longBreakEvery: 4, alert: 'fullScreen', holdAtPrayer: false, ...extra });
+
+test('Pomodoro: the tray shows it while it runs (pause, resume, stop); the window is told of every change', async () => {
+  const app = await launch();
+  app.win().emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const { id } = await app.svc('savePomodoro', { id: null, form: pomodoroForm() });
+  assert.equal(trayMenu(app).some((i) => /^Pomodoro/.test(i.label || '')), false, 'nothing about Pomodoro while none runs');
+  await app.svc('pomodoroAction', { action: 'start', id });
+  assert.ok(app.win().sent.some(([c, v]) => c === 'pomodoro-changed' && v && v.status === 'running'), 'the window hears about it');
+  assert.match(trayItem(app, 'Pause Pomodoro') ? 'ok' : '', /ok/);
+  assert.ok(trayMenu(app).some((i) => /^Pomodoro: Focus \d+:\d\d$/.test(i.label || '')), 'a line with the part and the time left');
+  assert.match(app.trays[0].tooltip, /Pomodoro: Focus$/);
+  trayItem(app, 'Pause Pomodoro').click();
+  assert.ok(trayMenu(app).some((i) => /^Pomodoro: Focus Paused at /.test(i.label || '')));
+  trayItem(app, 'Resume Pomodoro').click();
+  trayItem(app, 'Stop Pomodoro').click();
+  assert.equal(await app.svc('getPomodoroTimer'), null);
+  assert.equal(trayMenu(app).some((i) => /^Pomodoro/.test(i.label || '')), false);
+  app.cleanup();
+});
+
+test('Pomodoro: when a part ends the full-screen alert offers Start Break, 5 more minutes, Later and Stop', async () => {
+  const app = await launch();
+  app.win().emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const { id } = await app.svc('savePomodoro', { id: null, form: pomodoroForm() });
+  await app.svc('pomodoroAction', { action: 'start', id });
+  const service = app.main.getService();
+  const realNow = service.now;
+  service.now = () => new Date(realNow().getTime() + 26 * 60000);
+  service.pomodoroTick();
+  const win = app.alertWindows()[0];
+  assert.ok(win, 'the full-screen alert opened');
+  app.ipcOn['alert-ready'](alertEvent(win));
+  const item = win.sent.find(([c]) => c === 'alert-render')[1].items[0];
+  assert.equal(item.kind, 'pomodoro');
+  assert.equal(item.title, 'Time for a Short Break');
+  // "5 More Minutes of Focus" is sent as a snooze of 5
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'snooze', itemId: item.id, option: 5 });
+  assert.equal(app.alertWindows().length, 0);
+  let view = await app.svc('getPomodoroTimer');
+  assert.equal(view.part, 'focus');
+  assert.equal(view.partMs, 5 * 60000);
+  // It ends again: this time "Start Break"
+  service.now = () => new Date(realNow().getTime() + 32 * 60000);
+  service.pomodoroTick();
+  const again = app.alertWindows()[0];
+  app.ipcOn['alert-ready'](alertEvent(again));
+  const second = again.sent.find(([c]) => c === 'alert-render')[1].items[0];
+  app.ipcOn['alert-action'](alertEvent(again), { type: 'next', itemId: second.id });
+  view = await app.svc('getPomodoroTimer');
+  assert.equal(view.part, 'break');
+  assert.equal(view.status, 'running');
+  // "next" and "stop" mean nothing on a task alert
+  const { isValidAction } = require('../src/main/alert-window');
+  assert.ok(isValidAction('next') && isValidAction('stop'));
+  service.now = realNow;
+  app.cleanup();
+});
+
+test('Pomodoro: with "Notification" chosen, the end of a part is a notification that opens the Pomodoro page', async () => {
+  const app = await launch();
+  app.win().emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const { id } = await app.svc('savePomodoro', { id: null, form: pomodoroForm({ alert: 'notification' }) });
+  await app.svc('pomodoroAction', { action: 'start', id });
+  const service = app.main.getService();
+  const realNow = service.now;
+  service.now = () => new Date(realNow().getTime() + 26 * 60000);
+  service.pomodoroTick();
+  assert.equal(app.alertWindows().length, 0);
+  const toast = app.notifications[app.notifications.length - 1];
+  assert.equal(toast.options.title, 'Time for a Short Break');
+  assert.ok(toast.options.toastXml.includes('waqtwise://pomodoro'), 'a click opens the Pomodoro page');
+  app.main.handleAction({ type: 'pomodoro' });
+  assert.ok(app.win().sent.some(([c]) => c === 'show-pomodoro'));
+  service.now = realNow;
+  app.cleanup();
+});

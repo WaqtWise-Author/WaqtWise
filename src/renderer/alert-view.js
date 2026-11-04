@@ -34,7 +34,7 @@
   }
 
   // state: { item, remaining, appearance, snoozeMinutes, guardActive }
-  // handlers (optional): { dismiss, snooze, done, open } - called with no arguments
+  // handlers (optional): { dismiss, snooze, done, open, next, stop } - called with no arguments (snooze: with the chosen length)
   let snoozeChoicesOpen = false; // the row of other snooze lengths is open (kept across redraws)
   let watcher = null; // the one ResizeObserver that refits the title; the old one is let go before each redraw
 
@@ -54,9 +54,10 @@
       textTransform: a.name.uppercase ? 'uppercase' : 'none',
     });
 
-    const parts = [h('div', { class: 'alert-label', text: item.snoozed ? T('Snoozed Reminder') : item.kind === 'routine' ? T('Routine Time') : T('Starts Now') }), name];
+    const pomodoro = item.kind === 'pomodoro';
+    const parts = [h('div', { class: 'alert-label', text: pomodoro ? item.label : item.snoozed ? T('Snoozed Reminder') : item.kind === 'routine' ? T('Routine Time') : T('Starts Now') }), name];
 
-    if (a.notes.show && item.notes && item.notes.trim() !== '') {
+    if ((pomodoro || a.notes.show) && item.notes && item.notes.trim() !== '') {
       const notes = h('div', { class: 'alert-notes', text: item.notes });
       Object.assign(notes.style, {
         fontSize: `${a.notes.size}px`,
@@ -67,35 +68,45 @@
       parts.push(notes);
     }
 
-    const chips = [];
-    if (a.show.time) chips.push(h('span', { class: 'chip' }, h('b', { text: item.startLabel }), item.endLabel ? `– ${item.endLabel}` : ''));
-    if (a.show.duration && item.durationLabel) chips.push(h('span', { class: 'chip', text: item.durationLabel }));
-    if (a.show.zone && item.zoneName) chips.push(h('span', { class: 'chip', text: T('Zone: {zone}', { zone: T(item.zoneName) }) }));
-    if (a.show.category && item.categoryName) {
-      chips.push(h('span', { class: 'chip' }, h('span', { class: 'dot', style: { background: item.categoryColor || a.textColor } }), item.categoryName));
-    }
-    if (a.show.priority && item.priority) chips.push(h('span', { class: 'chip', text: T('{priority} priority', { priority: T(item.priority) }) }));
-    if (chips.length) parts.push(h('div', { class: 'alert-info' }, chips));
-
     const act = (key, option) => () => { if (handlers && handlers[key] && !state.guardActive) handlers[key](option); };
     const button = (label, key, primary, option) =>
       h('button', { type: 'button', class: primary ? 'primary' : '', text: label, disabled: state.guardActive, onclick: act(key, option), dataset: option === undefined ? { action: key } : { action: key, option: String(option) } });
-    // "Got It" is always shown; the others follow the choice in Settings.
-    const shown = a.buttons || { snooze: true, open: true, done: true };
-    parts.push(h('div', { class: 'alert-actions' },
-      button(T('Got It'), 'dismiss', true),
-      shown.snooze ? button(TP(state.snoozeMinutes, 'Snooze {n} minute', 'Snooze {n} minutes'), 'snooze', false) : null,
-      shown.snooze ? h('button', { type: 'button', class: 'snooze-more', text: '▾', title: T('More Snooze Options'), 'aria-label': T('More Snooze Options'), 'aria-expanded': String(snoozeChoicesOpen), 'aria-controls': 'alert-snooze-choices', disabled: state.guardActive, onclick: () => { snoozeChoicesOpen = !snoozeChoicesOpen; if (handlers && handlers.redraw) handlers.redraw(); }, dataset: { more: 'snooze' } }) : null,
-      shown.open ? button(item.kind === 'routine' ? T('Open Routines') : T('Open Task'), 'open', false) : null,
-      shown.done ? button(T('Mark as Done'), 'done', false) : null));
 
-    if (shown.snooze && snoozeChoicesOpen) {
-      parts.push(h('div', { class: 'alert-actions snooze-choices', id: 'alert-snooze-choices' },
-        button(T('5 Minutes'), 'snooze', false, 5),
-        button(T('15 Minutes'), 'snooze', false, 15),
-        button(T('30 Minutes'), 'snooze', false, 30),
-        button(T('1 Hour'), 'snooze', false, 60),
-        button(T('After the Next Prayer'), 'snooze', false, 'prayer')));
+    if (pomodoro) {
+      // A Pomodoro part is over: start the next part (the main button), focus 5 more minutes, later, or stop.
+      parts.push(h('div', { class: 'alert-actions' },
+        button(item.next === 'focus' ? T('Start Focus') : T('Start Break'), 'next', true),
+        item.canExtend ? button(T('5 More Minutes of Focus'), 'snooze', false, 5) : null,
+        button(T('Later'), 'dismiss', false),
+        button(T('Stop Pomodoro'), 'stop', false)));
+    } else {
+      const chips = [];
+      if (a.show.time) chips.push(h('span', { class: 'chip' }, h('b', { text: item.startLabel }), item.endLabel ? `– ${item.endLabel}` : ''));
+      if (a.show.duration && item.durationLabel) chips.push(h('span', { class: 'chip', text: item.durationLabel }));
+      if (a.show.zone && item.zoneName) chips.push(h('span', { class: 'chip', text: T('Zone: {zone}', { zone: T(item.zoneName) }) }));
+      if (a.show.category && item.categoryName) {
+        chips.push(h('span', { class: 'chip' }, h('span', { class: 'dot', style: { background: item.categoryColor || a.textColor } }), item.categoryName));
+      }
+      if (a.show.priority && item.priority) chips.push(h('span', { class: 'chip', text: T('{priority} priority', { priority: T(item.priority) }) }));
+      if (chips.length) parts.push(h('div', { class: 'alert-info' }, chips));
+
+      // "Got It" is always shown; the others follow the choice in Settings.
+      const shown = a.buttons || { snooze: true, open: true, done: true };
+      parts.push(h('div', { class: 'alert-actions' },
+        button(T('Got It'), 'dismiss', true),
+        shown.snooze ? button(TP(state.snoozeMinutes, 'Snooze {n} minute', 'Snooze {n} minutes'), 'snooze', false) : null,
+        shown.snooze ? h('button', { type: 'button', class: 'snooze-more', text: '▾', title: T('More Snooze Options'), 'aria-label': T('More Snooze Options'), 'aria-expanded': String(snoozeChoicesOpen), 'aria-controls': 'alert-snooze-choices', disabled: state.guardActive, onclick: () => { snoozeChoicesOpen = !snoozeChoicesOpen; if (handlers && handlers.redraw) handlers.redraw(); }, dataset: { more: 'snooze' } }) : null,
+        shown.open ? button(item.kind === 'routine' ? T('Open Routines') : T('Open Task'), 'open', false) : null,
+        shown.done ? button(T('Mark as Done'), 'done', false) : null));
+
+      if (shown.snooze && snoozeChoicesOpen) {
+        parts.push(h('div', { class: 'alert-actions snooze-choices', id: 'alert-snooze-choices' },
+          button(T('5 Minutes'), 'snooze', false, 5),
+          button(T('15 Minutes'), 'snooze', false, 15),
+          button(T('30 Minutes'), 'snooze', false, 30),
+          button(T('1 Hour'), 'snooze', false, 60),
+          button(T('After the Next Prayer'), 'snooze', false, 'prayer')));
+      }
     }
 
     if (state.remaining > 0) {
