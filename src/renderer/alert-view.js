@@ -33,7 +33,7 @@
     }
   }
 
-  // The picture behind the alert (1.4.0). bg: { url, blur, dim, panel, glassBlur, position } (blur, dim, glassBlur in %).
+  // The picture behind the alert (1.4.0). bg: { url, blur, dim, panel, glassBlur, glassDim, position } (blur, dim, glassBlur, glassDim in %).
   // 100% blur = 40px at 1280 wide (the preview size), scaled up with the screen like the rest of the alert.
   function backdrop(frame, bg) {
     const blurPx = (bg.blur / 100) * 40;
@@ -45,6 +45,7 @@
     frame.append(picture, shade);
     frame.classList.add('with-picture');
     frame.style.setProperty('--a-glass-blur', `calc(${(bg.glassBlur / 100) * 40} * 100cqw / 1280)`);
+    frame.style.setProperty('--a-glass-dim', String((Number.isInteger(bg.glassDim) ? bg.glassDim : 40) / 100));
   }
 
   // state: { item, remaining, appearance, snoozeMinutes, guardActive, background (optional, see backdrop) }

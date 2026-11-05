@@ -70,7 +70,7 @@
 .alert-glass {
   display: flex; flex-direction: column; align-items: var(--a-items, center); gap: 3cqh; max-width: min(100%, 1500px);
   padding: 4cqmin 5cqmin; border-radius: 3cqmin; border: 0.15cqmin solid color-mix(in srgb, var(--a-text) 28%, transparent);
-  background: color-mix(in srgb, var(--a-bg) 40%, transparent); box-shadow: 0 2cqmin 6cqmin rgb(0 0 0 / 0.35);
+  background: rgb(0 0 0 / var(--a-glass-dim, 0.4)); box-shadow: 0 2cqmin 6cqmin rgb(0 0 0 / 0.35);
   backdrop-filter: blur(var(--a-glass-blur, 24px)) saturate(140%);
 }
 

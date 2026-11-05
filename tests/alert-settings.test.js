@@ -154,7 +154,7 @@ test('Service: alert payload, config, presets and the sample', () => {
   assert.equal(config.screens, 'all');
   assert.equal(config.snoozeMinutes, 5);
   assert.deepEqual(config.appearance, DEFAULT_ALERT_APPEARANCE);
-  assert.deepEqual(config.sound, { id: 'bell', volume: 70, repeat: false });
+  assert.deepEqual(config.sound, { id: 'bell', volume: 70, repeat: false, stopAfterMinutes: 0 });
   config.appearance.backgroundColor = '#000000';
   assert.equal(service.getSettings().alertAppearance.backgroundColor, '#0f172a', 'a copy, not the real settings');
 

@@ -11,11 +11,14 @@
 //   dim: 0-80 (steps of 10),         how much it is darkened, so the text stays easy to read
 //   panel: 'none' | 'glass',         the text sits on the picture, or on a frosted glass panel
 //   glassBlur: 0-100 (steps of 10),  how frosted the glass is
+//   glassDim: 0-80 (steps of 10),    how dark the glass is (1.5.0)
 //   position: 'center' | 'bottom',   where the text sits
 //   useFor: 'all' | 'chosen',        every reminder, or only the tasks whose form says "Image"
+//   routines: 'default' | 'color',   routine alerts follow the setting above, or always keep the solid color (1.5.0)
+//   pomodoro: 'default' | 'color',   the same for Pomodoro alerts (1.5.0)
 // }
 // Each task can choose for itself (task.reminders.background): 'default' (as in Settings), 'image' or 'color'.
-// Routines, Pomodoro alerts and the preview follow the Settings.
+// The preview follows the Settings.
 
 const { t } = require('./i18n');
 
@@ -32,8 +35,11 @@ const DEFAULT_ALERT_BACKGROUND = {
   dim: 30,
   panel: 'glass',
   glassBlur: 60,
+  glassDim: 40,
   position: 'center',
   useFor: 'all',
+  routines: 'default',
+  pomodoro: 'default',
 };
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -49,6 +55,9 @@ const RULES = {
   dim: step10(80),
   panel: (v) => v === 'none' || v === 'glass',
   glassBlur: step10(100),
+  glassDim: step10(80),
+  routines: (v) => v === 'default' || v === 'color',
+  pomodoro: (v) => v === 'default' || v === 'color',
   position: (v) => v === 'center' || v === 'bottom',
   useFor: (v) => v === 'all' || v === 'chosen',
 };

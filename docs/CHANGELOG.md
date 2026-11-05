@@ -3,6 +3,17 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.5.0
+
+New
+- **The alert sound can stop by itself** (Settings → Sounds → Full-Screen Alert): with **Repeat the Sound** on, **Stop the Sound After** 1 to 10 minutes (or Never). Only the sound stops; the full-screen alert stays until a button is pressed.
+- **Glass Darken** for the glass panel of a full-screen alert with a picture (0 to 80%, steps of 10).
+- **Routine Alerts** and **Pomodoro Alerts** (Settings → Full-Screen Reminder → Background): follow the picture setting, or always keep the solid color.
+- **Tray menu**: the top line is now the **next prayer and the time until it** (for example *Next Prayer: Fajr in 5h 12m*) instead of the next task.
+
+Fixes
+- **Pause "Until the Next Prayer" after Isha**: from Isha until Fajr the next prayer is Fajr, so this choice is no longer offered then (only **Until the Next Fajr**). A pause whose end is not in the future is no longer started (it used to look as if nothing happened).
+
 ## 1.4.0
 
 New

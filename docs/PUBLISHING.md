@@ -41,7 +41,7 @@ started by hand.
 ## 4. First Release
 
 1. Set the new version with one command: `node tools/set-version.js 1.2.0` (it changes `package.json`, `package-lock.json`, the examples in the guides and templates, the website and adds an empty section to `docs/CHANGELOG.md` to fill in). Then run `python3 tools/build-site.py` and `node --test tests/version.test.js`: the test fails if anything disagrees. Every change that users will notice gets a new version (patch for fixes, minor for new features), never reuse a version that was already released.
-2. **Actions → Release → Run workflow** with the version (e.g. `1.4.0`). It builds the installer and creates a
+2. **Actions → Release → Run workflow** with the version (e.g. `1.5.0`). It builds the installer and creates a
    **draft** release with the installer, `SHA256SUMS.txt` and release notes.
 3. Open the draft, read the notes, test the installer once more, then **Publish release**.
 4. The website's *Download* button always points at the newest published release.

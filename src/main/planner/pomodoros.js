@@ -311,7 +311,7 @@ class PomodoroMethods {
       categoryColor: '',
       priority: '',
       snoozed: false,
-      backgroundId: this.pickAlertImageFor('default'),
+      backgroundId: this.pickAlertImageFor(this.settings.alertBackground.pomodoro === 'color' ? 'color' : 'default'),
     };
   }
 }

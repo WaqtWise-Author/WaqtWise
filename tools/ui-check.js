@@ -1008,9 +1008,15 @@ async function setTime(page, hour, minute, ampm) {
     await page.selectOption('select[aria-label="Full-Screen Alert sound"]', 'rising');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertSound, 'rising');
-    await page.click('label:has-text("Keep repeating until a button is pressed") input');
+    assert.equal(await page.isDisabled('#alert-sound-stop'), true, 'stopping only matters when the sound repeats');
+    await page.click('label:has-text("Repeat the Sound") input');
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertSoundRepeat, true);
+    assert.equal(await page.isDisabled('#alert-sound-stop'), false);
+    assert.deepEqual(await page.$$eval('#alert-sound-stop option', (els) => els.map((o) => o.textContent)).then((x) => [x.length, x[0], x[1], x[10]]), [11, 'Never (until a button is pressed)', '1 minute', '10 minutes']);
+    await page.selectOption('#alert-sound-stop', '2');
+    await page.waitForTimeout(150);
+    assert.equal(service.getSettings().alertSoundStopMinutes, 2);
     await shot(page, 'settings-sounds');
   });
   await step('toggles save: sound, zone-start, start with Windows', async () => {
@@ -1146,6 +1152,16 @@ async function setTime(page, hour, minute, ampm) {
     assert.deepEqual([service.getSettings().alertBackground.blur, service.getSettings().alertBackground.dim], [70, 50]);
     assert.equal(await page.$eval('.alert-preview .alert-shade', (el) => el.style.getPropertyValue('--a-dim')), '0.5');
     await shot(page, 'settings-alert-pictures');
+    // The glass can be darker or lighter
+    await setSlider('#alert-bg-glassDim', 70);
+    await page.waitForTimeout(150);
+    assert.equal(service.getSettings().alertBackground.glassDim, 70);
+    assert.equal(await page.$eval('.alert-preview .alert-frame', (el) => el.style.getPropertyValue('--a-glass-dim')), '0.7');
+    // Routines and Pomodoro: follow the setting or keep the solid color
+    await page.click('[data-bg="routines-color"]');
+    await page.click('[data-bg="pomodoro-color"]');
+    await page.waitForTimeout(150);
+    assert.deepEqual([service.getSettings().alertBackground.routines, service.getSettings().alertBackground.pomodoro], ['color', 'color']);
     // No panel, text at the bottom
     await page.click('[data-bg="panel-none"]');
     await page.waitForFunction(() => !document.querySelector('#alert-bg-glassBlur'));

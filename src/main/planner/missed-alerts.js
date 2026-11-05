@@ -134,7 +134,7 @@ class MissedAlertMethods {
       screens: s.alertScreens,
       language: s.language,
       snoozeMinutes: s.snoozeMinutes,
-      sound: { id: s.alertSound, volume: s.alertSoundVolume, repeat: s.alertSoundRepeat },
+      sound: { id: s.alertSound, volume: s.alertSoundVolume, repeat: s.alertSoundRepeat, stopAfterMinutes: s.alertSoundStopMinutes },
     };
   }
 

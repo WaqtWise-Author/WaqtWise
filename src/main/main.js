@@ -290,6 +290,11 @@ function refreshTrayTooltip() {
 }
 
 function pauseFor(kind, until) {
+  // A pause that would already be over (the chosen moment is not in the future) is not started.
+  if (!(until > service.now().getTime())) {
+    log(`Pause of ${kind} not started: the end time is not in the future`);
+    return;
+  }
   const p = pauses[kind];
   p.until = until;
   if (p.timer) clearTimeout(p.timer);
@@ -406,12 +411,16 @@ function pomodoroItems() {
 
 // ---- Tray ----------------------------------------------------------------------------------------------------------------
 
-// The line at the top of the menu: the next task that has not started yet.
-function nextTaskLine() {
-  const next = service.getNextTask();
-  if (!next) return t('No Upcoming Tasks');
-  const title = next.title.length > 36 ? `${next.title.slice(0, 35)}…` : next.title;
-  return t('Next Task: {title} · {when}', { title, when: next.when });
+// The line at the top of the menu: the next prayer and how long until it ("Next Prayer: Fajr in 5h 12m").
+function nextPrayerLine() {
+  const next = service.getNextPrayer();
+  if (!next) return t('Prayer Times Are Not Available');
+  return t('Next Prayer: {prayer} in {time}', { prayer: next.name, time: next.inLabel });
+}
+
+// After Isha has begun the next prayer is Fajr, so "Until the Next Prayer" would only repeat "Until the Next Fajr".
+function afterIsha() {
+  return service.nextPrayerMs() === service.nextFajrMs();
 }
 
 // `kind` is 'reminders', 'routines' or 'all' (both at once).
@@ -423,9 +432,9 @@ function pauseChoices(kind) {
     { id: `pause-${kind}-30`, label: t('For 30 Minutes'), click: minutes(30) },
     { id: `pause-${kind}-60`, label: t('For 1 Hour'), click: minutes(60) },
     { id: `pause-${kind}-120`, label: t('For 2 Hours'), click: minutes(120) },
-    { id: `pause-${kind}-prayer`, label: t('Until the Next Prayer'), click: pause(() => service.nextPrayerMs()) },
+    afterIsha() ? null : { id: `pause-${kind}-prayer`, label: t('Until the Next Prayer'), click: pause(() => service.nextPrayerMs()) },
     { id: `pause-${kind}-fajr`, label: t('Until the Next Fajr'), click: pause(() => service.nextFajrMs()) },
-  ];
+  ].filter(Boolean);
 }
 
 // "Pause All" pauses reminders and routines together; once both are paused it becomes "Resume All".
@@ -451,7 +460,7 @@ function pauseItems(kind) {
 // To add a tray menu item later, add one line here. It is built again every time the menu opens.
 function trayActions() {
   return [
-    { id: 'next', label: nextTaskLine(), enabled: false },
+    { id: 'next-prayer', label: nextPrayerLine(), enabled: false },
     ...pomodoroItems(),
     ...pauseItems('reminders'),
     ...pauseItems('routines'),

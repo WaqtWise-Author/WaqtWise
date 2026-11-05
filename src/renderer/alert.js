@@ -14,7 +14,10 @@
   let ringing = null; // the sound that is playing now
   let languageShown = null; // the language the page is drawn in now
 
+  let soundTimer = null; // stops a repeating sound after the minutes chosen in Settings (the alert stays)
   function stopSound() {
+    if (soundTimer) clearTimeout(soundTimer);
+    soundTimer = null;
     if (ringing) ringing.stop();
     ringing = null;
   }
@@ -64,6 +67,8 @@
       stopSound();
       if (next.soundHere && next.sound && next.sound.id !== 'off') {
         ringing = WW.sounds.play(next.sound.id, next.sound.volume, { repeat: next.sound.repeat });
+        const minutes = next.sound.stopAfterMinutes;
+        if (next.sound.repeat && Number.isInteger(minutes) && minutes > 0) soundTimer = setTimeout(stopSound, minutes * 60000);
       }
     }
     // A new task on screen (or the first one): ignore presses for a moment so nothing is dismissed by accident.

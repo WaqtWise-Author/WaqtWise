@@ -21,6 +21,13 @@ function alertEvent(win) {
   return { sender: win.webContents, senderFrame: { url: pathToFileURL(win.file).href, parent: null } };
 }
 
+// The pause lengths in the tray: after Isha (until Fajr) there is no "Until the Next Prayer".
+function pauseLabels(app) {
+  const service = app.main.getService();
+  const prayer = service.nextPrayerMs() === service.nextFajrMs() ? [] : ['Until the Next Prayer'];
+  return ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', ...prayer, 'Until the Next Fajr'];
+}
+
 // ---- Stand-ins ------------------------------------------------------------------------------------------
 
 function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = false, displays }) {
@@ -377,7 +384,7 @@ test('"Don\'t show again" turns the message off; Settings can turn it back on', 
   app.cleanup();
 });
 
-test('Tray: tooltip, icon, and the menu (next task, pause, open, hide, exit)', async () => {
+test('Tray: tooltip, icon, and the menu (next prayer, pause, open, hide, exit)', async () => {
   const app = await launch();
   const tray = app.trays[0];
   assert.equal(tray.tooltip, 'WaqtWise');
@@ -386,7 +393,9 @@ test('Tray: tooltip, icon, and the menu (next task, pause, open, hide, exit)', a
     assert.ok(fs.existsSync(path.join(path.dirname(tray.image.path), f)), `${f} exists`);
   }
   // The 16x16 size of the file itself is checked in packaging.test.js.
-  assert.deepEqual(trayMenu(app).map((i) => i.label || i.type), ['No Upcoming Tasks', 'separator', 'Pause Reminders', 'Pause Routines', 'Pause All', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
+  const labels = trayMenu(app).map((i) => i.label || i.type);
+  assert.match(labels[0], /^Next Prayer: (Fajr|Dhuhr|Asr|Maghrib|Isha) in (\d+h )?\d+m$/, 'the top line is the next prayer and the time until it');
+  assert.deepEqual(labels.slice(1), ['separator', 'Pause Reminders', 'Pause Routines', 'Pause All', 'separator', 'Open / Show', 'Hide / Minimize', 'separator', 'Exit']);
 
   const win = app.win();
   win.emit('ready-to-show');
@@ -713,7 +722,7 @@ test('Full-screen alert: the page is told what to show (title, notes, times, zon
   assert.equal(state.appearance.backgroundColor, '#0f172a');
   assert.equal(state.snoozeMinutes, 5);
   assert.equal(state.guardMs, 1500);
-  assert.deepEqual(state.sound, { id: 'bell', volume: 70, repeat: false });
+  assert.deepEqual(state.sound, { id: 'bell', volume: 70, repeat: false, stopAfterMinutes: 0 });
   assert.equal(state.soundSeq, 1);
   assert.equal(state.soundHere, true);
   app.cleanup();
@@ -732,7 +741,7 @@ test('Full-screen alert: only one screen rings, and the sound comes from Setting
     return w.sent.find(([c]) => c === 'alert-render')[1];
   });
   assert.deepEqual(states.map((st) => st.soundHere), wins.map((_, i) => i === 0), 'only the first window rings');
-  assert.deepEqual(states[0].sound, { id: 'alarm', volume: 40, repeat: true });
+  assert.deepEqual(states[0].sound, { id: 'alarm', volume: 40, repeat: true, stopAfterMinutes: 0 });
   app.cleanup();
 });
 
@@ -1008,7 +1017,7 @@ test('Tray: Pause Reminders silences the tasks until it is resumed, and leaves r
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'First', start: { mode: 'fixed', time: '23:00' } }) });
   await app.svc('saveTask', { mode: 'create', form: form({ title: 'Second', start: { mode: 'fixed', time: '23:30' } }) });
   const pause = trayItem(app, 'Pause Reminders');
-  assert.deepEqual(pause.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Prayer', 'Until the Next Fajr']);
+  assert.deepEqual(pause.submenu.map((i) => i.label), pauseLabels(app));
   pause.submenu[1].click();
   assert.match(app.trays[0].tooltip, /^WaqtWise · Reminders Paused Until /);
   const labels = trayMenu(app).map((i) => i.label || i.type);
@@ -1061,6 +1070,10 @@ test('Tray: Pause Routines silences only the routines; Pause Reminders only the 
 
 test('Tray: Pause All pauses reminders and routines together, "Until the Next Prayer" ends at the next prayer, Resume All ends both', async () => {
   const app = await launch();
+  const service = app.main.getService();
+  const realNow = service.now;
+  const today = new Date();
+  service.now = () => new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0, 0, 0); // before Maghrib
   const all = trayItem(app, 'Pause All');
   assert.deepEqual(all.submenu.map((i) => i.label), ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Prayer', 'Until the Next Fajr']);
   all.submenu[3].click();
@@ -1070,6 +1083,7 @@ test('Tray: Pause All pauses reminders and routines together, "Until the Next Pr
   trayItem(app, 'Resume All').click();
   assert.equal(app.trays[0].tooltip, 'WaqtWise');
   assert.ok(trayMenu(app).some((i) => i.label === 'Pause All'));
+  service.now = realNow;
   app.cleanup();
 });
 
@@ -1220,5 +1234,49 @@ test('Alert pictures: a task set to "Solid Color" keeps the color; "Only Tasks I
   assert.equal(items('color'), '');
   assert.equal(service.alertBackgroundLook('a'.repeat(24)).panel, 'glass');
   assert.equal(service.alertBackgroundLook('b'.repeat(24)), null, 'a picture that is not in the list is never shown');
+  app.cleanup();
+});
+
+
+// ---- 1.5.0: the tray after Isha, the alert sound that stops by itself ---------------------------------------------
+
+test('Tray: after Isha "Until the Next Prayer" is gone (it would be the same as Until the Next Fajr); before it, it pauses until the prayer', async () => {
+  const app = await launch();
+  const service = app.main.getService();
+  const realNow = service.now;
+  const today = new Date();
+  const at = (h, m) => new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m, 0, 0);
+  // The stand-in prayer times: Fajr 5:05, Dhuhr 11:48, Asr 15:14, Maghrib 18:00, Isha 19:20
+  service.now = () => at(21, 0);
+  assert.equal(trayMenu(app)[0].label, 'Next Prayer: Fajr in 8h 5m');
+  let choices = trayItem(app, 'Pause Reminders').submenu.map((i) => i.label);
+  assert.deepEqual(choices, ['For 30 Minutes', 'For 1 Hour', 'For 2 Hours', 'Until the Next Fajr']);
+  assert.deepEqual(trayItem(app, 'Pause All').submenu.map((i) => i.label), choices);
+  trayItem(app, 'Pause Reminders').submenu[3].click();
+  assert.ok(trayMenu(app).some((i) => i.label === 'Resume Reminders'), 'the pause is on');
+  assert.match(trayMenu(app).find((i) => /Reminders Paused Until/.test(i.label || '')).label, /5:05 AM/);
+  trayItem(app, 'Resume Reminders').click();
+  // After midnight, before Fajr: still no "Until the Next Prayer"
+  service.now = () => at(2, 0);
+  assert.deepEqual(trayItem(app, 'Pause Routines').submenu.map((i) => i.label), choices);
+  // In the afternoon it is there and ends at Maghrib
+  service.now = () => at(16, 0);
+  choices = trayItem(app, 'Pause Routines').submenu;
+  assert.equal(choices[3].label, 'Until the Next Prayer');
+  assert.equal(trayMenu(app)[0].label, 'Next Prayer: Maghrib in 2h 0m');
+  choices[3].click();
+  assert.match(trayMenu(app).find((i) => /Routines Paused Until/.test(i.label || '')).label, /6:00 PM/);
+  service.now = realNow;
+  app.cleanup();
+});
+
+test('Alert sound: "Stop the Sound After" is sent with the sound (1 to 10 minutes, 0 = until a button is pressed)', async () => {
+  const app = await launch();
+  const service = app.main.getService();
+  assert.equal(service.getSettings().alertSoundStopMinutes, 0);
+  service.saveSettings({ alertSoundRepeat: true, alertSoundStopMinutes: 2 });
+  assert.equal(service.getAlertConfig().sound.stopAfterMinutes, 2);
+  assert.throws(() => service.saveSettings({ alertSoundStopMinutes: 11 }));
+  assert.throws(() => service.saveSettings({ alertSoundStopMinutes: 1.5 }));
   app.cleanup();
 });

@@ -91,6 +91,10 @@
 
   function soundsSection() {
     const st = WW.state.settings;
+    // A repeating alert sound can stop by itself after 1 to 10 minutes (the alert stays until a button is pressed).
+    const stopSelect = h('select', { id: 'alert-sound-stop', class: 'sel-auto', disabled: !st.alertSoundRepeat, onchange: (e) => save({ alertSoundStopMinutes: Number(e.target.value) }) },
+      h('option', { value: '0', text: T('Never (until a button is pressed)'), selected: !st.alertSoundStopMinutes }),
+      Array.from({ length: 10 }, (_, i) => h('option', { value: String(i + 1), text: TP(i + 1, '{n} minute', '{n} minutes'), selected: st.alertSoundStopMinutes === i + 1 })));
     return section(T('Sounds'),
       h('p', { class: 'dialog-message', text: T('Sounds are made by WaqtWise itself and play only while it is running. They are separate from the Windows notification sound above.') }),
       h('div', { class: 'settings-grid' },
@@ -98,7 +102,9 @@
           extra: h('p', { class: 'hint', text: T('Plays when you tick a task as done.') }) })),
         row(T('Full-Screen Alert'), soundPicker({ label: T('Full-Screen Alert'), options: WW.sounds.ALERT_OPTIONS, idKey: 'alertSound', volumeKey: 'alertSoundVolume',
           extra: h('div', {},
-            toggle(T('Keep repeating until a button is pressed'), st.alertSoundRepeat, (v) => save({ alertSoundRepeat: v })),
+            toggle(T('Repeat the Sound'), st.alertSoundRepeat, (v) => { stopSelect.disabled = !v; save({ alertSoundRepeat: v }); }),
+            h('div', { class: 'row tight', style: { marginTop: '8px' } }, h('label', { for: 'alert-sound-stop', text: T('Stop the Sound After') }), stopSelect),
+            h('p', { class: 'hint', text: T('When the sound repeats, it can stop by itself; the alert stays on the screen until you press a button.') }),
             h('p', { class: 'hint', text: T('Plays when a full-screen alert appears (on one screen only, even if several are covered).') })) }))));
   }
 
@@ -248,7 +254,7 @@
       const list = images();
       if (bg.mode !== 'images' || list.length === 0) return null;
       const shown = list.find((x) => x.id === bg.fixedId) || list[0];
-      return shown.thumb ? { url: shown.thumb, blur: bg.blur, dim: bg.dim, panel: bg.panel, glassBlur: bg.glassBlur, position: bg.position } : null;
+      return shown.thumb ? { url: shown.thumb, blur: bg.blur, dim: bg.dim, panel: bg.panel, glassBlur: bg.glassBlur, glassDim: bg.glassDim, position: bg.position } : null;
     }
 
     // `commit` false = only update the preview while a slider is being dragged.
@@ -350,13 +356,17 @@
           row(T('Darken'), h('div', {}, percent('dim', 80, T('Darken')), h('p', { class: 'hint', text: T('Makes the picture darker so the text is easy to read.') }))),
           row(T('Text Panel'), h('div', {},
             choices(T('Text Panel'), 'panel', [['none', T('None')], ['glass', T('Glass')]]),
-            bg.panel === 'glass' ? h('div', { style: { marginTop: '10px' } }, h('div', { class: 'hint', text: T('Glass Blur') }), percent('glassBlur', 100, T('Glass Blur'))) : null)),
+            bg.panel === 'glass' ? h('div', { style: { marginTop: '10px' } },
+              h('div', { class: 'hint', text: T('Glass Blur') }), percent('glassBlur', 100, T('Glass Blur')),
+              h('div', { class: 'hint', style: { marginTop: '8px' }, text: T('Glass Darken') }), percent('glassDim', 80, T('Glass Darken'))) : null)),
           row(T('Text Position'), choices(T('Text Position'), 'position', [['center', T('Center')], ['bottom', T('Bottom')]])),
           row(T('Use Pictures For'), h('div', {},
             h('select', { class: 'sel-auto', id: 'alert-bg-usefor', 'aria-label': T('Use Pictures For'), onchange: (e) => saveBackground({ useFor: e.target.value }) },
               h('option', { value: 'all', text: T('Every Reminder'), selected: bg.useFor === 'all' }),
               h('option', { value: 'chosen', text: T('Only Tasks I Choose'), selected: bg.useFor === 'chosen' })),
-            h('p', { class: 'hint', text: T('Each task can also choose for itself in its form (Reminders → Alert Background). Routines and Pomodoro follow this setting.') }))));
+            h('p', { class: 'hint', text: T('Each task can also choose for itself in its form (Reminders → Alert Background).') }))),
+          row(T('Routine Alerts'), choices(T('Routine Alerts'), 'routines', [['default', T('Follow This Setting')], ['color', T('Solid Color')]])),
+          row(T('Pomodoro Alerts'), choices(T('Pomodoro Alerts'), 'pomodoro', [['default', T('Follow This Setting')], ['color', T('Solid Color')]])));
       }
       // Keep the keyboard where it was (the controls are drawn again after each change).
       const active = document.activeElement;

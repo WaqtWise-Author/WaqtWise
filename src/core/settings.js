@@ -211,6 +211,7 @@ const DEFAULT_SETTINGS = {
   alertSound: 'bell', // played when a full-screen alert appears
   alertSoundVolume: 70, // 0-100
   alertSoundRepeat: false, // keep repeating until a button is pressed
+  alertSoundStopMinutes: 0, // 1-10: the sound stops by itself after that many minutes (the alert stays); 0 = until a button is pressed
   // Sound when a task is marked done
   doneSound: 'chime',
   doneSoundVolume: 60, // 0-100
@@ -264,6 +265,9 @@ function validateSettings(settings) {
   }
   if ('doneSound' in s && !DONE_SOUNDS.includes(s.doneSound)) errors.push(t('Choose one of the sounds in the list'));
   if ('alertSound' in s && !ALERT_SOUNDS.includes(s.alertSound)) errors.push(t('Choose one of the sounds in the list'));
+  if ('alertSoundStopMinutes' in s && !(Number.isInteger(s.alertSoundStopMinutes) && s.alertSoundStopMinutes >= 0 && s.alertSoundStopMinutes <= 10)) {
+    errors.push(t('The sound can stop after 1 to 10 minutes, or keep going until a button is pressed'));
+  }
   for (const key of ['doneSoundVolume', 'alertSoundVolume']) {
     if (key in s && !isWholeNumber(s[key], 0, 100)) errors.push(t('Volume must be a whole number from 0 to 100'));
   }

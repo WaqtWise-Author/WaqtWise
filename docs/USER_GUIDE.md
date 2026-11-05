@@ -200,6 +200,7 @@ the start time the whole screen (all screens, if you have several) shows the tas
 - **Got It** (always there), **Snooze**, **Open Task**, **Mark as Done**. The small arrow beside **Snooze** opens more choices: 5, 15 or 30 minutes, 1 hour, or **After the Next Prayer**.
 - **One note at random:** write several notes separated by `;` (for example `Drink water; Stretch; Breathe`)
   and tick *Show One Note at Random*. Each alert shows one note, and all are used before any repeats.
+- **The sound**: Settings → Sounds → Full-Screen Alert. With **Repeat the Sound** on, **Stop the Sound After** can stop it by itself after 1 to 10 minutes (or *Never*, until a button is pressed); only the sound stops, the alert stays on the screen.
 - A few presses right after it appears are ignored on purpose, so typing cannot close it by accident.
 - If it is more than 15 seconds late (for example after sleep), the task goes into the missed list instead.
 - Look, colours, fonts, size and buttons: Settings → Full-screen reminder (with ready-made looks and a
@@ -209,11 +210,11 @@ the start time the whole screen (all screens, if you have several) shows the tas
   with your data, so a picture stays even if you move or delete the file. Then choose:
   - **Which Picture**: **One Fixed Picture** (click the one to show) or **Random Each Time** (never the same twice in a row).
   - **Background Blur** (0 to 100%) and **Darken** (0 to 80%), in steps of 10, so the text stays easy to read.
-  - **Text Panel**: **None** (the text sits on the picture) or **Glass** (a frosted panel, with its own **Glass Blur**).
+  - **Text Panel**: **None** (the text sits on the picture) or **Glass** (a frosted panel, with its own **Glass Blur** and **Glass Darken**, 0 to 80%).
   - **Text Position**: **Center** or **Bottom** (with a dark fade at the bottom).
   - **Use Pictures For**: **Every Reminder**, or **Only Tasks I Choose**. Each task can also choose for itself in its
     form, under the full-screen switch: **Alert Background** = *As in Settings*, *Picture* or *Solid Color*.
-    Routines and Pomodoro follow the setting. The small preview and **Preview Full Screen** show the result.
+    **Routine Alerts** and **Pomodoro Alerts**: **Follow This Setting** or always **Solid Color**. The small preview and **Preview Full Screen** show the result.
   - Pictures are not part of **Export Data** (the file would get very big): after importing on another computer, add
     them again; until then the solid color is used.
 
@@ -303,7 +304,7 @@ More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 - Closing or minimizing the window **keeps WaqtWise running in the tray** (small icons near the clock; you may
   need the small arrow). This is what lets reminders appear when the window is closed. The app tells you the
   first time.
-- Click the tray icon to open the window. Right-click for the menu: the **next task** that has not started yet (a line of information), **Pause Reminders**, **Pause Routines**, **Pause All**, **Open / Show**, **Hide / Minimize** and **Exit**. The two pauses are separate: **Pause Reminders** silences the notifications and full-screen alerts of the tasks in the zones, and **Pause Routines** silences the routines. Each one lasts **30 minutes, 1 hour, 2 hours, until the next prayer, or until the next Fajr**. Whatever falls inside a pause is skipped (it does not come back later and is not added to the missed reminders). The tray icon's tooltip and the menu show when each pause ends; choose **Resume Reminders** or **Resume Routines** to end it earlier. **Pause All** pauses both together with the same choices (it becomes **Resume All** while both are paused). The pause is not saved: closing the app ends it.
+- Click the tray icon to open the window. Right-click for the menu: the **next prayer** and the time until it (a line of information, such as *Next Prayer: Fajr in 5h 12m*), **Pause Reminders**, **Pause Routines**, **Pause All**, **Open / Show**, **Hide / Minimize** and **Exit**. The two pauses are separate: **Pause Reminders** silences the notifications and full-screen alerts of the tasks in the zones, and **Pause Routines** silences the routines. Each one lasts **30 minutes, 1 hour, 2 hours, until the next prayer, or until the next Fajr** (from Isha until Fajr the next prayer *is* Fajr, so only **Until the Next Fajr** is offered). Whatever falls inside a pause is skipped (it does not come back later and is not added to the missed reminders). The tray icon's tooltip and the menu show when each pause ends; choose **Resume Reminders** or **Resume Routines** to end it earlier. **Pause All** pauses both together with the same choices (it becomes **Resume All** while both are paused). The pause is not saved: closing the app ends it.
   **Exit** stops the app, and reminders stop too.
 - Settings → Application → **Start with Windows** starts it when you log in, quietly in the tray.
 - The window always opens maximized. A change of your computer's time zone is noticed within about a minute.

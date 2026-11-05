@@ -20,7 +20,7 @@ class AlertBackgroundMethods {
   alertBackgroundLook(imageId) {
     const bg = this.settings.alertBackground;
     if (!imageId || bg.mode !== 'images' || !bg.images.some((x) => x.id === imageId)) return null;
-    return { imageId, blur: bg.blur, dim: bg.dim, panel: bg.panel, glassBlur: bg.glassBlur, position: bg.position };
+    return { imageId, blur: bg.blur, dim: bg.dim, panel: bg.panel, glassBlur: bg.glassBlur, glassDim: bg.glassDim, position: bg.position };
   }
 
   // Pictures copied by the main process: [{ id, name }]. Returns { added, full } (full: some did not fit).

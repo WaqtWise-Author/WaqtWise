@@ -19,25 +19,12 @@ function firstLine(text) {
 class DayViewMethods {
   // ---- for the tray menu (main process only) ------------------------------------------------------------------------------
 
-  // The next task that has not started yet: { title, when } with "when" such as "4:30 PM" or "Tomorrow 4:30 PM"; null if none soon.
-  getNextTask() {
-    const nowDate = this.now();
-    const nowMs = nowDate.getTime();
-    const today = dateKey(nowDate);
-    const tomorrow = addDaysToKey(today, 1);
-    const provider = this.provider();
-    const options = this.recurrenceOptions();
-    let best = null;
-    for (const task of this.data.tasks) {
-      for (const o of getOccurrences(provider, task, addDaysToKey(today, -1), addDaysToKey(today, 14), { ...options, tasks: this.data.tasks })) {
-        if (o.done || o.start.getTime() <= nowMs) continue;
-        if (!best || o.start < best.start) best = o;
-      }
-    }
-    if (!best) return null;
-    const key = dateKey(best.start);
-    const day = key === today ? '' : `${key === tomorrow ? t('Tomorrow') : formatKeyShort(key)} `;
-    return { title: best.title, when: `${day}${formatTime12(best.start)}` };
+  // The next prayer and how long until it: { name, ms, inLabel } (inLabel such as "5h 12m"; never less than 1 minute).
+  getNextPrayer() {
+    const nowMs = this.now().getTime();
+    const next = this.nextPrayerAfter(nowMs);
+    if (!next) return null;
+    return { name: next.name, ms: next.ms, inLabel: formatDuration(Math.max(1, Math.ceil((next.ms - nowMs) / 60000))) };
   }
 
   // The next Fajr after now (the end of the current Planning Day), in milliseconds.

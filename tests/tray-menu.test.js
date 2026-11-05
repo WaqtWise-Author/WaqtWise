@@ -30,17 +30,11 @@ test('the tray menu template: information lines, submenus and separators', () =>
   ]);
 });
 
-test('the next task: the nearest one that has not started, with the day when it is not today', () => {
-  const s = service(); // 10:00 on a Sunday
-  assert.equal(s.getNextTask(), null);
-  add(s, 'Past', DAY, '09:00');
-  add(s, 'Tomorrow task', '2026-10-05', '08:15');
-  assert.deepEqual(s.getNextTask(), { title: 'Tomorrow task', when: 'Tomorrow 8:15 AM' });
-  const { taskId } = add(s, 'Later today', DAY, '16:30');
-  add(s, 'Evening', DAY, '19:00');
-  assert.deepEqual(s.getNextTask(), { title: 'Later today', when: '4:30 PM' });
-  s.data.tasks = s.data.tasks.map((x) => (x.id === taskId ? setCompletion(x, DAY, true) : x));
-  assert.deepEqual(s.getNextTask(), { title: 'Evening', when: '7:00 PM' }, 'a task that is done is skipped');
+test('the next prayer: its name and the time until it (at least 1 minute), Fajr of the next day after Isha', () => {
+  assert.deepEqual(service(at(DAY, '10:00')).getNextPrayer(), { name: 'Dhuhr', ms: at(DAY, '11:48').getTime(), inLabel: '1h 48m' });
+  assert.equal(service(at(DAY, '21:00')).getNextPrayer().name, 'Fajr');
+  assert.equal(service(at(DAY, '21:00')).getNextPrayer().inLabel, '8h 5m');
+  assert.equal(service(new Date(at(DAY, '11:47').getTime() + 30000)).getNextPrayer().inLabel, '1m', 'rounded up, never 0m');
 });
 
 test('the end of the Planning Day is the next Fajr', () => {

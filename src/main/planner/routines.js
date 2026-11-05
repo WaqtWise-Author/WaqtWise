@@ -228,7 +228,7 @@ class RoutineMethods {
         categoryColor: category ? category.color : '',
         priority: '',
         snoozed: Boolean(i.snoozed),
-        backgroundId: this.pickAlertImageFor('default'),
+        backgroundId: this.pickAlertImageFor(this.settings.alertBackground.routines === 'color' ? 'color' : 'default'),
       };
     });
   }
