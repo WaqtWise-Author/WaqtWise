@@ -354,6 +354,23 @@ async function setTime(page, hour, minute, ampm) {
     assert.equal(service.data.tasks.find((t) => t.title === 'Alarm task').reminders.fullScreen, true);
   });
 
+  await step('task form: with the full-screen alert on, the task chooses its alert background', async () => {
+    await page.click('#add-btn');
+    await page.fill('#f-title', 'Picture task');
+    assert.equal(await page.$('[data-alert-bg]'), null, 'only shown when the full-screen alert is on');
+    await page.check('#f-fullscreen');
+    await page.waitForSelector('[data-alert-bg="default"].on');
+    assert.match(await page.textContent('.dialog'), /Pictures are not switched on in Settings/);
+    await page.click('[data-alert-bg="image"]');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.alertBg), 'image');
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForSelector('.dialog', { state: 'detached' });
+    assert.equal(service.data.tasks.find((t) => t.title === 'Picture task').reminders.background, 'image');
+    const t = service.data.tasks.find((x) => x.title === 'Picture task');
+    service.deleteTask({ taskId: t.id, scope: 'all' });
+    await page.evaluate(() => window.WW.afterChange());
+  });
+
   console.log('Tasks relative to tasks');
   await step('"Relative to Task": pick a task, minutes, before/after, start/end - the start time updates live', async () => {
     await page.click('#add-btn');
@@ -1105,6 +1122,52 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForTimeout(150);
     assert.ok((await page.evaluate(() => window.__exports)).includes('preview-alert'));
   });
+  await step('full-screen reminder background: pictures (add, choose, remove), blur, darken, glass, position, and the preview', async () => {
+    await page.click('[data-bg="mode-images"]');
+    await page.waitForSelector('#alert-bg-empty');
+    assert.equal(service.getSettings().alertBackground.mode, 'images');
+    await page.click('#alert-bg-add');
+    await page.waitForFunction(() => document.querySelectorAll('.bg-item').length === 2);
+    const pics = service.getSettings().alertBackground.images;
+    assert.deepEqual(pics.map((x) => x.name), ['Sunset', 'Hills']);
+    assert.equal(service.getSettings().alertBackground.fixedId, pics[0].id, 'the first picture is the fixed one');
+    assert.match(await page.textContent('.bg-item:first-child'), /Shown/);
+    await page.waitForSelector('.alert-preview .alert-picture');
+    assert.equal(await page.isVisible('.alert-preview .alert-glass'), true, 'glass panel by default');
+    // Choose the second picture
+    await page.click(`.bg-item[data-id="${pics[1].id}"] .bg-thumb`);
+    await page.waitForFunction((id) => document.querySelector(`.bg-item[data-id="${id}"] .bg-shown`), pics[1].id);
+    assert.equal(service.getSettings().alertBackground.fixedId, pics[1].id);
+    // Sliders: blur and darken in steps of 10
+    const setSlider = (id, value) => page.$eval(id, (el, v) => { el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }, value);
+    await setSlider('#alert-bg-blur', 70);
+    await setSlider('#alert-bg-dim', 50);
+    await page.waitForTimeout(150);
+    assert.deepEqual([service.getSettings().alertBackground.blur, service.getSettings().alertBackground.dim], [70, 50]);
+    assert.equal(await page.$eval('.alert-preview .alert-shade', (el) => el.style.getPropertyValue('--a-dim')), '0.5');
+    await shot(page, 'settings-alert-pictures');
+    // No panel, text at the bottom
+    await page.click('[data-bg="panel-none"]');
+    await page.waitForFunction(() => !document.querySelector('#alert-bg-glassBlur'));
+    assert.equal(await page.$('.alert-preview .alert-glass'), null);
+    await page.click('[data-bg="position-bottom"]');
+    await page.waitForSelector('.alert-preview .alert-stage.at-bottom');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.bg), 'position-bottom', 'the keyboard stays on the button');
+    await page.click('[data-bg="pick-random"]');
+    assert.equal(await page.isDisabled('.bg-thumb >> nth=0'), true, 'no fixed picture to choose when random');
+    await page.selectOption('#alert-bg-usefor', 'chosen');
+    await page.waitForTimeout(150);
+    const bg = service.getSettings().alertBackground;
+    assert.deepEqual([bg.panel, bg.position, bg.pick, bg.useFor], ['none', 'bottom', 'random', 'chosen']);
+    // Remove a picture
+    await page.click(`.bg-item[data-id="${pics[0].id}"] .bg-remove`);
+    await page.waitForFunction(() => document.querySelectorAll('.bg-item').length === 1);
+    assert.deepEqual(service.getSettings().alertBackground.images.map((x) => x.name), ['Hills']);
+    // Back to the solid color: the preview has no picture
+    await page.click('[data-bg="mode-color"]');
+    await page.waitForFunction(() => !document.querySelector('.alert-preview .alert-picture'));
+    service.saveSettings({ alertBackground: { mode: 'images', panel: 'glass', position: 'center', pick: 'fixed', useFor: 'chosen' } });
+  });
   await step('back to the Daily View keeps working', async () => {
     await page.click('.back-link');
     await page.waitForSelector('.zone');
@@ -1560,6 +1623,29 @@ async function setTime(page, hour, minute, ampm) {
     await shot(p, 'alert-pomodoro');
     await p.click('button[data-action="next"]');
     assert.deepEqual(await p.evaluate(() => window.__actions.slice(-1)[0]), ['next', 'pomodoro:p1:1']);
+    await alert.browser.close();
+  });
+
+  await step('full-screen alert with a picture: blurred, darkened, glass panel or not, centered or at the bottom', async () => {
+    const alert = await openAlertPage({ playwright, executablePath });
+    const p = alert.page;
+    const base = require('../src/core').DEFAULT_ALERT_APPEARANCE;
+    const item = { id: 'a1', taskId: 't1', dateKey: '2026-10-04', title: 'Study Session', notes: 'Chapter 4 review', startLabel: '4:30 PM', endLabel: '5:30 PM', durationLabel: '1h', zoneName: 'Asr → Maghrib', zoneIndex: 3, categoryName: '', categoryColor: '', priority: 'Medium', snoozed: false };
+    const url = await p.evaluate(() => `data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#1e3a8a'/><stop offset='0.6' stop-color='#c2410c'/><stop offset='1' stop-color='#fbbf24'/></linearGradient></defs><rect width='1600' height='900' fill='url(#g)'/><circle cx='1080' cy='560' r='100' fill='#fde68a'/><path d='M0 600 L200 430 L370 540 L600 360 L800 520 L1000 400 L1230 530 L1430 410 L1600 500 L1600 900 L0 900Z' fill='#3b1d4a'/><path d='M0 680 L260 550 L470 640 L740 520 L990 630 L1260 560 L1600 640 L1600 900 L0 900Z' fill='#1f1235'/></svg>")}`);
+    const draw = (bg) => p.evaluate(([st]) => window.__render(st), [{ items: [item], appearance: base, snoozeMinutes: 10, guardMs: 0, background: bg }]);
+    await draw({ url, blur: 30, dim: 30, panel: 'glass', glassBlur: 60, position: 'center' });
+    await p.waitForSelector('.alert-picture');
+    assert.equal(await p.isVisible('.alert-glass .alert-name'), true, 'the text sits on the glass panel');
+    assert.match(await p.$eval('.alert-picture', (el) => getComputedStyle(el).filter), /blur\(/);
+    await shot(p, 'alert-picture-glass');
+    await draw({ url, blur: 0, dim: 20, panel: 'none', glassBlur: 60, position: 'bottom' });
+    await p.waitForSelector('.alert-stage.at-bottom');
+    assert.equal(await p.$('.alert-glass'), null);
+    assert.equal(await p.$eval('.alert-shade', (el) => el.classList.contains('bottom')), true);
+    await shot(p, 'alert-picture-bottom');
+    await draw(null);
+    await p.waitForFunction(() => !document.querySelector('.alert-picture'));
+    assert.notEqual(await p.$eval('.alert-stage', (el) => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', 'the solid color is back');
     await alert.browser.close();
   });
 

@@ -25,7 +25,7 @@ class TaskFormMethods {
       date: key,
       recurrence: null,
       // empty list = the default reminder time from Settings; the full-screen switch follows the Settings default
-      reminders: { enabled: true, offsets: [], fullScreen: Boolean(this.settings.fullScreenDefaultForNewTasks), randomNotes: false },
+      reminders: { enabled: true, offsets: [], fullScreen: Boolean(this.settings.fullScreenDefaultForNewTasks), randomNotes: false, background: 'default' },
       priority: 'Medium',
       categoryId: null,
       notes: '',
@@ -132,6 +132,8 @@ class TaskFormMethods {
         offsets: form.reminders && Array.isArray(form.reminders.offsets) ? form.reminders.offsets : [],
         fullScreen: Boolean(form.reminders && form.reminders.fullScreen),
         randomNotes: Boolean(form.reminders && form.reminders.randomNotes),
+        // the background of the full-screen alert: as in Settings, a picture, or the solid color (1.4.0)
+        background: form.reminders && ['image', 'color'].includes(form.reminders.background) ? form.reminders.background : 'default',
       },
     };
     return { fields, recurrence: form.recurrence ? normalizeRule(form.recurrence) : null, date: form.date };

@@ -232,6 +232,7 @@ const MIXINS = [
   require('./planner/free-tasks').FreeTaskMethods,
   require('./planner/routines').RoutineMethods,
   require('./planner/pomodoros').PomodoroMethods,
+  require('./planner/alert-background').AlertBackgroundMethods,
   require('./planner/undo').UndoMethods,
 ];
 for (const mixin of MIXINS) {

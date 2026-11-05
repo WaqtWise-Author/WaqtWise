@@ -8,6 +8,7 @@ const { CITIES, DEFAULT_CITY, validateCustomCity } = require('./cities');
 const { isCountryCode } = require('./world');
 const { PRAYERS } = require('./zones');
 const { DEFAULT_REMINDER_SETTINGS } = require('./reminders');
+const { DEFAULT_ALERT_BACKGROUND, validateAlertBackground, sanitizeAlertBackground } = require('./alert-background');
 
 const METHOD_KEYS = [
   'egyptian',
@@ -214,6 +215,7 @@ const DEFAULT_SETTINGS = {
   doneSound: 'chime',
   doneSoundVolume: 60, // 0-100
   alertAppearance: DEFAULT_ALERT_APPEARANCE,
+  alertBackground: DEFAULT_ALERT_BACKGROUND, // a solid color or pictures (1.4.0), see alert-background.js
   // Statistics screen: the charts that are shown, in order (see STATS_CHARTS)
   statsCharts: STATS_CHART_IDS.slice(),
   // A done task counts as late when it was ticked this many minutes after its start time (default 1 hour)
@@ -278,6 +280,7 @@ function validateSettings(settings) {
   if ('taskInfo' in s) errors.push(...validateTaskInfo(s.taskInfo));
   if ('alertScreens' in s && !ALERT_SCREENS.includes(s.alertScreens)) errors.push(t('Choose all screens or the main screen'));
   if ('alertAppearance' in s) errors.push(...validateAppearance(s.alertAppearance));
+  if ('alertBackground' in s) errors.push(...validateAlertBackground(s.alertBackground));
   for (const key of ['notificationsEnabled', 'soundEnabled', 'zoneStartNotifications', 'startWithWindows', 'showBackgroundMessage', 'backgroundMessageShown', 'welcomeShown', 'fullScreenAlerts', 'fullScreenDefaultForNewTasks', 'alertSoundRepeat', 'useCustomCity', 'collapseZones']) {
     if (key in s && typeof s[key] !== 'boolean') errors.push(`${key} must be on or off`);
   }
@@ -295,6 +298,7 @@ function mergeSettings(current, patch) {
   merged.taskInfo = { ...current.taskInfo, ...(patch.taskInfo || {}) };
   if (patch.workingDays) merged.workingDays = Array.from(new Set(patch.workingDays)).sort((a, b) => a - b);
   if (patch.alertAppearance) merged.alertAppearance = mergeAppearance(current.alertAppearance, patch.alertAppearance);
+  if (patch.alertBackground) merged.alertBackground = sanitizeAlertBackground({ ...current.alertBackground, ...patch.alertBackground });
   return merged;
 }
 
@@ -306,6 +310,10 @@ function sanitizeSettings(raw) {
     if (!(key in raw)) continue;
     if (key === 'alertAppearance') {
       clean.alertAppearance = sanitizeAppearance(raw.alertAppearance);
+      continue;
+    }
+    if (key === 'alertBackground') {
+      clean.alertBackground = sanitizeAlertBackground(raw.alertBackground);
       continue;
     }
     const candidate = key === 'adjustments' ? { adjustments: { ...clean.adjustments, ...raw.adjustments } }

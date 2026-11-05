@@ -33,6 +33,7 @@
       appearance: state.appearance,
       snoozeMinutes: state.snoozeMinutes,
       guardActive,
+      background: state.background || null,
     }, {
       dismiss: () => { stopSound(); window.alertApi.action('dismiss', item.id); },
       snooze: (option) => { stopSound(); window.alertApi.action('snooze', item.id, option); },

@@ -37,6 +37,8 @@
 }
 .alert-info { display: flex; flex-wrap: wrap; gap: 1.4cqmin 3cqmin; justify-content: var(--a-items-justify, center); font-size: 3cqmin; }
 .alert-info .chip { display: inline-flex; align-items: center; gap: 1cqmin; opacity: 0.95; }
+/* In the Settings preview the app's own .chip style must not leak in (it made the details unreadable). */
+.alert-stage .alert-info .chip { background: none; border: 0; padding: 0; border-radius: 0; color: inherit; font-size: inherit; min-height: 0; }
 .alert-info .chip b { font-weight: 700; }
 .alert-info .dot { width: 2cqmin; height: 2cqmin; border-radius: 50%; display: inline-block; }
 .alert-actions { display: flex; flex-wrap: wrap; gap: 2cqmin; justify-content: var(--a-items-justify, center); margin-top: 2cqh; }
@@ -54,6 +56,23 @@
 .alert-actions.snooze-choices button { font-size: 2.3cqmin; padding: 1.2cqmin 3cqmin; }
 .alert-more { position: absolute; bottom: 4cqh; left: 0; right: 0; font-size: 2.4cqmin; opacity: 0.85; text-align: center; }
 .alert-guard { position: absolute; top: 3cqh; left: 0; right: 0; text-align: center; font-size: 2cqmin; opacity: 0.6; }
+
+/* A picture behind the alert (1.4.0): blurred and darkened as chosen; the text either on it or on a glass panel. */
+.alert-frame.with-picture { position: relative; overflow: hidden; }
+.alert-picture { position: absolute; inset: calc(var(--a-blur, 0px) * -2); background-size: cover; background-position: center; filter: blur(var(--a-blur, 0px)); }
+.alert-shade { position: absolute; inset: 0; background: rgb(0 0 0 / var(--a-dim, 0.3)); }
+.alert-shade.bottom { background: linear-gradient(to top, rgb(0 0 0 / calc(var(--a-dim, 0.3) + 0.45)) 0%, rgb(0 0 0 / var(--a-dim, 0.3)) 55%, rgb(0 0 0 / calc(var(--a-dim, 0.3) * 0.4)) 100%); }
+.alert-stage.on-picture { background: transparent; }
+.alert-stage.on-picture > :not(.alert-glass), .alert-stage.on-picture .alert-name { text-shadow: 0 0.2cqmin 1.2cqmin rgb(0 0 0 / 0.55); }
+.alert-stage.on-picture .alert-actions button { text-shadow: none; background: color-mix(in srgb, var(--a-bg) 35%, transparent); }
+.alert-stage.on-picture .alert-actions button.primary { background: var(--a-accent); }
+.alert-stage.at-bottom { justify-content: flex-end; padding-bottom: 8cqh; }
+.alert-glass {
+  display: flex; flex-direction: column; align-items: var(--a-items, center); gap: 3cqh; max-width: min(100%, 1500px);
+  padding: 4cqmin 5cqmin; border-radius: 3cqmin; border: 0.15cqmin solid color-mix(in srgb, var(--a-text) 28%, transparent);
+  background: color-mix(in srgb, var(--a-bg) 40%, transparent); box-shadow: 0 2cqmin 6cqmin rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(var(--a-glass-blur, 24px)) saturate(140%);
+}
 
 /* The preview in Settings: the real thing, drawn 1280 x 720 and scaled down to fit */
 .alert-preview { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; border: 1px solid var(--border); }

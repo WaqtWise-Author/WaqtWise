@@ -118,6 +118,7 @@ function cleanReminders(raw) {
   const out = { enabled: raw.enabled === true, offsets: Array.isArray(raw.offsets) ? Array.from(new Set(raw.offsets)).sort((a, b) => a - b) : raw.offsets };
   if ('fullScreen' in raw) out.fullScreen = raw.fullScreen;
   if ('randomNotes' in raw) out.randomNotes = raw.randomNotes;
+  if ('background' in raw) out.background = raw.background;
   return out;
 }
 

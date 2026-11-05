@@ -204,6 +204,18 @@ the start time the whole screen (all screens, if you have several) shows the tas
 - If it is more than 15 seconds late (for example after sleep), the task goes into the missed list instead.
 - Look, colours, fonts, size and buttons: Settings → Full-screen reminder (with ready-made looks and a
   **Preview Full Screen** button).
+- **A picture behind it** (Settings → Full-screen reminder → **Background**): choose **Pictures** instead of
+  **Solid Color**, then **Add Pictures** from your computer (JPG, PNG or WebP, up to 20). A copy, made smaller, is kept
+  with your data, so a picture stays even if you move or delete the file. Then choose:
+  - **Which Picture**: **One Fixed Picture** (click the one to show) or **Random Each Time** (never the same twice in a row).
+  - **Background Blur** (0 to 100%) and **Darken** (0 to 80%), in steps of 10, so the text stays easy to read.
+  - **Text Panel**: **None** (the text sits on the picture) or **Glass** (a frosted panel, with its own **Glass Blur**).
+  - **Text Position**: **Center** or **Bottom** (with a dark fade at the bottom).
+  - **Use Pictures For**: **Every Reminder**, or **Only Tasks I Choose**. Each task can also choose for itself in its
+    form, under the full-screen switch: **Alert Background** = *As in Settings*, *Picture* or *Solid Color*.
+    Routines and Pomodoro follow the setting. The small preview and **Preview Full Screen** show the result.
+  - Pictures are not part of **Export Data** (the file would get very big): after importing on another computer, add
+    them again; until then the solid color is used.
 
 ![Full-screen alert settings](images/settings-fullscreen.webp)
 

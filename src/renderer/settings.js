@@ -189,7 +189,7 @@
     function drawPreview() {
       const { frame } = WW.AlertView.render(preview, {
         item: sampleItem(), remaining: 0, appearance: WW.state.settings.alertAppearance,
-        snoozeMinutes: WW.state.settings.snoozeMinutes, guardActive: false,
+        snoozeMinutes: WW.state.settings.snoozeMinutes, guardActive: false, background: previewBackground(),
       }, null);
       const fit = () => { frame.style.transform = `scale(${preview.clientWidth / 1280})`; };
       fit();
@@ -237,6 +237,138 @@
       },
     })));
 
+    // ---- the picture behind the alert (1.4.0) ----
+    const bgBox = h('div', { class: 'settings-grid', id: 'alert-bg-settings' });
+    const images = () => WW.state.alertImages || [];
+    const bgValue = () => WW.state.settings.alertBackground;
+
+    // The picture the small preview shows: the fixed one (or the first), with the chosen blur, darkening and panel.
+    function previewBackground() {
+      const bg = bgValue();
+      const list = images();
+      if (bg.mode !== 'images' || list.length === 0) return null;
+      const shown = list.find((x) => x.id === bg.fixedId) || list[0];
+      return shown.thumb ? { url: shown.thumb, blur: bg.blur, dim: bg.dim, panel: bg.panel, glassBlur: bg.glassBlur, position: bg.position } : null;
+    }
+
+    // `commit` false = only update the preview while a slider is being dragged.
+    async function saveBackground(patch, commit = true) {
+      WW.state.settings = { ...WW.state.settings, alertBackground: { ...bgValue(), ...patch } };
+      drawPreview();
+      if (!commit) return;
+      try {
+        WW.state.settings = await WW.call('saveSettings', { alertBackground: patch });
+      } catch (error) {
+        WW.toast(error.message, 'error');
+        WW.state.settings = await WW.call('getSettings');
+      }
+      drawBackground();
+      drawPreview();
+    }
+
+    const choices = (label, key, options) => h('div', { class: 'segmented', role: 'group', 'aria-label': label },
+      options.map(([v, text]) => h('button', {
+        type: 'button', class: bgValue()[key] === v ? 'on' : '', text, 'aria-pressed': String(bgValue()[key] === v), 'data-bg': `${key}-${v}`,
+        onclick: () => saveBackground({ [key]: v }),
+      })));
+    const percent = (key, max, label) => {
+      const readout = h('span', { class: 'hint', text: T('{n}%', { n: bgValue()[key] }) });
+      return h('span', { class: 'row tight' },
+        h('input', {
+          type: 'range', min: '0', max: String(max), step: '10', value: String(bgValue()[key]), 'aria-label': label, id: `alert-bg-${key}`, style: { width: '220px' },
+          oninput: (e) => { readout.textContent = T('{n}%', { n: e.target.value }); saveBackground({ [key]: Number(e.target.value) }, false); },
+          onchange: (e) => saveBackground({ [key]: Number(e.target.value) }),
+        }), readout);
+    };
+
+    async function addPictures() {
+      try {
+        const result = await window.api.addAlertImages();
+        if (!result || result.canceled) return;
+        WW.state.alertImages = result.images;
+        WW.state.settings = await WW.call('getSettings');
+        if (result.skipped) WW.toast(TP(result.skipped, '{n} file could not be used as a picture', '{n} files could not be used as pictures'), 'error');
+        else WW.toast(TP(result.added, '{n} picture added', '{n} pictures added'));
+      } catch (error) {
+        WW.toast(error.message, 'error');
+      }
+      drawBackground();
+      drawPreview();
+    }
+
+    async function removePicture(item) {
+      try {
+        WW.state.alertImages = await window.api.removeAlertImage(item.id);
+        WW.state.settings = await WW.call('getSettings');
+      } catch (error) {
+        WW.toast(error.message, 'error');
+      }
+      drawBackground();
+      drawPreview();
+      const add = document.getElementById('alert-bg-add');
+      if (add) add.focus();
+    }
+
+    function pictureGrid() {
+      const bg = bgValue();
+      const shownId = (images().find((x) => x.id === bg.fixedId) || images()[0] || {}).id;
+      if (images().length === 0) return h('p', { class: 'hint', id: 'alert-bg-empty', text: T('No pictures yet. Add one or more from your computer.') });
+      return h('div', { class: 'bg-grid' }, images().map((x) => {
+        const fixed = bg.pick === 'fixed' && x.id === shownId;
+        const thumb = h('button', {
+          type: 'button', class: `bg-thumb ${fixed ? 'on' : ''}`, 'aria-pressed': String(fixed), disabled: bg.pick !== 'fixed',
+          'aria-label': T('Use "{name}"', { name: x.name }), title: x.name,
+          onclick: () => saveBackground({ fixedId: x.id }),
+        });
+        if (x.thumb) thumb.style.backgroundImage = `url("${x.thumb}")`;
+        return h('div', { class: 'bg-item', 'data-id': x.id },
+          thumb,
+          fixed ? h('span', { class: 'bg-shown', text: T('Shown') }) : null,
+          h('button', { type: 'button', class: 'bg-remove', text: '✕', 'aria-label': T('Remove "{name}"', { name: x.name }), onclick: () => removePicture(x) }));
+      }));
+    }
+
+    function drawBackground() {
+      const bg = bgValue();
+      const rows = [
+        subheading(T('Background')),
+        row(T('Behind the Text'), h('div', {},
+          choices(T('Behind the Text'), 'mode', [['color', T('Solid Color')], ['images', T('Pictures')]]),
+          h('p', { class: 'hint', text: bg.mode === 'color' ? T('The background color above is used.') : T('A picture covers the screen behind the text.') }))),
+      ];
+      if (bg.mode === 'images') {
+        rows.push(
+          row(T('Your Pictures'), h('div', {},
+            pictureGrid(),
+            h('div', { class: 'row', style: { marginTop: '10px' } },
+              h('button', { type: 'button', class: 'btn', id: 'alert-bg-add', text: T('Add Pictures'), disabled: images().length >= 20, onclick: WW.oneAtATime(addPictures) })),
+            h('p', { class: 'hint', text: T('JPG, PNG or WebP, up to 20 pictures. A copy is kept with your data, so a picture stays even if you move the file.') }))),
+          row(T('Which Picture'), h('div', {},
+            choices(T('Which Picture'), 'pick', [['fixed', T('One Fixed Picture')], ['random', T('Random Each Time')]]),
+            h('p', { class: 'hint', text: bg.pick === 'fixed' ? T('Click a picture to choose the one that is shown.') : T('A different picture each time (never the same one twice in a row).') }))),
+          row(T('Background Blur'), percent('blur', 100, T('Background Blur'))),
+          row(T('Darken'), h('div', {}, percent('dim', 80, T('Darken')), h('p', { class: 'hint', text: T('Makes the picture darker so the text is easy to read.') }))),
+          row(T('Text Panel'), h('div', {},
+            choices(T('Text Panel'), 'panel', [['none', T('None')], ['glass', T('Glass')]]),
+            bg.panel === 'glass' ? h('div', { style: { marginTop: '10px' } }, h('div', { class: 'hint', text: T('Glass Blur') }), percent('glassBlur', 100, T('Glass Blur'))) : null)),
+          row(T('Text Position'), choices(T('Text Position'), 'position', [['center', T('Center')], ['bottom', T('Bottom')]])),
+          row(T('Use Pictures For'), h('div', {},
+            h('select', { class: 'sel-auto', id: 'alert-bg-usefor', 'aria-label': T('Use Pictures For'), onchange: (e) => saveBackground({ useFor: e.target.value }) },
+              h('option', { value: 'all', text: T('Every Reminder'), selected: bg.useFor === 'all' }),
+              h('option', { value: 'chosen', text: T('Only Tasks I Choose'), selected: bg.useFor === 'chosen' })),
+            h('p', { class: 'hint', text: T('Each task can also choose for itself in its form (Reminders → Alert Background). Routines and Pomodoro follow this setting.') }))));
+      }
+      // Keep the keyboard where it was (the controls are drawn again after each change).
+      const active = document.activeElement;
+      const again = active && bgBox.contains(active) ? (active.id ? `#${active.id}` : active.dataset.bg ? `[data-bg="${active.dataset.bg}"]` : null) : null;
+      clear(bgBox).append(...rows);
+      if (again) { const el = bgBox.querySelector(again); if (el) el.focus(); }
+    }
+    drawBackground();
+    if (window.api.getAlertImages) {
+      window.api.getAlertImages().then((list) => { WW.state.alertImages = list || []; drawBackground(); drawPreview(); }).catch(() => {});
+    }
+
     const box = section(T('Full-Screen Reminder'),
       h('p', { class: 'dialog-message', text: T('At the exact start time of a task that has the full-screen alert switched on, a full-screen reminder covers the screen so it cannot be missed. It stays until you click a button.') }),
       h('div', { class: 'settings-grid' },
@@ -272,6 +404,7 @@
           h('div', { class: 'row' },
             check(['buttons', 'snooze'], T('Snooze')), check(['buttons', 'open'], T('Open Task')), check(['buttons', 'done'], T('Mark as Done'))),
           h('p', { class: 'hint', text: T('"Got It" is always shown, so the reminder can always be closed.') })))),
+      bgBox,
       h('div', { style: { marginTop: '16px' } },
         preview,
         h('div', { class: 'row', style: { marginTop: '10px' } },

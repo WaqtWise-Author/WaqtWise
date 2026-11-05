@@ -147,7 +147,7 @@ test('Service: alert payload, config, presets and the sample', () => {
   assert.deepEqual(items[0], {
     id: 'x', taskId, dateKey: DAY, title: 'Study', notes: 'Chapter 4', startMs: at(DAY, '12:00').getTime(), startLabel: '12:00 PM', endLabel: '12:45 PM',
     durationLabel: '45m', zoneName: 'Dhuhr → Asr', zoneIndex: 2, categoryName: 'Study', categoryColor: '#8b5cf6',
-    priority: 'High', snoozed: false,
+    priority: 'High', snoozed: false, backgroundId: '', // the solid color (no pictures chosen)
   });
 
   const config = service.getAlertConfig();

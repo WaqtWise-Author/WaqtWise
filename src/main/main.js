@@ -30,6 +30,8 @@ const { createElectronNotifier, findActionUrlInArgv, APP_ID, PROTOCOL } = requir
 const { createTray } = require('./tray');
 const { createAlertManager, isValidAction } = require('./alert-window');
 const { MAX_IMPORT_BYTES } = require('../core/limits');
+const { MAX_ALERT_IMAGES } = require('../core/alert-background');
+const { createBackgrounds } = require('./backgrounds');
 
 const ICON = path.join(__dirname, 'icon.ico'); // window / taskbar icon (the .ico holds the small bold version Windows needs at 16-32 px)
 // Tray icon: tray-icon.png is 16x16; Electron also picks up tray-icon@1.5x / @2x / @3x for sharper icons on scaled screens.
@@ -304,6 +306,25 @@ function resumeFor(kind) {
   refreshTrayTooltip();
 }
 
+// ---- Pictures behind the full-screen alert (1.4.0) --------------------------------------------------------------------------
+
+let backgrounds = null;
+
+// The look of the picture with the picture itself (as a data: address), or null for the solid color.
+function alertPicture(imageId, thumb) {
+  if (!service || !backgrounds) return null;
+  const look = service.alertBackgroundLook(imageId);
+  if (!look) return null;
+  const url = backgrounds.dataUrl(look.imageId, thumb);
+  return url ? { ...look, url } : null;
+}
+
+// The pictures for the Settings screen, each with its small copy.
+function alertImageList() {
+  const bg = service.getSettings().alertBackground;
+  return bg.images.map((x) => ({ id: x.id, name: x.name, thumb: backgrounds ? backgrounds.dataUrl(x.id, true) : null }));
+}
+
 // ---- Pomodoro ----------------------------------------------------------------------------------------------------------------
 // The timer itself is in the service (see planner/pomodoros.js); here it gets a clock: one timeout aimed at the moment
 // the service asks for (the end of the part, or the next prayer when the Pomodoro stops for prayer).
@@ -472,6 +493,7 @@ function startAlerts() {
     preloadPath: path.join(__dirname, 'alert-preload.js'),
     pagePath: PAGES.alert,
     getConfig: () => service.getAlertConfig(),
+    getBackground: (item) => alertPicture(item.backgroundId, false),
     onAbandoned: (left) => {
       const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine' && i.kind !== 'pomodoro'); // a routine time (or a Pomodoro alert) that was not answered is just skipped
       if (real.length === 0) return;
@@ -667,7 +689,47 @@ function registerIpc() {
     // A backup is a small file; refuse a huge one before reading it into memory.
     if (fs.statSync(result.filePaths[0]).size > MAX_IMPORT_BYTES) throw new Error(t('This file is too big to be a WaqtWise backup.'));
     const text = fs.readFileSync(result.filePaths[0], 'utf8');
-    return service.importData(text);
+    const imported = service.importData(text);
+    // Pictures the imported settings do not use any more are removed from the data folder.
+    if (backgrounds) backgrounds.keepOnly(service.getSettings().alertBackground.images.map((x) => x.id));
+    return imported;
+  });
+
+  // ---- Pictures behind the full-screen alert ----
+  ipcMain.handle('alert-images', (event) => {
+    refuseOutsiders(event);
+    return alertImageList();
+  });
+
+  ipcMain.handle('add-alert-images', async (event) => {
+    refuseOutsiders(event);
+    const left = MAX_ALERT_IMAGES - service.getSettings().alertBackground.images.length;
+    if (left <= 0) throw new Error(t('You already have {max} pictures. Remove one to add another.', { max: MAX_ALERT_IMAGES }));
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: t('Add Pictures'),
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: t('Pictures'), extensions: backgrounds.EXTENSIONS }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    const copied = backgrounds.add(result.filePaths.slice(0, left));
+    const { added } = service.addAlertImages(copied.images);
+    // Copies that did not make it into the list are not kept.
+    const kept = new Set(service.getSettings().alertBackground.images.map((x) => x.id));
+    for (const x of copied.images) if (!kept.has(x.id)) backgrounds.remove(x.id);
+    return { added, skipped: copied.skipped.length + Math.max(0, result.filePaths.length - left), images: alertImageList() };
+  });
+
+  ipcMain.handle('remove-alert-image', (event, id) => {
+    refuseOutsiders(event);
+    service.removeAlertImage(id);
+    backgrounds.remove(id);
+    return alertImageList();
+  });
+
+  // The picture of the Preview in Settings (the small copy is enough there).
+  ipcMain.handle('alert-preview-picture', (event) => {
+    refuseOutsiders(event);
+    return alertPicture(service.pickAlertImageFor('image'), true);
   });
 
   ipcMain.handle('test-notification', async (event) => {
@@ -756,6 +818,8 @@ function start() {
         onPomodoroChanged,
         onPomodoroSignal: signalPomodoro,
       });
+      backgrounds = createBackgrounds({ dir: path.join(app.getPath('userData'), 'backgrounds'), fs, nativeImage, log });
+      backgrounds.keepOnly(service.getSettings().alertBackground.images.map((x) => x.id));
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
       dialog.showErrorBox('WaqtWise', error && error.message ? error.message : String(error));

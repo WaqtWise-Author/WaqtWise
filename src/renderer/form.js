@@ -410,6 +410,24 @@
       recurrenceBox.appendChild(box);
     }
 
+    // The background of this task's full-screen alert: as in Settings, a picture, or the solid color (1.4.0).
+    function backgroundChoice(rem) {
+      const bg = settings.alertBackground || { mode: 'color', images: [], useFor: 'all' };
+      const current = ['image', 'color'].includes(rem.background) ? rem.background : 'default';
+      const pick = (v) => { rem.background = v; renderReminders(); const again = document.querySelector(`[data-alert-bg="${v}"]`); if (again) again.focus(); };
+      const button = (v, label) => h('button', { type: 'button', class: current === v ? 'on' : '', text: label, 'aria-pressed': String(current === v), 'data-alert-bg': v, onclick: () => pick(v) });
+      const pictures = bg.mode === 'images' && bg.images.length > 0;
+      let hint;
+      if (!pictures) hint = T('Pictures are not switched on in Settings → Full-Screen Reminder → Background, so the solid color is used.');
+      else if (current === 'default') hint = bg.useFor === 'all' ? T('As in Settings: every reminder shows a picture now.') : T('As in Settings: only the tasks you choose show a picture, so this one keeps the solid color.');
+      else hint = current === 'image' ? T('This task shows a picture.') : T('This task keeps the solid color.');
+      return h('div', { style: { marginTop: '12px' } },
+        h('div', { class: 'label', id: 'f-alert-bg-label', text: T('Alert Background') }),
+        h('div', { class: 'segmented', role: 'group', 'aria-labelledby': 'f-alert-bg-label' },
+          button('default', T('As in Settings')), button('image', T('Picture')), button('color', T('Solid Color'))),
+        h('p', { class: 'hint', text: hint }));
+    }
+
     // ---- reminders ----
     function renderReminders() {
       clear(remindersBox);
@@ -430,7 +448,8 @@
             ? h('div', { style: { marginTop: '12px' } },
               WW.onOffSwitch(T('Show One Note at Random'), Boolean(rem.randomNotes), (on) => { rem.randomNotes = on; }, null, { id: 'f-random-notes' }),
               h('p', { class: 'hint', text: T('Separate the notes with ; (for example: first note; second note). The alert shows one of them each time, and every note is shown once before any is repeated.') }))
-            : null)
+            : null,
+          rem.fullScreen ? backgroundChoice(rem) : null)
       );
       remindersBox.appendChild(
         h('div', { class: 'field' },

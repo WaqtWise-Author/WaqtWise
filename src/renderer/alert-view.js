@@ -33,7 +33,21 @@
     }
   }
 
-  // state: { item, remaining, appearance, snoozeMinutes, guardActive }
+  // The picture behind the alert (1.4.0). bg: { url, blur, dim, panel, glassBlur, position } (blur, dim, glassBlur in %).
+  // 100% blur = 40px at 1280 wide (the preview size), scaled up with the screen like the rest of the alert.
+  function backdrop(frame, bg) {
+    const blurPx = (bg.blur / 100) * 40;
+    const picture = h('div', { class: 'alert-picture', 'aria-hidden': 'true' });
+    picture.style.backgroundImage = `url("${bg.url.replace(/["\\]/g, '')}")`;
+    picture.style.setProperty('--a-blur', `calc(${blurPx} * 100cqw / 1280)`);
+    const shade = h('div', { class: `alert-shade ${bg.position === 'bottom' ? 'bottom' : ''}`, 'aria-hidden': 'true' });
+    shade.style.setProperty('--a-dim', String(bg.dim / 100));
+    frame.append(picture, shade);
+    frame.classList.add('with-picture');
+    frame.style.setProperty('--a-glass-blur', `calc(${(bg.glassBlur / 100) * 40} * 100cqw / 1280)`);
+  }
+
+  // state: { item, remaining, appearance, snoozeMinutes, guardActive, background (optional, see backdrop) }
   // handlers (optional): { dismiss, snooze, done, open, next, stop } - called with no arguments (snooze: with the chosen length)
   let snoozeChoicesOpen = false; // the row of other snooze lengths is open (kept across redraws)
   let watcher = null; // the one ResizeObserver that refits the title; the old one is let go before each redraw
@@ -41,6 +55,8 @@
   function render(root, state, handlers) {
     const { item, appearance: a } = state;
     const frame = h('div', { class: 'alert-frame' });
+    const bg = state.background && state.background.url ? state.background : null;
+    if (bg) backdrop(frame, bg);
     const stage = h('div', { class: 'alert-stage', role: 'alertdialog', 'aria-modal': handlers ? 'true' : undefined, // the preview in Settings is not modal
       'aria-label': T('Reminder: {title}', { title: item.title }) });
     applyAppearance(stage, a);
@@ -113,7 +129,20 @@
       parts.push(h('div', { class: 'alert-more', text: TP(state.remaining, '{n} more task starting now', '{n} more tasks starting now') }));
     }
 
-    stage.append(...parts);
+    if (bg) {
+      stage.classList.add('on-picture');
+      if (bg.position === 'bottom') stage.classList.add('at-bottom');
+      // The text on a frosted glass panel (the notes about more tasks stay at the edge of the screen)
+      if (bg.panel === 'glass') {
+        const more = parts.filter((p) => p && p.classList && p.classList.contains('alert-more'));
+        const glass = h('div', { class: 'alert-glass' }, parts.filter((p) => !more.includes(p)));
+        stage.append(glass, ...more);
+      } else {
+        stage.append(...parts);
+      }
+    } else {
+      stage.append(...parts);
+    }
     frame.appendChild(stage);
     clear(root).appendChild(frame);
     if (watcher) { watcher.disconnect(); watcher = null; }

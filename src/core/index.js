@@ -18,6 +18,7 @@ module.exports = {
   ...require('./routine-engine'),
   ...require('./routine-stats'),
   ...require('./pomodoro'),
+  ...require('./alert-background'),
   ...require('./snooze'),
   ...require('./prayer-trends'),
   ...require('./random-notes'),

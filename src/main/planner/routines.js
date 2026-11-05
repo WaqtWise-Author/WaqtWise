@@ -228,6 +228,7 @@ class RoutineMethods {
         categoryColor: category ? category.color : '',
         priority: '',
         snoozed: Boolean(i.snoozed),
+        backgroundId: this.pickAlertImageFor('default'),
       };
     });
   }

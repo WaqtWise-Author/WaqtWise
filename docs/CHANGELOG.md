@@ -3,6 +3,14 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.4.0
+
+New
+- **A picture behind the full-screen reminder** (Settings → Full-Screen Reminder → Background): choose **Pictures** instead of the solid color and add up to 20 pictures from your computer (JPG, PNG or WebP; a smaller copy is kept with your data). Show **one fixed picture** or a **random one each time**; **Background Blur** (0 to 100%) and **Darken** (0 to 80%) in steps of 10; the text on the picture or on a **glass panel** with its own **Glass Blur**; the text in the **center** or at the **bottom**. **Use Pictures For**: every reminder, or only the tasks you choose; each task can also choose in its form (**Alert Background**: As in Settings, Picture or Solid Color). Routines and Pomodoro follow the setting. Pictures are not part of the export file.
+
+Fixes
+- The details row (time, duration, zone ...) of the small preview in Settings → Full-Screen Reminder was unreadable (light pills); it now looks like the real alert.
+
 ## 1.3.0
 
 New

@@ -14,7 +14,8 @@ const GUARD_NEXT_MS = 700; // shorter pause when the next task comes up
 
 const ACTIONS = ['dismiss', 'snooze', 'done', 'open', 'next', 'stop']; // next / stop: the Pomodoro alert (start the next part, stop the timer)
 
-function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getConfig, onAbandoned = () => {}, log = () => {} }) {
+// getBackground(item): the picture behind an alert ({ url, blur, dim, panel, glassBlur, position }) or null for the solid color.
+function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getConfig, getBackground = () => null, onAbandoned = () => {}, log = () => {} }) {
   let items = [];
   let windows = [];
   let guardMs = GUARD_FIRST_MS;
@@ -32,6 +33,7 @@ function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getC
       sound: config.sound || { id: 'off', volume: 0, repeat: false },
       soundSeq,
       soundHere: Boolean(win) && win === windows.find(alive),
+      background: items.length ? getBackground(items[0]) : null,
     };
   }
 

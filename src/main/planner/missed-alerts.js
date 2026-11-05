@@ -121,6 +121,7 @@ class MissedAlertMethods {
         categoryColor: category ? category.color : '',
         priority: i.priority,
         snoozed: Boolean(i.snoozed),
+        backgroundId: this.pickAlertImageFor(i.background), // the picture behind it ('' = the solid color)
       };
     });
   }
@@ -162,6 +163,7 @@ class MissedAlertMethods {
       categoryColor: '#8b5cf6',
       priority: 'High',
       snoozed: false,
+      backgroundId: this.pickAlertImageFor('image'), // the preview shows a picture whenever pictures are chosen
     };
   }
 }

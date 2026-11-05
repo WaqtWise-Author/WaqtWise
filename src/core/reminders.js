@@ -131,6 +131,7 @@ function alertsInWindow(provider, tasks, fromMs, toMs, settings, options = {}) {
           title: occ.title,
           notes: occ.notes,
           randomNotes: Boolean(occ.reminders && occ.reminders.randomNotes),
+          background: (occ.reminders && occ.reminders.background) || 'default',
           priority: occ.priority,
           categoryId: occ.categoryId,
           durationMinutes: occ.durationMinutes,

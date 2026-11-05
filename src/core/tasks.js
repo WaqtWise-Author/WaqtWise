@@ -98,6 +98,9 @@ function validateReminders(reminders) {
   if ('randomNotes' in reminders && typeof reminders.randomNotes !== 'boolean') {
     return [t('The random note switch must be on or off')];
   }
+  if ('background' in reminders && !['default', 'image', 'color'].includes(reminders.background)) {
+    return [t('Choose the alert background from the list')];
+  }
   return [];
 }
 

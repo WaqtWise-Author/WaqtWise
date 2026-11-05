@@ -311,6 +311,7 @@ class PomodoroMethods {
       categoryColor: '',
       priority: '',
       snoozed: false,
+      backgroundId: this.pickAlertImageFor('default'),
     };
   }
 }

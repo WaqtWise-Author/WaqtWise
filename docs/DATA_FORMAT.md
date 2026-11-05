@@ -64,6 +64,8 @@ Export / Import (Settings -> Data) uses one JSON file. Version 1:
 
 ## One Note at Random
 
+`settings.alertBackground` (1.4.0) = `{ mode: "color"|"images", images: [{ id, name }], pick: "fixed"|"random", fixedId, blur: 0-100, dim: 0-80, panel: "none"|"glass", glassBlur: 0-100, position: "center"|"bottom", useFor: "all"|"chosen" }` (`blur`, `dim` and `glassBlur` in steps of 10; at most 20 pictures; `id` is 16 to 40 letters `a-f` and digits). The pictures themselves are copies (made smaller, JPEG) in the `backgrounds` folder next to `data.json` (`<id>.jpg` and a small `<id>-thumb.jpg`); they are not part of the export file, and a picture whose file is missing is simply not shown. Older files get the solid color. A task's own choice is `reminders.background` = `"default"` (as in Settings), `"image"` or `"color"` (it can differ per occurrence like the other reminder options).
+
 In the task form, with the full-screen alert on, **Show One Note at Random** is saved as `reminders.randomNotes` (true/false; it can differ per occurrence like the other reminder options). The notes are split on `;` or `؛`, blanks are dropped, and the full-screen alert shows one message. Every message is shown once before any is repeated (never the same one twice in a row), and the same message stays when the alert is only shown again on the same day; after **Snooze** the alert comes back with a different message. With only one message the notes are shown as written. Everywhere else (details, edit form) the notes are shown whole. What was shown last is kept in `data.json` as `noteRotation` (`{ taskId: { sig, dateKey, index, used } }`); it is not part of the export file, and it starts over when the notes are changed.
 
 ## Saved statistics (`statsHistory`)

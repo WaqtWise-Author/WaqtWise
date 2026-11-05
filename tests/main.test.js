@@ -114,7 +114,12 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     getPrimaryDisplay: () => fake.displays[0],
   };
   fake.Menu = { buildFromTemplate: (template) => ({ template }) };
-  fake.nativeImage = { createFromPath: (p) => ({ path: p, resize: (size) => ({ path: p, size }) }) };
+  // A picture stand-in: any file whose text starts with "IMG" is a 4000 x 2000 picture; toJPEG gives its size as text.
+  const picture = (p, w, h) => ({
+    path: p, isEmpty: () => !(fs.existsSync(p) && fs.readFileSync(p, 'utf8').startsWith('IMG')), getSize: () => ({ width: w, height: h }),
+    resize: (size) => ({ ...picture(p, size.width || w, size.height || h), size }), toJPEG: () => Buffer.from(`JPEG ${w}x${h}`),
+  });
+  fake.nativeImage = { createFromPath: (p) => picture(p, 4000, 2000) };
   fake.nativeTheme = { shouldUseDarkColors: false, on: () => {} };
   fake.powerMonitor = { on: (event, fn) => { fake.powerEvents[event] = fn; } };
 
@@ -131,7 +136,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
 
   fake.dialog = {
     showSaveDialog: async () => (fake.dialogs.saveTo ? { canceled: false, filePath: fake.dialogs.saveTo } : { canceled: true }),
-    showOpenDialog: async () => (fake.dialogs.openFrom ? { canceled: false, filePaths: [fake.dialogs.openFrom] } : { canceled: true }),
+    showOpenDialog: async () => (fake.dialogs.openFrom ? { canceled: false, filePaths: [].concat(fake.dialogs.openFrom) } : { canceled: true }),
     showMessageBox: async (options) => {
       fake.messageBoxes.push(options);
       return fake.nextBox;
@@ -953,7 +958,7 @@ test('The preload script exposes only the expected functions', () => {
   };
   delete require.cache[require.resolve('../src/main/preload.js')];
   require('../src/main/preload.js');
-  assert.deepEqual(Object.keys(exposed.api).sort(), ['call', 'exportData', 'getPauseState', 'importData', 'on', 'previewAlert', 'ready', 'resumePause', 'testNotification']);
+  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getPauseState', 'importData', 'on', 'previewAlert', 'ready', 'removeAlertImage', 'resumePause', 'testNotification']);
   exposed.api.call('getDay', '2030-01-10');
   assert.deepEqual(sent[0], ['svc', 'getDay', ['2030-01-10']]);
 });
@@ -1148,5 +1153,72 @@ test('Pomodoro: with "Notification" chosen, the end of a part is a notification 
   app.main.handleAction({ type: 'pomodoro' });
   assert.ok(app.win().sent.some(([c]) => c === 'show-pomodoro'));
   service.now = realNow;
+  app.cleanup();
+});
+
+// ---- Pictures behind the full-screen alert (1.4.0) ---------------------------------------------------------------
+
+test('Alert pictures: add from the disk (copied, made smaller), shown behind the alert, removed again', async () => {
+  const app = await launch();
+  app.win().emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const ok = app.win().webContents;
+  const ev = { sender: ok, senderFrame: { url: pathToFileURL(app.win().file).href, parent: null } };
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'pictures-'));
+  const a = path.join(src, 'Sunset.jpg');
+  const b = path.join(src, 'Hills.png');
+  const notPicture = path.join(src, 'notes.png');
+  const wrongType = path.join(src, 'clip.gif');
+  fs.writeFileSync(a, 'IMG a');
+  fs.writeFileSync(b, 'IMG b');
+  fs.writeFileSync(notPicture, 'hello');
+  fs.writeFileSync(wrongType, 'IMG gif');
+  app.dialogs.openFrom = [a, b, notPicture, wrongType];
+  const result = await app.ipc['add-alert-images'](ev);
+  assert.equal(result.added, 2);
+  assert.equal(result.skipped, 2, 'a file that is not a picture and a GIF are skipped');
+  assert.deepEqual(result.images.map((x) => x.name), ['Sunset', 'Hills']);
+  assert.match(result.images[0].thumb, /^data:image\/jpeg;base64,/);
+  const dir = path.join(app.userData, 'backgrounds');
+  const id = result.images[0].id;
+  assert.equal(fs.readFileSync(path.join(dir, `${id}.jpg`), 'utf8'), 'JPEG 2560x1280', 'made smaller to fit 2560 x 1600');
+  assert.equal(fs.readFileSync(path.join(dir, `${id}-thumb.jpg`), 'utf8'), 'JPEG 320x160');
+  fs.rmSync(a);
+  assert.ok((await app.ipc['alert-images'](ev))[0].thumb, 'the copy stays when the original file is deleted');
+
+  // With pictures switched on, the alert gets one behind it
+  await app.svc('saveSettings', { alertBackground: { mode: 'images', pick: 'fixed', fixedId: result.images[1].id, blur: 50, panel: 'glass', position: 'bottom' } });
+  app.ipc['preview-alert'](ev);
+  const win = app.alertWindows()[0];
+  app.ipcOn['alert-ready'](alertEvent(win));
+  const render = win.sent.find(([c]) => c === 'alert-render')[1];
+  assert.equal(render.background.imageId, result.images[1].id);
+  assert.equal(render.background.blur, 50);
+  assert.equal(render.background.position, 'bottom');
+  assert.match(render.background.url, /^data:image\/jpeg;base64,/);
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'dismiss', itemId: render.items[0].id });
+
+  // Removing a picture deletes its files
+  const left = await app.ipc['remove-alert-image'](ev, id);
+  assert.deepEqual(left.map((x) => x.name), ['Hills']);
+  assert.equal(fs.existsSync(path.join(dir, `${id}.jpg`)), false);
+  assert.equal(fs.existsSync(path.join(dir, `${id}-thumb.jpg`)), false);
+  // Another page may not use these
+  await assert.rejects(Promise.resolve().then(() => app.ipc['alert-images']({ sender: {} })));
+  app.cleanup();
+});
+
+test('Alert pictures: a task set to "Solid Color" keeps the color; "Only Tasks I Choose" shows pictures only where chosen', async () => {
+  const app = await launch();
+  const service = app.main.getService();
+  service.saveSettings({ alertBackground: { mode: 'images', images: [{ id: 'a'.repeat(24), name: 'A' }], useFor: 'chosen' } });
+  const items = (choice) => service.buildAlertItems([{ id: 'x', taskId: 't', dateKey: '2030-01-10', title: 'T', start: new Date(), end: new Date(), durationMinutes: 30, zoneName: 'Fajr → Dhuhr', zoneIndex: 1, priority: 'Medium', background: choice }])[0].backgroundId;
+  assert.equal(items('default'), '', 'not chosen: the solid color');
+  assert.equal(items('image'), 'a'.repeat(24));
+  service.saveSettings({ alertBackground: { useFor: 'all' } });
+  assert.equal(items('default'), 'a'.repeat(24));
+  assert.equal(items('color'), '');
+  assert.equal(service.alertBackgroundLook('a'.repeat(24)).panel, 'glass');
+  assert.equal(service.alertBackgroundLook('b'.repeat(24)), null, 'a picture that is not in the list is never shown');
   app.cleanup();
 });
