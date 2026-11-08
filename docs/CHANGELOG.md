@@ -3,6 +3,16 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.5.1
+
+Fixes
+- **The window that stayed blank (or empty) after Windows sleep, a long idle time or a start with Windows.** The reminders ran in the background, but the window's page could have crashed, hung or failed to load, and opening the window showed the same broken page until the app was closed from the tray and started again. Now WaqtWise notices a crashed, hung (after 15 seconds) or failed page, also a page that does not answer a few seconds after wake or unlock, and repairs **only the page**: it reloads it, and if that does not help it opens a new window (at most 3 tries, with a wait between them). Your tasks, reminders, routines, Pomodoro and the tray are not touched, a window that was hidden in the tray stays hidden, and a healthy window is never reloaded just because the PC woke up. Opening a broken window from the tray first repairs it.
+- **Start-up that never ends:** if the first load of the data gets no answer for 15 seconds, the window shows an error with **Try Again** instead of staying empty.
+- Events waiting for the window (for example a click on a notification) are kept once, and only the newest 20.
+
+New
+- **Settings → Data → Open Log Folder.** A small log file (`%APPDATA%\WaqtWise\logs\waqtwise.log`, 3 files of at most 256 KB) records start-up, page loading, wake and lock, crashes and repairs. It holds no tasks, notes or other planner data. If the blank window ever comes back, send that file.
+
 ## 1.5.0
 
 New

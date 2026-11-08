@@ -36,7 +36,7 @@ function createService(options = {}) {
   return service;
 }
 
-async function openApp({ playwright, service, colorScheme = 'light', width = 1100, height = 900, executablePath, keepSplash = false }) {
+async function openApp({ playwright, service, colorScheme = 'light', width = 1100, height = 900, executablePath, keepSplash = false, stallFirstBootstrap = false }) {
   const browser = await playwright.chromium.launch({ executablePath });
   const context = await browser.newContext({ viewport: { width, height }, colorScheme });
   const page = await context.newPage();
@@ -45,9 +45,11 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
 
   const calls = [];
+  const stall = { first: stallFirstBootstrap };
   await page.exposeFunction('__invoke', async (method, args) => {
     if (!PUBLIC_METHODS.includes(method)) throw new Error(`Not allowed: ${method}`);
     calls.push(method);
+    if (method === 'bootstrap' && stall.first) { stall.first = false; await new Promise(() => {}); } // the main process never answers
     return JSON.parse(JSON.stringify(await service[method](...args)));
   });
   // The pictures behind the full-screen alert: the main process copies files; here the list lives in the real service and
@@ -57,7 +59,8 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
     if (op === 'remove') service.removeAlertImage(arg);
     return JSON.parse(JSON.stringify(service.getSettings().alertBackground.images));
   });
-  await page.addInitScript((splashMs) => {
+  await page.addInitScript(({ splashMs, startMs }) => {
+    if (startMs) window.WW_START_TIMEOUT_MS = startMs; // the real wait for the first answer is 15 seconds
     if (splashMs !== null) window.WW_SPLASH_MS = splashMs; // the real start-up splash lasts 3 seconds; the checks do not wait for it
     window.__exports = [];
     window.api = {
@@ -67,6 +70,7 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
       testNotification: async () => { window.__exports.push('test-notification'); return { ok: true }; },
       previewAlert: async () => { window.__exports.push('preview-alert'); return { ok: true }; },
       getPauseState: async () => ({ reminders: null, routines: null }),
+      openLogsFolder: async () => { (window.__calls = window.__calls || []).push('openLogsFolder'); return { ok: true }; },
       getAlertImages: async () => window.__pictureList(await window.__pictures('list')),
       addAlertImages: async () => {
         const n = (window.__pictureCount = (window.__pictureCount || 0) + 2);
@@ -81,9 +85,10 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
     };
     window.__pictureList = (list) => list.map((x) => ({ ...x, thumb: window.__samplePicture(x.name === 'Hills' ? ['#0e7490', '#67e8f9'] : ['#1e3a8a', '#f59e0b']) }));
     window.__samplePicture = ([top, bottom]) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='320' height='200'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${top}'/><stop offset='1' stop-color='${bottom}'/></linearGradient></defs><rect width='320' height='200' fill='url(#g)'/><circle cx='220' cy='110' r='28' fill='#fde68a'/><path d='M0 150 L80 100 L150 140 L230 90 L320 130 L320 200 L0 200Z' fill='#1f1235'/></svg>`)}`;
-  }, keepSplash ? null : 300);
+  }, { splashMs: keepSplash ? null : 300, startMs: stallFirstBootstrap ? 400 : null });
   const file = path.resolve(__dirname, '../src/renderer/index.html');
   await page.goto(`file://${file}`);
+  if (stallFirstBootstrap) return { browser, context, page, errors, calls };
   await page.waitForSelector('.zone');
   if (!keepSplash) await page.waitForSelector('#splash', { state: 'detached' }); // the real splash lasts 3 seconds; here it is cut to 0.3 s
   return { browser, context, page, errors, calls };

@@ -914,15 +914,49 @@
       if (!e.target.closest('.popover') && !e.target.closest('.icon-btn')) closePopovers();
     });
 
+    await attemptStart();
+  }
+
+  // The first load of the data must not wait for ever: if the main process does not answer, the person sees an error
+  // with a Try Again button instead of a splash or an empty window that never ends.
+  const START_TIMEOUT_MS = window.WW_START_TIMEOUT_MS || 15000; // the checks shorten it
+  let started = false; // the listeners and timers below are set up once, however many times the start is tried
+  let trying = false;
+
+  function loadWithTimeout() {
+    let timer;
+    const limit = new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(T('The app did not answer in time.'))), START_TIMEOUT_MS);
+    });
+    return Promise.race([reloadEverything(), limit]).finally(() => clearTimeout(timer));
+  }
+
+  function showStartError(error) {
+    clear(view()).appendChild(h('div', { class: 'errors', role: 'alert' },
+      h('p', { text: T('Could not start: {error}', { error: error.message }) }),
+      h('button', { class: 'btn', type: 'button', id: 'start-retry', text: T('Try Again'), onclick: () => attemptStart() })));
+    hideSplash();
+  }
+
+  async function attemptStart() {
+    if (trying || started) return;
+    trying = true;
+    let boot;
     try {
-      const boot = await reloadEverything();
-      if (boot.loadNotes && boot.loadNotes.length) WW.toast(boot.loadNotes[0], 'error');
+      boot = await loadWithTimeout();
     } catch (error) {
-      clear(view()).appendChild(h('div', { class: 'errors', text: T('Could not start: {error}', { error: error.message }) }));
-      hideSplash();
+      trying = false;
+      showStartError(error);
       return;
     }
+    trying = false;
+    if (boot.loadNotes && boot.loadNotes.length) WW.toast(boot.loadNotes[0], 'error');
+    finishStart();
+  }
 
+  function finishStart() {
+    if (started) return;
+    started = true;
     refreshBell();
     WW.refreshSaveBanner();
     WW.refreshPauseBanner();

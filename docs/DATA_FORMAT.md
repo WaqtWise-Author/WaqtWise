@@ -138,6 +138,9 @@ the time zone being an IANA name such as `Asia/Riyadh`). An invalid city is drop
 `data.json` also holds `statsHistory`: `{ "through": "YYYY-MM-DD", "days": { "<day>": [[taskId, dateKey, title, categoryId, minutes, done(0/1), startMs, zone, completedMs], ...] } }`,
 the saved statistics of finished days. It is not part of the export file. Automatic copies of `data.json` are kept
 in the `backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.json`, `before-restore-*.json`).
+The `logs` folder next to it holds the diagnostic log (`waqtwise.log`, rotated to `waqtwise.log.1` and `.2`; 256 KB each at most).
+It records app events only (start-up, page loading, sleep / wake, renderer crashes and repairs), never planner data; it is not part of the
+export file and is not data the app reads.
 
 ## Limits
 

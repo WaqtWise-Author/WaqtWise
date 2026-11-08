@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
   addAlertImages: () => ipcRenderer.invoke('add-alert-images'),
   removeAlertImage: (id) => ipcRenderer.invoke('remove-alert-image', String(id)),
   getAlertPreviewPicture: () => ipcRenderer.invoke('alert-preview-picture'),
+  openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   getPauseState: () => ipcRenderer.invoke('pause-state'),
   resumePause: (kind) => ipcRenderer.invoke('resume-pause', kind),
   on: (channel, callback) => {

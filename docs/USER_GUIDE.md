@@ -296,6 +296,10 @@ Changing it can move such tasks to other weeks.
   **Restore**. The data you had a moment before is saved first, so a restore can be undone.
 - If saving ever fails (disk full, file locked) a red banner stays at the top with **Try Again** and
   **Export a Copy**.
+- **If the window ever stays empty:** WaqtWise repairs the window's page by itself (after sleep, a long idle time or a
+  start with Windows), and if the first load gets no answer it shows an error with **Try Again**. A small log of what
+  happened (never your tasks or notes) is kept in `%APPDATA%\WaqtWise\logs`; open it from Settings → Data →
+  **Open Log Folder**.
 
 More: [PRIVACY](../PRIVACY.md) and the technical [data format](DATA_FORMAT.md).
 

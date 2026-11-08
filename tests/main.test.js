@@ -73,9 +73,18 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
       this.webContents = {
         send: (channel, payload) => this.sent.push([channel, payload]),
         setWindowOpenHandler: () => {},
-        on: () => {},
+        on: (event, fn) => { (this.pageHandlers[event] = this.pageHandlers[event] || []).push(fn); },
         isDestroyed: () => this.destroyed,
+        isCrashed: () => this.crashed,
+        isLoading: () => this.loading,
+        reload: () => { this.reloads += 1; this.crashed = false; },
+        executeJavaScript: () => (this.pingFails ? new Promise(() => {}) : Promise.resolve('complete')),
       };
+      this.pageHandlers = {};
+      this.crashed = false;
+      this.loading = false;
+      this.reloads = 0;
+      this.pingFails = false;
       fake.windows.push(this);
     }
     setMenuBarVisibility() {}
@@ -96,7 +105,10 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
       (this.handlers[event] || []).forEach((fn) => fn(e));
       return e;
     }
+    // Pretend the page (webContents) raised an event: crash, hang, load failure ...
+    page(event, ...args) { (this.pageHandlers[event] || []).forEach((fn) => fn({}, ...args)); }
     isDestroyed() { return this.destroyed; }
+    isVisible() { return this.visible; }
     isMinimized() { return false; }
     restore() {}
     maximize() { this.maximized = true; this.maximizeCount = (this.maximizeCount || 0) + 1; }
@@ -129,6 +141,8 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
   fake.nativeImage = { createFromPath: (p) => picture(p, 4000, 2000) };
   fake.nativeTheme = { shouldUseDarkColors: false, on: () => {} };
   fake.powerMonitor = { on: (event, fn) => { fake.powerEvents[event] = fn; } };
+  fake.openedPaths = [];
+  fake.shell = { openPath: async (dir) => { fake.openedPaths.push(dir); return ''; } };
 
   // A call from the app's own window: the tests leave the event out (or pass {}) and get this one.
   fake.mainEvent = () => {
@@ -967,7 +981,7 @@ test('The preload script exposes only the expected functions', () => {
   };
   delete require.cache[require.resolve('../src/main/preload.js')];
   require('../src/main/preload.js');
-  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getPauseState', 'importData', 'on', 'previewAlert', 'ready', 'removeAlertImage', 'resumePause', 'testNotification']);
+  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getPauseState', 'importData', 'on', 'openLogsFolder', 'previewAlert', 'ready', 'removeAlertImage', 'resumePause', 'testNotification']);
   exposed.api.call('getDay', '2030-01-10');
   assert.deepEqual(sent[0], ['svc', 'getDay', ['2030-01-10']]);
 });
@@ -1278,5 +1292,179 @@ test('Alert sound: "Stop the Sound After" is sent with the sound (1 to 10 minute
   assert.equal(service.getAlertConfig().sound.stopAfterMinutes, 2);
   assert.throws(() => service.saveSettings({ alertSoundStopMinutes: 11 }));
   assert.throws(() => service.saveSettings({ alertSoundStopMinutes: 1.5 }));
+  app.cleanup();
+});
+
+// ---- The window's page: crash, hang, failed load, wake from sleep -----------------------------------------------
+
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// An app whose window is up and whose page said "ready"; the recovery waits are made short.
+async function liveApp(options = {}, config = {}) {
+  const app = await launch(options);
+  Object.assign(app.main.getRecovery().config, { settleMs: 5, unresponsiveGraceMs: 20, readyTimeoutMs: 40, pingTimeoutMs: 15, backoffMs: [0, 5, 5], ...config });
+  const win = app.win();
+  win.emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  return { app, win };
+}
+const readLog = (app) => fs.readFileSync(path.join(app.userData, 'logs', 'waqtwise.log'), 'utf8');
+
+test('A crashed page is reloaded once, and nothing is sent to it until it is ready again', async () => {
+  const { app, win } = await liveApp();
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
+  assert.equal(win.reloads, 1);
+  assert.equal(app.main.getRecovery().isBusy(), true);
+  const before = win.sent.length;
+  app.powerEvents.resume(); // the data refresh must not go to a page that is gone
+  assert.equal(win.sent.length, before);
+  app.ipcOn['renderer-ready']();
+  assert.equal(app.main.getRecovery().isBusy(), false);
+  assert.equal(app.main.getRecovery().attempts(), 0);
+  const text = readLog(app);
+  assert.match(text, /Renderer process gone.*crashed/);
+  assert.match(text, /Recovery succeeded/);
+  app.cleanup();
+});
+
+test('Repeated crash and wake events during a recovery do not start more recoveries', async () => {
+  const { app, win } = await liveApp();
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
+  app.powerEvents.resume();
+  app.powerEvents['unlock-screen']();
+  await pause(15); // the wake checks run, and find a recovery already going
+  assert.equal(win.reloads, 1);
+  assert.equal(app.windows.length, 1);
+  app.cleanup();
+});
+
+test('A page that stays broken gets a new window, and after the last attempt recovery stops', async () => {
+  const { app, win } = await liveApp();
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 }); // attempt 1: reload; the page never says ready
+  await pause(150);
+  assert.equal(win.reloads, 1);
+  assert.equal(win.destroyed, true, 'the first window is replaced');
+  assert.equal(app.windows.length, 3, 'attempts 2 and 3 build a new window each, then it stops');
+  assert.equal(app.windows.filter((w) => !w.destroyed).length, 1);
+  assert.equal(app.main.getRecovery().request('again'), 'gave-up');
+  assert.match(readLog(app), /Recovery gave up/);
+  app.cleanup();
+});
+
+test('Opening the window shows a broken page only after it is repaired', async () => {
+  const { app, win } = await liveApp();
+  app.ipcOn['renderer-ready']();
+  win.emit('close'); // the person closes it to the tray
+  assert.equal(win.visible, false);
+  win.crashed = true; // the page died without anyone noticing
+  const shown = win.shownCount;
+  app.appEvents['second-instance'][0]({}, ['WaqtWise.exe']);
+  assert.equal(win.reloads, 1);
+  assert.equal(win.shownCount, shown, 'not shown while it is broken');
+  app.ipcOn['renderer-ready']();
+  assert.equal(win.shownCount, shown + 1, 'shown once the page works');
+  app.cleanup();
+});
+
+test('Wake from sleep with a healthy page does not reload it', async () => {
+  const { app, win } = await liveApp();
+  const engine = app.main.getEngine();
+  app.powerEvents.resume();
+  assert.ok(win.sent.some(([channel]) => channel === 'data-changed'));
+  await pause(40);
+  assert.equal(win.reloads, 0);
+  assert.equal(app.windows.length, 1);
+  assert.match(readLog(app), /healthy after the system event/);
+  assert.equal(app.main.getEngine(), engine);
+  app.cleanup();
+});
+
+test('Wake from sleep with a broken page repairs only the page; the engines keep running', async () => {
+  const { app, win } = await liveApp();
+  const engine = app.main.getEngine();
+  const routines = app.main.getRoutineEngine();
+  const service = app.main.getService();
+  win.crashed = true;
+  app.powerEvents.resume();
+  await pause(25);
+  assert.equal(win.reloads, 1);
+  assert.equal(app.main.getEngine(), engine);
+  assert.equal(app.main.getRoutineEngine(), routines);
+  assert.equal(app.main.getService(), service);
+  assert.equal(app.trays.length, 1);
+  app.cleanup();
+});
+
+test('A page that does not answer after wake is repaired', async () => {
+  const { app, win } = await liveApp();
+  win.pingFails = true;
+  app.powerEvents['unlock-screen']();
+  await pause(50);
+  assert.equal(win.reloads, 1);
+  assert.match(readLog(app), /did not answer/);
+  app.cleanup();
+});
+
+test('A hang that ends by itself is left alone; one that lasts is repaired', async () => {
+  const { app, win } = await liveApp();
+  win.page('unresponsive');
+  await pause(5);
+  win.page('responsive');
+  await pause(40);
+  assert.equal(win.reloads, 0);
+  assert.match(readLog(app), /responsive by itself/);
+  win.page('unresponsive');
+  await pause(10);
+  assert.equal(win.reloads, 0, 'not before the grace period');
+  await pause(30);
+  assert.equal(win.reloads, 1);
+  app.cleanup();
+});
+
+test('Only a failed load of the main page is a failure', async () => {
+  const { app, win } = await liveApp();
+  win.page('did-fail-load', -3, 'ERR_ABORTED', 'file:///x', true); // a load replaced by another one
+  win.page('did-fail-load', -2, 'ERR_FAILED', 'file:///x', false); // a part of the page
+  assert.equal(win.reloads, 0);
+  win.page('did-fail-load', -2, 'ERR_FAILED', 'file:///x', true);
+  assert.equal(win.reloads, 1);
+  assert.match(readLog(app), /Page failed to load/);
+  app.cleanup();
+});
+
+test('A start with Windows stays hidden, also when the page has to be repaired', async () => {
+  const { app, win } = await liveApp({ hidden: true });
+  assert.equal(win.shownCount, 0);
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
+  app.ipcOn['renderer-ready']();
+  assert.equal(win.shownCount, 0);
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 }); // and a new window after a failed reload
+  await pause(80);
+  const fresh = app.windows.filter((w) => !w.destroyed).pop();
+  fresh.emit('ready-to-show');
+  assert.equal(fresh.shownCount, 0);
+  assert.equal(fresh.options.show, false);
+  app.cleanup();
+});
+
+test('Events kept while the page is not ready are not repeated when it is ready again', async () => {
+  const { app, win } = await liveApp();
+  win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
+  app.main.handleAction({ type: 'routines' });
+  app.main.handleAction({ type: 'routines' });
+  app.ipcOn['renderer-ready']();
+  assert.equal(win.sent.filter(([channel]) => channel === 'show-routines').length, 1);
+  app.cleanup();
+});
+
+test('Settings can open the log folder, and the log has no planner data', async () => {
+  const { app } = await liveApp();
+  await app.svc('saveTask', { mode: 'create', form: form({ title: 'My private task title' }) });
+  const result = await app.ipc['open-logs-folder']();
+  assert.deepEqual(result, { ok: true });
+  assert.deepEqual(app.openedPaths, [path.join(app.userData, 'logs')]);
+  assert.match(readLog(app), /App started/);
+  assert.doesNotMatch(readLog(app), /private task title/);
   app.cleanup();
 });

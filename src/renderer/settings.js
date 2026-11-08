@@ -720,7 +720,20 @@
           h('button', { class: 'btn', text: T('Import Data…'), onclick: () => WW.importData() }),
           h('button', { class: 'btn', text: T('Restore from Backup…'), onclick: () => WW.restoreBackup() })),
         h('p', { class: 'hint', text: T('Export saves a backup file on this computer. Importing a backup replaces all tasks, categories and settings.') }),
-        h('p', { class: 'hint', text: T('WaqtWise also keeps its own copies automatically: one per day for the last 7 days, and one before every import.') }))
+        h('p', { class: 'hint', text: T('WaqtWise also keeps its own copies automatically: one per day for the last 7 days, and one before every import.') }),
+        h('div', { class: 'row' },
+          h('button', {
+            class: 'btn', type: 'button', id: 'open-logs', text: T('Open Log Folder'),
+            onclick: async () => {
+              try {
+                const result = await window.api.openLogsFolder();
+                if (!result || !result.ok) WW.toast(T('Could not open the log folder.'), 'error');
+              } catch (error) {
+                WW.toast(error.message, 'error');
+              }
+            },
+          })),
+        h('p', { class: 'hint', text: T('If the window ever stays empty, WaqtWise keeps a small log of what happened (no tasks or notes) that helps to find the cause.') }))
     ];
     // The index row sticks just below the top bar, so it needs the bar's real height (it wraps on narrow windows).
     const fitIndex = () => {

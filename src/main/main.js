@@ -16,8 +16,9 @@ require('../core/i18n-ar');
 const path = require('path');
 const { fileURLToPath } = require('url');
 const fs = require('fs');
+const os = require('os');
 const {
-  app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu, nativeImage, powerMonitor, screen, nativeTheme, session,
+  app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu, nativeImage, powerMonitor, screen, nativeTheme, session, shell,
 } = require('electron');
 
 const { PlannerService, checkRequest } = require('./service');
@@ -32,6 +33,8 @@ const { createAlertManager, isValidAction } = require('./alert-window');
 const { MAX_IMPORT_BYTES } = require('../core/limits');
 const { MAX_ALERT_IMAGES } = require('../core/alert-background');
 const { createBackgrounds } = require('./backgrounds');
+const { createLogger } = require('./logger');
+const { createRecovery } = require('./recovery');
 
 const ICON = path.join(__dirname, 'icon.ico'); // window / taskbar icon (the .ico holds the small bold version Windows needs at 16-32 px)
 // Tray icon: tray-icon.png is 16x16; Electron also picks up tray-icon@1.5x / @2x / @3x for sharper icons on scaled screens.
@@ -53,26 +56,68 @@ let showOnReady = true;
 let lastLoginSetting = null;
 let lastOffset = null;
 const pendingEvents = []; // events waiting for the window to be ready
+const MAX_PENDING_EVENTS = 20;
+let showAfterReload = false; // a reload (not a new window) must show the window once the page is ready
+// What is known about the current window's page; it starts again with every window and every reload.
+const winState = { createdAt: 0, loadFinishedAt: 0, loadFailed: false, crashed: false };
+
+// ---- Log file ---------------------------------------------------------------------------------------------------
+// Diagnostics for problems nobody was watching (see logger.js): %APPDATA%\WaqtWise\logs\waqtwise.log. No planner data.
+let logger = null;
+function getLogger() {
+  if (!logger) {
+    try {
+      logger = createLogger({
+        fs,
+        dir: path.join(app.getPath('userData'), 'logs'),
+        context: {
+          version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome,
+          platform: process.platform, arch: process.arch, os: os.release(),
+        },
+      });
+      logger.header();
+    } catch (error) {
+      logger = { info() {}, warn() {}, error() {}, dir: '' };
+    }
+  }
+  return logger;
+}
+const diag = {
+  info: (...args) => getLogger().info(...args),
+  warn: (...args) => getLogger().warn(...args),
+  error: (...args) => getLogger().error(...args),
+};
 
 function log(...args) {
-  // Console only (visible when started from a terminal).
+  // Console (visible when started from a terminal) and the log file.
   console.error('[waqtwise]', ...args);
+  getLogger().error(...args);
 }
 
 // ---- Talking to the window ---------------------------------------------------------------------------------
 
 function sendToWindow(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed() && rendererReady) {
-    mainWindow.webContents.send(channel, payload);
+    try {
+      mainWindow.webContents.send(channel, payload);
+    } catch (error) {
+      // The page went away at this very moment: the recovery handles it.
+      diag.warn('Could not send to the window', channel);
+    }
   } else if (channel !== 'data-changed' && channel !== 'pause-changed' && channel !== 'pomodoro-changed') {
-    pendingEvents.push({ channel, payload });
+    // While the page is not ready the same event is kept once, and only the newest ones are kept.
+    let key = channel;
+    try { key = JSON.stringify([channel, payload]); } catch (error) { /* keep the channel as the key */ }
+    if (pendingEvents.some((event) => event.key === key)) return;
+    pendingEvents.push({ channel, payload, key });
+    while (pendingEvents.length > MAX_PENDING_EVENTS) pendingEvents.shift();
   }
 }
 
 function flushPendingEvents() {
   while (pendingEvents.length > 0 && mainWindow && !mainWindow.isDestroyed()) {
     const { channel, payload } = pendingEvents.shift();
-    mainWindow.webContents.send(channel, payload);
+    try { mainWindow.webContents.send(channel, payload); } catch (error) { diag.warn('Could not send to the window', channel); }
   }
 }
 
@@ -106,6 +151,8 @@ nativeTheme.on('updated', applyTitleBarTheme);
 function createWindow({ visible }) {
   rendererReady = false;
   showOnReady = visible;
+  showAfterReload = false;
+  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false });
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 860,
@@ -125,10 +172,22 @@ function createWindow({ visible }) {
     },
   });
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile(PAGES.main);
+  const win = mainWindow; // events of an older window must never act on the current one
+  diag.info('Window created', { visible });
+  watchPage(win);
+  Promise.resolve(win.loadFile(PAGES.main)).catch((error) => {
+    if (error && (error.code === 'ERR_ABORTED' || error.errno === -3)) return; // a load replaced by another one
+    diag.error('loadFile failed', error);
+    if (win === mainWindow && !winState.loadFailed) {
+      winState.loadFailed = true;
+      rendererReady = false;
+      recovery.request('loadFile-rejected');
+    }
+  });
 
   mainWindow.once('ready-to-show', () => {
-    if (showOnReady && mainWindow && !mainWindow.isDestroyed()) {
+    diag.info('Window ready to show', { show: showOnReady });
+    if (win === mainWindow && showOnReady && !mainWindow.isDestroyed()) {
       mainWindow.maximize(); // always opens full size
       mainWindow.show();
       bringToFront();
@@ -157,10 +216,107 @@ function createWindow({ visible }) {
   });
 
   mainWindow.on('closed', () => {
+    if (win !== mainWindow) return; // an old window that was replaced by a recovery
     mainWindow = null;
     rendererReady = false;
   });
 }
+
+// ---- Watching the page, and repairing it ---------------------------------------------------------------------------------
+// The tray keeps the app (and its reminders) alive while the window's page may have crashed, hung or failed to load.
+// These events are logged, and a confirmed failure goes to the recovery controller (recovery.js).
+
+function watchPage(win) {
+  const wc = win.webContents;
+  const current = () => win === mainWindow;
+  wc.on('render-process-gone', (event, details) => {
+    diag.error('Renderer process gone', { reason: details && details.reason, exitCode: details && details.exitCode });
+    if (!current()) return;
+    winState.crashed = true;
+    rendererReady = false; // nothing more is sent to a page that is gone
+    recovery.request('render-process-gone');
+  });
+  wc.on('unresponsive', () => {
+    diag.warn('Renderer unresponsive');
+    if (current()) recovery.unresponsive();
+  });
+  wc.on('responsive', () => {
+    diag.info('Renderer responsive');
+    if (current()) recovery.responsive();
+  });
+  wc.on('did-start-loading', () => diag.info('Page loading'));
+  wc.on('did-finish-load', () => {
+    diag.info('Page loaded');
+    if (!current()) return;
+    winState.loadFinishedAt = Date.now();
+    winState.loadFailed = false;
+  });
+  wc.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame) {
+      diag.warn('A part of the page failed to load', { errorCode, errorDescription });
+      return;
+    }
+    if (errorCode === -3) { // ERR_ABORTED: a load replaced by another one (a reload); not a failure
+      diag.info('Page load was replaced by another load');
+      return;
+    }
+    diag.error('Page failed to load', { errorCode, errorDescription });
+    if (!current()) return;
+    winState.loadFailed = true;
+    rendererReady = false;
+    recovery.request('did-fail-load');
+  });
+}
+
+// What recovery.js needs to know about the window right now.
+function inspectWindow() {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return { exists: false };
+  const wc = win.webContents;
+  if (wc.isDestroyed && wc.isDestroyed()) return { exists: true, crashed: true, ready: false, loading: false, loadFailed: false, sinceLoadMs: Infinity };
+  return {
+    exists: true,
+    crashed: winState.crashed || Boolean(wc.isCrashed && wc.isCrashed()),
+    loadFailed: winState.loadFailed,
+    loading: Boolean(wc.isLoading && wc.isLoading()),
+    ready: rendererReady,
+    sinceLoadMs: Date.now() - (winState.loadFinishedAt || winState.createdAt),
+  };
+}
+
+// First repair: load the same page again in the same window.
+function reloadMainWindow() {
+  const win = mainWindow;
+  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false });
+  rendererReady = false;
+  showAfterReload = showOnReady; // a window that should be on screen is shown once the page is ready
+  win.webContents.reload();
+}
+
+// Next repairs: replace the window (keeping it hidden if it was hidden). The old one is destroyed without the
+// "hide to the tray" step.
+function recreateMainWindow() {
+  const old = mainWindow;
+  const visible = showOnReady || Boolean(old && !old.isDestroyed() && old.isVisible && old.isVisible());
+  mainWindow = null;
+  if (old && !old.isDestroyed()) {
+    try { old.destroy(); } catch (error) { diag.error('Could not close the old window', error); }
+  }
+  createWindow({ visible });
+}
+
+function pingRenderer() {
+  return mainWindow.webContents.executeJavaScript('document.readyState');
+}
+
+const recovery = createRecovery({
+  log: diag,
+  inspect: inspectWindow,
+  reload: reloadMainWindow,
+  recreate: recreateMainWindow,
+  ping: pingRenderer,
+  isQuitting: () => quitting,
+});
 
 // Windows does not let a program that is running in the background take the screen: the window only flashes in the
 // taskbar. This is the case after a start with Windows, when the person later opens the app from its shortcut or the
@@ -194,6 +350,17 @@ function showWindow() {
     return;
   }
   showOnReady = true;
+  // A page that is known to be broken is not shown again: it is repaired first, and shown once it works.
+  const failure = recovery.diagnose();
+  if (failure || recovery.isBusy()) {
+    diag.warn('The window was opened while its page is not working', { failure });
+    const result = recovery.isBusy() && !failure ? 'busy' : recovery.request(`show-window:${failure}`, { userAction: true });
+    if (result === 'started' || result === 'deferred' || result === 'busy') {
+      showAfterReload = true;
+      return;
+    }
+    // Recovery refused (gave up): show the window as before rather than nothing.
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   if (!mainWindow.isMaximized()) mainWindow.maximize(); // opening from the tray brings it back full size
   mainWindow.show();
@@ -201,6 +368,7 @@ function showWindow() {
 }
 
 function hideWindow() {
+  showOnReady = false; // a window the person sent to the tray stays there, also after a recovery
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
 }
 
@@ -603,8 +771,16 @@ function onSystemChange() {
 }
 
 function startSystemWatch() {
-  powerMonitor.on('resume', onSystemChange);
-  powerMonitor.on('unlock-screen', onSystemChange);
+  // Wake and unlock refresh the data at once; the page itself is checked a few seconds later, once Windows has settled.
+  const onWake = (name) => () => {
+    diag.info('System event', name);
+    recovery.systemEvent(name);
+    onSystemChange();
+  };
+  powerMonitor.on('resume', onWake('resume'));
+  powerMonitor.on('unlock-screen', onWake('unlock-screen'));
+  powerMonitor.on('suspend', () => diag.info('System event', 'suspend'));
+  powerMonitor.on('lock-screen', () => diag.info('System event', 'lock-screen'));
 
   // A change of the PC's time zone (or a daylight saving change) changes the UTC offset.
   lastOffset = new Date().getTimezoneOffset();
@@ -785,7 +961,26 @@ function registerIpc() {
   ipcMain.on('renderer-ready', (event) => {
     if (!fromMainWindow(event)) return;
     rendererReady = true;
+    diag.info('Renderer ready');
+    recovery.onReady();
     flushPendingEvents();
+    if (showAfterReload) {
+      showAfterReload = false;
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        mainWindow.maximize();
+        mainWindow.show();
+        bringToFront();
+      }
+    }
+  });
+
+  // Settings -> Open Log Folder: the diagnostic log (no planner data) lives there.
+  ipcMain.handle('open-logs-folder', async (event) => {
+    refuseOutsiders(event);
+    const dir = getLogger().dir || path.join(app.getPath('userData'), 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    const problem = await shell.openPath(dir); // an empty text means it worked
+    return problem ? { ok: false, error: String(problem) } : { ok: true };
   });
 }
 
@@ -840,6 +1035,7 @@ function start() {
       session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(false));
       if (session.defaultSession.setPermissionCheckHandler) session.defaultSession.setPermissionCheckHandler(() => false);
     }
+    diag.info('App started', { hidden: process.argv.includes(STARTUP_ARG) });
     registerIpc();
     if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
     applyStartWithWindows(service.getSettings());
@@ -865,8 +1061,16 @@ function start() {
   // The app keeps running when there are no windows: it lives in the tray.
   app.on('window-all-closed', () => {});
 
+  // A helper process of Chromium (the graphics process, for example) ended: written to the log for later.
+  app.on('child-process-gone', (event, details) => {
+    diag.error('Child process gone', {
+      type: details && details.type, reason: details && details.reason, exitCode: details && details.exitCode, name: details && details.name,
+    });
+  });
+
   app.on('before-quit', () => {
     quitting = true;
+    recovery.dispose();
     if (watchdog) clearInterval(watchdog);
     if (engine) engine.stop();
     if (routineEngine) routineEngine.stop();
@@ -881,4 +1085,6 @@ function start() {
 
 start();
 
-module.exports = { handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine, getService: () => service };
+module.exports = {
+  handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine, getService: () => service, getRecovery: () => recovery,
+};

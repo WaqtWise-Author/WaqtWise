@@ -2021,6 +2021,32 @@ async function setTime(page, hour, minute, ampm) {
     await first.browser.close();
   });
 
+  await step('Start-up: a main process that never answers ends in an error with Try Again, and Try Again starts the app once', async () => {
+    const a = await openApp({ playwright, service: createService(), executablePath, stallFirstBootstrap: true });
+    const p = a.page;
+    await p.waitForSelector('#start-retry', { timeout: 5000 });
+    assert.match(await p.textContent('#view'), /did not answer in time/);
+    assert.equal(await p.getAttribute('#view .errors', 'role'), 'alert');
+    await p.click('#start-retry');
+    await p.waitForSelector('.zone');
+    assert.equal((await p.$$('#start-retry')).length, 0);
+    assert.ok(a.calls.filter((c) => c === 'bootstrap').length >= 2);
+    assert.deepEqual(realErrors(a.errors), []);
+    await a.browser.close();
+  });
+
+  await step('Settings: Open Log Folder asks the main process to open the folder', async () => {
+    const a = await openApp({ playwright, service: createService(), executablePath });
+    const p = a.page;
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.waitForSelector('#open-logs');
+    await p.click('#open-logs');
+    await p.waitForFunction(() => (window.__calls || []).includes('openLogsFolder'));
+    assert.deepEqual(realErrors(a.errors), []);
+    await a.browser.close();
+  });
+
   console.log(`\n${passed} steps passed${process.exitCode ? ', some FAILED' : ''}`);
   process.exit(process.exitCode || 0); // the browsers left open by the first screens would keep the script alive
 })().catch((error) => {
