@@ -116,7 +116,7 @@ The Free To-Do list holds tasks that have no time yet. It has no reminders, no z
 
 - Each task's `reminders` object may contain `"fullScreen": true` (missing means off). Single-occurrence edits in
   `overrides` can carry their own `reminders`, so one day can differ.
-- `settings` contains `fullScreenAlerts`, `fullScreenDefaultForNewTasks`, `alertScreens` (`"all"` or `"main"`) and
+- `settings` contains `trayIcon` (`"normal"` or `"monochrome"`, default `"normal"`: the icon near the clock; a file without it gets `"normal"`), `fullScreenAlerts`, `fullScreenDefaultForNewTasks`, `alertScreens` (`"all"` or `"main"`) and
   `alertAppearance` (colors as `#rrggbb`, `fontFamily`, `alignment`, and the groups `name`, `notes` and `show`).
   Missing or invalid values are replaced by the defaults when a backup is imported.
 

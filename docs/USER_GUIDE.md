@@ -266,7 +266,7 @@ Open the menu → **Settings**. A row of buttons at the top jumps to each sectio
 | **Language** | English or العربية, applied immediately. Your own text (task names, notes, your categories) is never translated. Numbers always use 0123456789. |
 | **Prayer Times** | Country and city (or a custom city), calculation method (12 are offered), minutes to add or subtract for each prayer, and the Hijri date adjustment. |
 | **Reminders & Notifications** | Windows notifications on/off, a sound, the default reminder time (10 minutes before), the snooze length, an optional notification at the start of each zone, and a **Send a Test Notification** button. |
-| **Application** | **Start with Windows**, the background message, theme (system, light or dark), first day of the week, **late tasks** (after how long a ticked task counts as late) and working days (used by "last working day" repeats). |
+| **Application** | **Start with Windows**, the background message, theme (system, light or dark), **Tray Icon** (the normal colored icon near the clock, or a monochrome one that is white on a dark taskbar and black on a light one and follows Windows by itself), first day of the week, **late tasks** (after how long a ticked task counts as late) and working days (used by "last working day" repeats). |
 | **Daily View** | Which details each task row shows (with *Show Everything*, *Standard* and *Name Only* presets and a live preview), and whether empty and finished zones are collapsed. |
 | **Full-Screen Reminder** | Whether new tasks get it, which screens, colours, font, name and note sizes, details and buttons shown, and ready-made looks. |
 | **Sounds** | The sound for finishing a task and for the full-screen alert (or off). |

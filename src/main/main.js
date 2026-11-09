@@ -35,10 +35,15 @@ const { MAX_ALERT_IMAGES } = require('../core/alert-background');
 const { createBackgrounds } = require('./backgrounds');
 const { createLogger } = require('./logger');
 const { createRecovery } = require('./recovery');
+const { createTaskbarTheme } = require('./taskbar-theme');
 
 const ICON = path.join(__dirname, 'icon.ico'); // window / taskbar icon (the .ico holds the small bold version Windows needs at 16-32 px)
 // Tray icon: tray-icon.png is 16x16; Electron also picks up tray-icon@1.5x / @2x / @3x for sharper icons on scaled screens.
 const TRAY_ICON = path.join(__dirname, 'tray-icon.png');
+// The monochrome tray icons: white for a dark taskbar, black for a light one (each also has @1.5x / @2x / @3x files).
+const TRAY_ICON_WHITE = path.join(__dirname, 'tray-icon-white.png');
+const TRAY_ICON_BLACK = path.join(__dirname, 'tray-icon-black.png');
+const TASKBAR_POLL_MS = 5000; // while the monochrome icon is on, the taskbar's mode is looked at this often as well (a cheap property read)
 const STARTUP_ARG = '--hidden'; // given to the app when Windows starts it at login
 const WATCHDOG_MS = 60000;
 
@@ -642,9 +647,88 @@ function trayActions() {
 function startTray() {
   trayController = createTray(
     { Tray, Menu, nativeImage },
-    { iconPath: TRAY_ICON, tooltip: 'WaqtWise', getActions: trayActions, onOpen: showWindow }
+    { iconPath: trayIconFile(), tooltip: 'WaqtWise', getActions: trayActions, onOpen: showWindow }
   );
+  currentTrayIcon = trayIconFile();
+  syncTrayIcon();
 }
+
+// ---- Tray icon: colored, or monochrome that follows the Windows taskbar ------------------------------------------------------
+// Monochrome: white on a dark taskbar, black on a light one. The taskbar's mode ("Windows mode") is not the same as the
+// app mode, so it comes from nativeTheme.shouldUseDarkColorsForSystemIntegratedUI (taskbar-theme.js). It is looked at again
+// when Windows reports a theme change, after wake / unlock, and every few seconds while the monochrome icon is on, so a
+// change shows without a restart.
+
+const taskbarTheme = createTaskbarTheme({ nativeTheme });
+let taskbarDark = true; // the last known mode of the taskbar
+let taskbarTimer = null; // the periodic look
+let taskbarDebounce = null; // a theme change is looked at once Windows has finished writing it
+let currentTrayIcon = null;
+let trayMode = null;
+
+function trayIconFile() {
+  const mode = service ? service.getSettings().trayIcon : 'normal';
+  if (mode !== 'monochrome') return TRAY_ICON;
+  return taskbarDark ? TRAY_ICON_WHITE : TRAY_ICON_BLACK;
+}
+
+function applyTrayIcon() {
+  if (!trayController) return;
+  const file = trayIconFile();
+  if (file === currentTrayIcon) return;
+  try {
+    trayController.setIcon(file);
+    currentTrayIcon = file;
+    diag.info('Tray icon changed', { icon: path.basename(file), taskbarDark });
+  } catch (error) {
+    log('Could not change the tray icon', error);
+  }
+}
+
+function refreshTaskbarTheme() {
+  if (quitting) return;
+  let dark;
+  try {
+    dark = taskbarTheme.isDark();
+  } catch (error) {
+    return; // keep the icon that is shown
+  }
+  taskbarDark = dark;
+  applyTrayIcon();
+}
+
+function scheduleTaskbarRefresh() {
+  if (trayMode !== 'monochrome') return;
+  if (taskbarDebounce) clearTimeout(taskbarDebounce);
+  taskbarDebounce = setTimeout(() => { taskbarDebounce = null; refreshTaskbarTheme(); }, 300);
+  if (taskbarDebounce.unref) taskbarDebounce.unref();
+}
+
+function stopTaskbarWatch() {
+  if (taskbarTimer) clearInterval(taskbarTimer);
+  taskbarTimer = null;
+  if (taskbarDebounce) clearTimeout(taskbarDebounce);
+  taskbarDebounce = null;
+}
+
+// Called at start and whenever settings change: follows the "Tray Icon" setting.
+function syncTrayIcon() {
+  const mode = service ? service.getSettings().trayIcon : 'normal';
+  if (mode === trayMode) return;
+  trayMode = mode;
+  if (mode === 'monochrome') {
+    if (!taskbarTimer) {
+      taskbarTimer = setInterval(refreshTaskbarTheme, TASKBAR_POLL_MS);
+      if (taskbarTimer.unref) taskbarTimer.unref();
+    }
+    refreshTaskbarTheme();
+  } else {
+    stopTaskbarWatch();
+  }
+  applyTrayIcon();
+}
+
+nativeTheme.on('updated', scheduleTaskbarRefresh);
 
 // ---- Notification clicks and links ---------------------------------------------------------------------------------------
 
@@ -775,6 +859,7 @@ function startSystemWatch() {
   const onWake = (name) => () => {
     diag.info('System event', name);
     recovery.systemEvent(name);
+    scheduleTaskbarRefresh();
     onSystemChange();
   };
   powerMonitor.on('resume', onWake('resume'));
@@ -1018,7 +1103,7 @@ function start() {
           if (engine) engine.reschedule(); // tasks or settings changed: re-aim the exact-time timer
           if (routineEngine) routineEngine.reschedule();
         },
-        onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); refreshTrayTooltip(); },
+        onSettingsChanged: (settings) => { applyStartWithWindows(settings); applyTitleBarTheme(); refreshTrayTooltip(); syncTrayIcon(); },
         onPomodoroChanged,
         onPomodoroSignal: signalPomodoro,
       });
@@ -1071,6 +1156,7 @@ function start() {
   app.on('before-quit', () => {
     quitting = true;
     recovery.dispose();
+    stopTaskbarWatch();
     if (watchdog) clearInterval(watchdog);
     if (engine) engine.stop();
     if (routineEngine) routineEngine.stop();
@@ -1087,4 +1173,5 @@ start();
 
 module.exports = {
   handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine, getService: () => service, getRecovery: () => recovery,
+  getTaskbarTheme: () => taskbarTheme, // for the tests: the reader of the taskbar's mode
 };

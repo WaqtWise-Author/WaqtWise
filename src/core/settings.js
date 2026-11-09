@@ -74,6 +74,7 @@ const ALERT_SOUNDS = ['bell', 'alarm', 'rising', 'pulse', 'off'];
 
 const ALERT_FONTS = ['Segoe UI', 'Tahoma', 'Arial', 'Verdana', 'Georgia', 'Times New Roman'];
 const ALERT_SCREENS = ['all', 'main'];
+const TRAY_ICONS = ['normal', 'monochrome']; // the icon near the clock: the colored one, or a white / black one that follows the taskbar
 
 const isColor = (v) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
 const isBool = (v) => typeof v === 'boolean';
@@ -201,6 +202,7 @@ const DEFAULT_SETTINGS = {
   backgroundMessageShown: false,
   welcomeShown: false, // the first-run "choose your city" screen
   theme: 'system',
+  trayIcon: 'normal', // 'normal' (colored) or 'monochrome' (white on a dark taskbar, black on a light one)
   language: 'en', // 'en' English or 'ar' Arabic (right to left)
   workingDays: [0, 1, 2, 3, 4], // Sunday - Thursday
   weekStart: 0, // first day of the week: 6 Saturday, 0 Sunday or 1 Monday
@@ -283,6 +285,7 @@ function validateSettings(settings) {
   if ('weekStart' in s && ![6, 0, 1].includes(s.weekStart)) errors.push(t('Choose Saturday, Sunday or Monday as the first day of the week'));
   if ('taskInfo' in s) errors.push(...validateTaskInfo(s.taskInfo));
   if ('alertScreens' in s && !ALERT_SCREENS.includes(s.alertScreens)) errors.push(t('Choose all screens or the main screen'));
+  if ('trayIcon' in s && !TRAY_ICONS.includes(s.trayIcon)) errors.push(t('Choose the normal or the monochrome tray icon'));
   if ('alertAppearance' in s) errors.push(...validateAppearance(s.alertAppearance));
   if ('alertBackground' in s) errors.push(...validateAlertBackground(s.alertBackground));
   for (const key of ['notificationsEnabled', 'soundEnabled', 'zoneStartNotifications', 'startWithWindows', 'showBackgroundMessage', 'backgroundMessageShown', 'welcomeShown', 'fullScreenAlerts', 'fullScreenDefaultForNewTasks', 'alertSoundRepeat', 'useCustomCity', 'collapseZones']) {
@@ -338,6 +341,7 @@ function sanitizeSettings(raw) {
 module.exports = {
   ALERT_FONTS,
   ALERT_SCREENS,
+  TRAY_ICONS,
   ALERT_PRESETS,
   DEFAULT_ALERT_APPEARANCE,
   validateAppearance,

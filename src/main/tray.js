@@ -40,6 +40,10 @@ function createTray({ Tray, Menu, nativeImage }, { iconPath, tooltip, getActions
     setTooltip(text) {
       tray.setToolTip(text);
     },
+    // Another icon file (the colored one, or the white / black one); the @1.5x / @2x / @3x files next to it are used as well.
+    setIcon(file) {
+      tray.setImage(nativeImage.createFromPath(file));
+    },
     destroy() {
       if (!tray.isDestroyed || !tray.isDestroyed()) tray.destroy();
     },

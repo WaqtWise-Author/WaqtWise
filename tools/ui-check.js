@@ -2047,6 +2047,22 @@ async function setTime(page, hour, minute, ampm) {
     await a.browser.close();
   });
 
+  await step('Settings: the Tray Icon choice (Normal / Monochrome) is saved', async () => {
+    const service = createService();
+    const a = await openApp({ playwright, service, executablePath });
+    const p = a.page;
+    await p.click('#menu-btn');
+    await p.click('button:has-text("Settings")');
+    await p.waitForSelector('#tray-icon');
+    assert.equal(await p.inputValue('#tray-icon'), 'normal');
+    assert.deepEqual(await p.$$eval('#tray-icon option', (o) => o.map((x) => x.textContent)), ['Normal Icon', 'Monochrome Icon']);
+    await p.selectOption('#tray-icon', 'monochrome');
+    await p.waitForFunction(() => document.querySelector('#tray-icon').value === 'monochrome');
+    assert.equal(service.getSettings().trayIcon, 'monochrome');
+    assert.deepEqual(realErrors(a.errors), []);
+    await a.browser.close();
+  });
+
   console.log(`\n${passed} steps passed${process.exitCode ? ', some FAILED' : ''}`);
   process.exit(process.exitCode || 0); // the browsers left open by the first screens would keep the script alive
 })().catch((error) => {

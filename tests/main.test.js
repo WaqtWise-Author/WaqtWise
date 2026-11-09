@@ -120,7 +120,8 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
   };
 
   fake.Tray = class {
-    constructor(image) { this.image = image; this.handlers = {}; this.destroyed = false; fake.trays.push(this); }
+    constructor(image) { this.image = image; this.images = [image]; this.handlers = {}; this.destroyed = false; fake.trays.push(this); }
+    setImage(image) { this.image = image; this.images.push(image); }
     setToolTip(text) { this.tooltip = text; }
     setContextMenu(menu) { this.menu = menu; }
     popUpContextMenu(menu) { this.menu = menu; }
@@ -139,7 +140,8 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     resize: (size) => ({ ...picture(p, size.width || w, size.height || h), size }), toJPEG: () => Buffer.from(`JPEG ${w}x${h}`),
   });
   fake.nativeImage = { createFromPath: (p) => picture(p, 4000, 2000) };
-  fake.nativeTheme = { shouldUseDarkColors: false, on: () => {} };
+  fake.themeEvents = [];
+  fake.nativeTheme = { shouldUseDarkColors: false, on: (event, fn) => { if (event === 'updated') fake.themeEvents.push(fn); } };
   fake.powerMonitor = { on: (event, fn) => { fake.powerEvents[event] = fn; } };
   fake.openedPaths = [];
   fake.shell = { openPath: async (dir) => { fake.openedPaths.push(dir); return ''; } };
@@ -1467,4 +1469,87 @@ test('Settings can open the log folder, and the log has no planner data', async 
   assert.match(readLog(app), /App started/);
   assert.doesNotMatch(readLog(app), /private task title/);
   app.cleanup();
+});
+
+// ---- Tray icon: normal, or monochrome that follows the Windows taskbar -------------------------------------------------
+
+// Windows' taskbar mode as Electron reports it (nativeTheme.shouldUseDarkColorsForSystemIntegratedUI), which is not the
+// app mode (shouldUseDarkColors). `taskbar.dark` can be changed while the app runs; `taskbar.reads` counts the looks.
+function fakeTaskbar(app, dark) {
+  const taskbar = { dark, reads: 0 };
+  Object.defineProperty(app.nativeTheme, 'shouldUseDarkColorsForSystemIntegratedUI', {
+    configurable: true,
+    get() { taskbar.reads += 1; return taskbar.dark; },
+  });
+  return taskbar;
+}
+const trayFile = (app) => path.basename(app.trays[0].image.path);
+
+test('Tray icon: the normal colored icon is the default and the taskbar is not looked at', async () => {
+  const app = await launch();
+  const taskbar = fakeTaskbar(app, true);
+  assert.equal(trayFile(app), 'tray-icon.png');
+  assert.equal((await app.svc('getSettings')).trayIcon, 'normal');
+  app.themeEvents.forEach((fn) => fn());
+  await pause(400);
+  assert.equal(taskbar.reads, 0);
+  assert.equal(trayFile(app), 'tray-icon.png');
+  app.cleanup();
+});
+
+test('Tray icon: monochrome follows the taskbar mode (not the app mode), also when Windows changes', async () => {
+  const app = await launch();
+  app.nativeTheme.shouldUseDarkColors = false; // the apps are light ...
+  const taskbar = fakeTaskbar(app, true); // ... and the taskbar is dark: the icon must be white
+  await app.svc('saveSettings', { trayIcon: 'monochrome' });
+  await pause(10);
+  assert.equal(trayFile(app), 'tray-icon-white.png');
+  // Windows switches to the light mode: no restart needed.
+  taskbar.dark = false;
+  app.themeEvents.forEach((fn) => fn());
+  await pause(450);
+  assert.equal(trayFile(app), 'tray-icon-black.png');
+  taskbar.dark = true;
+  app.powerEvents.resume(); // a change that happened during sleep
+  await pause(450);
+  assert.equal(trayFile(app), 'tray-icon-white.png');
+  // Back to the normal icon: it is colored again and the taskbar is not looked at any more.
+  await app.svc('saveSettings', { trayIcon: 'normal' });
+  assert.equal(trayFile(app), 'tray-icon.png');
+  const reads = taskbar.reads;
+  app.themeEvents.forEach((fn) => fn());
+  await pause(400);
+  assert.equal(taskbar.reads, reads);
+  assert.match(readLog(app), /Tray icon changed/);
+  app.cleanup();
+});
+
+test('Tray icon: an unchanged mode does not set the icon again, and a failing reader never breaks the app', async () => {
+  const app = await launch();
+  const taskbar = fakeTaskbar(app, true);
+  await app.svc('saveSettings', { trayIcon: 'monochrome' });
+  await pause(10);
+  const images = app.trays[0].images.length;
+  app.themeEvents.forEach((fn) => fn());
+  await pause(400);
+  assert.ok(taskbar.reads >= 2);
+  assert.equal(app.trays[0].images.length, images, 'same mode: the icon is not set again');
+  app.main.getTaskbarTheme().isDark = () => { throw new Error('the mode cannot be read'); };
+  app.themeEvents.forEach((fn) => fn());
+  await pause(400);
+  assert.equal(trayFile(app), 'tray-icon-white.png');
+  app.cleanup();
+});
+
+test('Tray icon: the monochrome files exist in the four sizes, as white and as black, with transparency', () => {
+  for (const name of ['white', 'black']) {
+    for (const [suffix, size] of [['', 16], ['@1.5x', 24], ['@2x', 32], ['@3x', 48]]) {
+      const file = path.join(__dirname, '..', 'src', 'main', `tray-icon-${name}${suffix}.png`);
+      assert.ok(fs.existsSync(file), `${name}${suffix} exists`);
+      const buf = fs.readFileSync(file);
+      assert.equal(buf.readUInt32BE(16), size);
+      assert.equal(buf.readUInt32BE(20), size);
+      assert.equal(buf[25], 6, 'RGBA'); // color type 6: has an alpha channel
+    }
+  }
 });

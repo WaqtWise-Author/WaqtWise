@@ -3,6 +3,11 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.6.0
+
+New
+- **Tray icon style (Settings → Application → Tray Icon).** Choose **Normal Icon** (the colored icon, as before) or **Monochrome Icon**, a one-color icon that matches the other icons near the clock: **white on a dark taskbar, black on a light one**. It follows the Windows mode of the taskbar (the "Windows mode" in Settings → Personalization → Colors, which can differ from the app mode), and changes **by itself, without restarting WaqtWise**, when you switch Windows between light and dark. The setting is saved and exported with your other settings; the default is Normal.
+
 ## 1.5.1
 
 Fixes
