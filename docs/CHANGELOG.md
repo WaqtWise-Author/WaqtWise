@@ -3,6 +3,15 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.6.1
+
+Fixes
+- **The empty, unresponsive window after a start with Windows.** Found from the log: at login the window's page took 10 to 20 seconds to load (and once 76 seconds, then failed) because Windows and the disk were busy with startup, and the program is installed on a slower drive. Opening the window from the "missed reminders" notification during that time showed an empty window. Now:
+  - **A start with Windows no longer creates the window at all.** The reminders, alerts, tray and notifications work exactly as before; the window is created the first time you open it (tray, notification, shortcut), so nothing competes with Windows while it starts.
+  - **A window is never shown before its page has drawn something.** If you open it too early it appears as soon as it is ready; if that takes more than 20 seconds the page is repaired automatically (a reload, then a new window).
+  - A slow start is not mistaken for a hang: while the page is still starting, a hang is given 60 seconds instead of 15 before it is repaired.
+- The log now also records when you open the window or click a notification (and the state of the page then), and when a repair is not started because the app is closing.
+
 ## 1.6.0
 
 New

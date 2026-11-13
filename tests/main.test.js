@@ -30,8 +30,9 @@ function pauseLabels(app) {
 
 // ---- Stand-ins ------------------------------------------------------------------------------------------
 
-function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = false, displays }) {
+function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = false, displays, loadFileError = null }) {
   const fake = {
+    loadFileError,
     appId: null,
     quitCalled: false,
     appEvents: {},
@@ -96,7 +97,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
       this.visible = false;
       (this.handlers.closed || []).forEach((fn) => fn({}));
     }
-    loadFile(file) { this.file = file; }
+    loadFile(file) { this.file = file; return fake.loadFileError ? Promise.reject(fake.loadFileError) : undefined; }
     on(event, fn) { (this.handlers[event] = this.handlers[event] || []).push(fn); }
     once(event, fn) { this.on(event, fn); }
     // Pretend Windows/Electron raised an event. Returns an event object that records preventDefault().
@@ -286,13 +287,15 @@ test('Start-up: app id, one secure window showing our page, shown when ready', a
 
 test('22. Started by Windows at login (--hidden): stays hidden in the tray', async () => {
   const app = await launch({ hidden: true });
-  const win = app.win();
-  win.emit('ready-to-show');
-  assert.equal(win.visible, false, 'the window does not pop up');
-  assert.notEqual(win.maximized, true, 'nothing is maximized while hidden');
+  assert.equal(app.windows.length, 0, 'no window is even created at login: nothing competes with Windows starting up');
   assert.equal(app.trays.length, 1, 'but the tray icon is there');
   assert.ok(app.main.getEngine(), 'and the reminder engine is running');
+  assert.ok(app.ipcOn['renderer-ready'], 'the app is ready to be opened');
   trayItem(app, 'Open / Show').click();
+  assert.equal(app.windows.length, 1, 'the window is created when it is first opened');
+  const win = app.win();
+  assert.equal(win.visible, false, 'and it is shown when its page has drawn, not before');
+  win.emit('ready-to-show');
   assert.equal(win.visible, true, 'it opens from the tray');
   assert.equal(win.maximized, true, 'and comes up maximized');
   app.cleanup();
@@ -1435,15 +1438,17 @@ test('Only a failed load of the main page is a failure', async () => {
   app.cleanup();
 });
 
-test('A start with Windows stays hidden, also when the page has to be repaired', async () => {
-  const { app, win } = await liveApp({ hidden: true });
-  assert.equal(win.shownCount, 0);
+test('A window the person sent to the tray stays in the tray, also when the page has to be repaired', async () => {
+  const { app, win } = await liveApp();
+  win.emit('close'); // sent to the tray
+  const shown = win.shownCount;
   win.page('render-process-gone', { reason: 'crashed', exitCode: 1 });
   app.ipcOn['renderer-ready']();
-  assert.equal(win.shownCount, 0);
+  assert.equal(win.shownCount, shown);
   win.page('render-process-gone', { reason: 'crashed', exitCode: 1 }); // and a new window after a failed reload
   await pause(80);
   const fresh = app.windows.filter((w) => !w.destroyed).pop();
+  assert.notEqual(fresh, win);
   fresh.emit('ready-to-show');
   assert.equal(fresh.shownCount, 0);
   assert.equal(fresh.options.show, false);
@@ -1553,3 +1558,62 @@ test('Tray icon: the monochrome files exist in the four sizes, as white and as b
     }
   }
 });
+
+test('A main page whose file cannot be read (loadFile rejects, as on a slow or missing drive) is repaired', async () => {
+  // The error Electron gives: "ERR_FAILED (-2) loading 'file:///...index.html'", with code and errno.
+  const error = Object.assign(new Error("ERR_FAILED (-2) loading 'file:///D:/WaqtWise/resources/app.asar/src/renderer/index.html'"), { code: 'ERR_FAILED', errno: -2 });
+  const app = await launch({ loadFileError: error });
+  Object.assign(app.main.getRecovery().config, { backoffMs: [0, 5, 5], readyTimeoutMs: 40 });
+  await pause(30);
+  const text = readLog(app);
+  assert.match(text, /loadFile failed/);
+  assert.match(text, /Recovery attempt/);
+  assert.equal(app.win().reloads, 1);
+  app.cleanup();
+});
+
+test('A start with Windows: a notification click before the page exists opens the window once its page has drawn, and the missed list reaches it', async () => {
+  const app = await launch({ hidden: true });
+  assert.equal(app.windows.length, 0);
+  app.main.handleAction({ type: 'missed' }); // the click on "2 reminders were missed"
+  assert.equal(app.windows.length, 1);
+  const win = app.win();
+  assert.equal(win.shownCount, 0, 'not shown while the page has drawn nothing');
+  app.main.handleAction({ type: 'missed' }); // a second click does not stack windows or show a blank one
+  assert.equal(app.windows.length, 1);
+  assert.equal(win.shownCount, 0);
+  win.emit('ready-to-show');
+  assert.equal(win.shownCount, 1);
+  assert.match(readLog(app), /Action.*missed/);
+  app.cleanup();
+});
+
+test('A window that is wanted but never draws its page is repaired after the wait', async () => {
+  const app = await launch();
+  Object.assign(app.main.getRecovery().config, { paintWatchMs: 20, readyTimeoutMs: 400, backoffMs: [0, 5, 5] });
+  const win = app.win();
+  app.main.handleAction({ type: 'open' });
+  assert.equal(win.shownCount, 0, 'not shown blank');
+  assert.equal(win.reloads, 0);
+  await pause(60);
+  assert.equal(win.reloads, 1, 'repaired after the wait');
+  assert.match(readLog(app), /has not drawn yet/);
+  assert.match(readLog(app), /Recovery attempt.*not-painted/);
+  app.cleanup();
+});
+
+test('While the page is still starting, a hang gets the longer grace period', async () => {
+  const { app, win } = await launchStarting();
+  Object.assign(app.main.getRecovery().config, { unresponsiveGraceMs: 10, unresponsiveStartupGraceMs: 120 });
+  win.page('unresponsive');
+  await pause(50);
+  assert.equal(win.reloads, 0, 'a slow start is not a hang');
+  await pause(120);
+  assert.equal(win.reloads, 1);
+  app.cleanup();
+});
+
+async function launchStarting() {
+  const app = await launch();
+  return { app, win: app.win() };
+}

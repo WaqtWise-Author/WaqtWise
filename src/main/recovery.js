@@ -21,9 +21,11 @@
 
 const DEFAULTS = {
   unresponsiveGraceMs: 15000, // a hang shorter than this is left alone
+  unresponsiveStartupGraceMs: 60000, // the same while the page has not finished starting (a slow disk at login)
   settleMs: 3000, // after wake / unlock, wait for Windows and Chromium to settle before looking
   notReadyAfterMs: 20000, // a loaded page that never said "ready" for this long is stuck
   readyTimeoutMs: 20000, // a recovery that is not "ready" after this long counts as failed
+  paintWatchMs: 20000, // a window the person wants to see must have drawn its page within this time
   pingTimeoutMs: 8000, // the page must answer a trivial question within this time
   maxAttempts: 3,
   backoffMs: [0, 5000, 30000], // wait before attempt 1, 2, 3
@@ -108,7 +110,10 @@ function createRecovery({ log, inspect, reload, recreate, ping, isQuitting = () 
   // waiting), 'gave-up' (too many attempts in a row), or 'quit'. `userAction` (the person opened the window) skips the
   // wait and gives a fresh set of attempts.
   function request(reason, options = {}) {
-    if (disposed || isQuitting()) return 'quit';
+    if (disposed || isQuitting()) {
+      log.info('Recovery not started: the app is closing', { reason });
+      return 'quit';
+    }
     if (busy || deferTimer) {
       log.info('Recovery already in progress; request ignored', { reason });
       return 'busy';
@@ -140,11 +145,13 @@ function createRecovery({ log, inspect, reload, recreate, ping, isQuitting = () 
   // A hang is repaired only if it lasts.
   function unresponsive() {
     if (graceTimer) return;
+    const state = inspect();
+    const graceMs = state && state.exists && !state.ready ? cfg.unresponsiveStartupGraceMs : cfg.unresponsiveGraceMs;
     graceTimer = timers.setTimeout(() => {
       graceTimer = null;
-      log.warn('The page is still unresponsive after the grace period', { graceMs: cfg.unresponsiveGraceMs });
+      log.warn('The page is still unresponsive after the grace period', { graceMs });
       request('unresponsive');
-    }, cfg.unresponsiveGraceMs);
+    }, graceMs);
   }
 
   function responsive() {

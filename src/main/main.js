@@ -64,7 +64,8 @@ const pendingEvents = []; // events waiting for the window to be ready
 const MAX_PENDING_EVENTS = 20;
 let showAfterReload = false; // a reload (not a new window) must show the window once the page is ready
 // What is known about the current window's page; it starts again with every window and every reload.
-const winState = { createdAt: 0, loadFinishedAt: 0, loadFailed: false, crashed: false };
+const winState = { createdAt: 0, loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false };
+let paintTimer = null; // see armPaintWatch
 
 // ---- Log file ---------------------------------------------------------------------------------------------------
 // Diagnostics for problems nobody was watching (see logger.js): %APPDATA%\WaqtWise\logs\waqtwise.log. No planner data.
@@ -157,7 +158,7 @@ function createWindow({ visible }) {
   rendererReady = false;
   showOnReady = visible;
   showAfterReload = false;
-  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false });
+  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false });
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 860,
@@ -180,6 +181,7 @@ function createWindow({ visible }) {
   const win = mainWindow; // events of an older window must never act on the current one
   diag.info('Window created', { visible });
   watchPage(win);
+  if (visible) armPaintWatch(win);
   Promise.resolve(win.loadFile(PAGES.main)).catch((error) => {
     if (error && (error.code === 'ERR_ABORTED' || error.errno === -3)) return; // a load replaced by another one
     diag.error('loadFile failed', error);
@@ -192,6 +194,7 @@ function createWindow({ visible }) {
 
   mainWindow.once('ready-to-show', () => {
     diag.info('Window ready to show', { show: showOnReady });
+    if (win === mainWindow) winState.painted = true;
     if (win === mainWindow && showOnReady && !mainWindow.isDestroyed()) {
       mainWindow.maximize(); // always opens full size
       mainWindow.show();
@@ -349,12 +352,33 @@ function bringToFront() {
   }
 }
 
+// A window the person asked for is shown when its page has drawn its first picture (never before: an empty window that
+// cannot be used is worse than a short wait). If that does not happen in time, the page is repaired.
+function armPaintWatch(win) {
+  if (paintTimer) clearTimeout(paintTimer);
+  paintTimer = setTimeout(() => {
+    paintTimer = null;
+    if (win !== mainWindow || winState.painted || quitting) return;
+    diag.warn('The window page has drawn nothing yet', { waitedMs: recovery.config.paintWatchMs });
+    recovery.request('not-painted', { userAction: true });
+  }, recovery.config.paintWatchMs);
+  if (paintTimer.unref) paintTimer.unref();
+}
+
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
+    diag.info('Opening: creating the window');
     createWindow({ visible: true });
     return;
   }
   showOnReady = true;
+  if (!winState.painted && !recovery.isBusy()) {
+    // Right after the window was created (a start with Windows, a slow disk): the page has drawn nothing yet. It is shown
+    // by "ready-to-show" as soon as it has.
+    diag.info('Opening: the page has not drawn yet; the window is shown when it has', { ready: rendererReady });
+    armPaintWatch(mainWindow);
+    return;
+  }
   // A page that is known to be broken is not shown again: it is repaired first, and shown once it works.
   const failure = recovery.diagnose();
   if (failure || recovery.isBusy()) {
@@ -736,6 +760,7 @@ nativeTheme.on('updated', scheduleTaskbarRefresh);
 // window. { type: 'open-task', taskId, dateKey } comes from the "Open Task" button of the full-screen alert.
 function handleAction(action) {
   if (!action) return;
+  diag.info('Action', { type: action.type, window: Boolean(mainWindow), painted: winState.painted, ready: rendererReady });
   showWindow();
   if (action.type === 'open') sendToWindow('show-daily', {});
   if (action.type === 'open-routines' || action.type === 'routines') sendToWindow('show-routines', {});
@@ -1047,6 +1072,7 @@ function registerIpc() {
     if (!fromMainWindow(event)) return;
     rendererReady = true;
     diag.info('Renderer ready');
+    if (paintTimer) { clearTimeout(paintTimer); paintTimer = null; }
     recovery.onReady();
     flushPendingEvents();
     if (showAfterReload) {
@@ -1130,9 +1156,12 @@ function start() {
     startTray();
     startSystemWatch();
 
-    // Started by Windows at login: stay hidden in the tray.
+    // Started by Windows at login: stay hidden in the tray. The window is not even created then: it is created when it is
+    // first opened (tray, notification, shortcut). At login the disk and the PC are busy with everything else, and a page
+    // that nobody asked for must not compete with them (or fail, as it did when the app's drive was slow to answer).
     const startedHidden = process.argv.includes(STARTUP_ARG);
-    createWindow({ visible: !startedHidden });
+    if (startedHidden) diag.info('Started hidden: the window is created when it is first opened');
+    else createWindow({ visible: true });
 
     const launchAction = findActionUrlInArgv(process.argv);
     if (launchAction) handleAction(launchAction);
@@ -1156,6 +1185,7 @@ function start() {
   app.on('before-quit', () => {
     quitting = true;
     recovery.dispose();
+    if (paintTimer) clearTimeout(paintTimer);
     stopTaskbarWatch();
     if (watchdog) clearInterval(watchdog);
     if (engine) engine.stop();
