@@ -9,6 +9,7 @@
 const { t } = require('../core/i18n');
 const fs = require('fs');
 const path = require('path');
+const { isDeepStrictEqual } = require('node:util');
 const { emptyData, normalizeData, DATA_VERSION } = require('../core/data');
 const { normalizeState } = require('../core/reminder-engine');
 
@@ -18,6 +19,26 @@ const REPLACE_WAIT_MS = 25;
 
 function sleepMs(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function writeFlushed(file, text) {
+  const fd = fs.openSync(file, 'w');
+  try {
+    fs.writeFileSync(fd, text, 'utf8');
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function needsImportBackup(data) {
+  const defaults = emptyData();
+  // An untouched installation can already have automatic reminder and history bookkeeping.
+  return !isDeepStrictEqual({
+    ...data,
+    reminderState: defaults.reminderState,
+    statsHistory: { ...data.statsHistory, through: null },
+  }, defaults);
 }
 
 class FileStore {
@@ -30,6 +51,7 @@ class FileStore {
     this.backupDir = path.join(path.dirname(filePath), 'backups');
     this.now = (options && options.now) || (() => new Date());
     this.sleep = (options && options.sleep) || sleepMs;
+    this.onBackupsPruned = options?.onBackupsPruned;
   }
 
   // Windows may refuse for a moment to replace a file that a virus scanner, the search indexer or a sync tool has open
@@ -136,13 +158,7 @@ class FileStore {
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const text = JSON.stringify(data, null, 2);
 
-    const fd = fs.openSync(this.tempPath, 'w');
-    try {
-      fs.writeSync(fd, text);
-      fs.fsyncSync(fd);
-    } finally {
-      fs.closeSync(fd);
-    }
+    writeFlushed(this.tempPath, text);
 
     if (fs.existsSync(this.filePath)) {
       try {
@@ -172,33 +188,69 @@ class FileStore {
   }
 
   // A copy of the data as it is now, made before something replaces it (kind: 'before-import' | 'before-restore').
-  backupNow(kind) {
+  backupNow(kind, data = this.load()) {
+    if (kind === 'before-import' && !needsImportBackup(data)) return true;
+    let temp;
     try {
-      if (!fs.existsSync(this.filePath)) return false;
       const stamp = localStamp(this.now());
       fs.mkdirSync(this.backupDir, { recursive: true });
-      fs.copyFileSync(this.filePath, path.join(this.backupDir, `${kind}-${stamp}.json`));
-      this.prune(kind, SAFETY_KEEP);
+      const prefix = `${kind}-${stamp}`;
+      const latest = this.listFiles(true).find((entry) => entry.id.startsWith(prefix));
+      const suffix = latest ? Number(latest.sortKey.slice(-6)) + 1 : 0;
+      const id = suffix ? `${prefix}-${String(suffix).padStart(6, '0')}.json` : `${prefix}.json`;
+      const file = path.join(this.backupDir, id);
+      temp = `${file}.tmp`;
+      writeFlushed(temp, JSON.stringify(data));
+      fs.renameSync(temp, file);
+      this.prune(kind, SAFETY_KEEP, id);
       return true;
     } catch (error) {
+      if (temp) try { fs.unlinkSync(temp); } catch (ignore) { /* no published backup */ }
       return false;
     }
   }
 
-  prune(kind, keep) {
-    const same = this.listFiles().filter((b) => b.kind === kind); // newest first
-    for (const old of same.slice(keep)) {
-      try { fs.unlinkSync(path.join(this.backupDir, old.id)); } catch (error) { /* ignore */ }
+  prune(kind, keep, preservedId) {
+    const same = this.listFiles().filter((b) => b.kind === kind && b.id !== preservedId); // newest first
+    let removed = false;
+    for (const old of same.slice(preservedId ? keep - 1 : keep)) {
+      try {
+        fs.unlinkSync(path.join(this.backupDir, old.id));
+        removed = true;
+      } catch (error) { /* ignore */ }
     }
+    if (removed && this.onBackupsPruned) queueMicrotask(this.onBackupsPruned);
   }
 
-  listFiles() {
+  listFiles(strict = false) {
     let names = [];
-    try { names = fs.readdirSync(this.backupDir); } catch (error) { return []; }
+    try {
+      names = fs.readdirSync(this.backupDir);
+    } catch (error) {
+      if (strict && error.code !== 'ENOENT') throw error;
+    }
     return names
       .map((id) => ({ id, ...describeBackupName(id) }))
       .filter((b) => b.kind)
       .sort((a, b) => (a.sortKey < b.sortKey ? 1 : a.sortKey > b.sortKey ? -1 : 0));
+  }
+
+  retainedBackgroundIds() {
+    const ids = new Set();
+    const files = this.listFiles(true).map((entry) => path.join(this.backupDir, entry.id));
+    files.push(this.backupPath);
+    for (const file of files) {
+      let data;
+      try {
+        data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      } catch (error) {
+        if (error.code === 'ENOENT' || error instanceof SyntaxError) continue;
+        throw error; // Do not remove pictures if a recoverable backup could not be read.
+      }
+      const images = data?.settings?.alertBackground?.images;
+      if (Array.isArray(images)) for (const image of images) ids.add(image?.id);
+    }
+    return ids;
   }
 
   // [{ id, kind, label date, tasks }] newest first. Files that cannot be read are left out.
@@ -239,8 +291,8 @@ const localStamp = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.get
 function describeBackupName(id) {
   let m = /^data-(\d{4}-\d{2}-\d{2})\.json$/.exec(String(id));
   if (m) return { kind: 'daily', date: m[1], time: '', sortKey: m[1] };
-  m = /^(before-import|before-restore)-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.json$/.exec(String(id));
-  if (m) return { kind: m[1], date: `${m[2]}-${m[3]}-${m[4]}`, time: `${m[5]}:${m[6]}`, sortKey: `${m[2]}-${m[3]}-${m[4]}T${m[5]}${m[6]}${m[7]}` };
+  m = /^(before-import|before-restore)-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(?:-(\d{6}))?\.json$/.exec(String(id));
+  if (m) return { kind: m[1], date: `${m[2]}-${m[3]}-${m[4]}`, time: `${m[5]}:${m[6]}`, sortKey: `${m[2]}-${m[3]}-${m[4]}T${m[5]}${m[6]}${m[7]}-${m[8] || '000000'}` };
   return {};
 }
 
@@ -258,11 +310,11 @@ class MemoryStore {
     this.stateSaveCount = (this.stateSaveCount || 0) + 1;
   }
 
-  backupNow(kind) {
+  backupNow(kind, data = this.data) {
     const when = new Date();
     this.backups.unshift({
       id: `${kind}-${this.backups.length}`, kind, date: localDate(when), time: `${pad(when.getHours())}:${pad(when.getMinutes())}`,
-      data: JSON.parse(JSON.stringify(this.data)),
+      data: JSON.parse(JSON.stringify(data)),
     });
     return true;
   }

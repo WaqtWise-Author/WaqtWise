@@ -13,6 +13,8 @@ const Module = require('module');
 const { pathToFileURL } = require('url');
 
 const { at } = require('./helpers');
+const { MAX_BACKUP_BYTES } = require('../src/core/limits');
+const { createTask, buildExport, emptyData } = require('../src/core');
 
 const MAIN_PATH = require.resolve('../src/main/main.js');
 
@@ -211,7 +213,7 @@ test.after(() => {
 });
 
 async function launch(options = {}) {
-  const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-main-'));
+  const userData = options.userData ?? fs.mkdtempSync(path.join(os.tmpdir(), 'planner-main-'));
   const fake = makeFakeElectron({ userData, ...options });
   stand.electron = fake;
   delete require.cache[MAIN_PATH];
@@ -241,7 +243,7 @@ async function launch(options = {}) {
   fake.cleanup = () => {
     // stop the reminder engine's timer, otherwise the test process would never finish
     if (fake.appEvents['before-quit']) fake.appEvents['before-quit'][0]();
-    fs.rmSync(userData, { recursive: true, force: true });
+    if (!options.userData) fs.rmSync(userData, { recursive: true, force: true });
   };
   return fake;
 }
@@ -646,11 +648,42 @@ test('Export writes a backup file; import restores it; cancelling does nothing',
 
   // a file far bigger than any backup is refused before it is read
   fs.writeFileSync(backupFile, '');
-  fs.truncateSync(backupFile, 21 * 1024 * 1024);
+  fs.truncateSync(backupFile, MAX_BACKUP_BYTES + 1);
   const e = await launch({ openFrom: backupFile });
   await assert.rejects(() => e.ipc['import-data'](), /too big/);
   e.cleanup();
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Portable backups round-trip beyond the old limit and refuse oversized exports before writing', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-large-backup-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const backupFile = path.join(dir, 'backup.json');
+  const date = '2026-10-04';
+  const tasks = Array.from({ length: 1650 }, (_, i) => createTask({
+    id: `task-${i}`, title: 'Sample', date, start: { mode: 'fixed', time: '08:00' },
+    durationMinutes: 30, notes: 'a'.repeat(20000),
+  }));
+  const a = await launch({ saveTo: backupFile });
+  try {
+    const service = a.main.getService();
+    service.exportData = () => buildExport({ ...emptyData(), tasks });
+    assert.equal((await a.ipc['export-data']()).ok, true);
+    const size = fs.statSync(backupFile).size;
+    assert.ok(size > 31 * 1024 * 1024 && size <= MAX_BACKUP_BYTES);
+    service.exportData = () => buildExport({ ...emptyData(), tasks: [...tasks, ...tasks.slice(0, 25)] });
+    await assert.rejects(() => a.ipc['export-data'](), /maximum backup size/);
+    assert.equal(fs.statSync(backupFile).size, size);
+  } finally {
+    a.cleanup();
+  }
+  const b = await launch({ openFrom: backupFile });
+  try {
+    assert.equal((await b.ipc['import-data']()).tasks, tasks.length);
+    assert.equal(b.main.getService().getTasks().at(-1).notes.length, 20000);
+  } finally {
+    b.cleanup();
+  }
 });
 
 test('The test notification works and has no buttons; clicking it opens the app', async () => {
@@ -1231,14 +1264,57 @@ test('Alert pictures: add from the disk (copied, made smaller), shown behind the
   assert.match(render.background.url, /^data:image\/jpeg;base64,/);
   app.ipcOn['alert-action'](alertEvent(win), { type: 'dismiss', itemId: render.items[0].id });
 
-  // Removing a picture deletes its files
+  // Removing a picture unlists it while its files are still needed by an older local copy.
   const left = await app.ipc['remove-alert-image'](ev, id);
   assert.deepEqual(left.map((x) => x.name), ['Hills']);
-  assert.equal(fs.existsSync(path.join(dir, `${id}.jpg`)), false);
-  assert.equal(fs.existsSync(path.join(dir, `${id}-thumb.jpg`)), false);
+  assert.equal(fs.existsSync(path.join(dir, `${id}.jpg`)), true);
+  assert.equal(fs.existsSync(path.join(dir, `${id}-thumb.jpg`)), true);
   // Another page may not use these
   await assert.rejects(Promise.resolve().then(() => app.ipc['alert-images']({ sender: {} })));
   app.cleanup();
+});
+
+test('Alert pictures survive import and restart while a local backup refers to them', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-image-backup-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const userData = path.join(dir, 'data');
+  fs.mkdirSync(userData);
+  const picture = path.join(dir, 'Sunset.jpg');
+  const portableBackup = path.join(dir, 'import.json');
+  fs.writeFileSync(picture, 'IMG a');
+  fs.writeFileSync(portableBackup, JSON.stringify(buildExport(emptyData())));
+  const first = await launch({ userData, openFrom: [picture] });
+  let id;
+  try {
+    const added = await first.ipc['add-alert-images']();
+    id = added.images[0].id;
+    await first.svc('saveSettings', { alertBackground: { mode: 'images', pick: 'fixed', fixedId: id } });
+    first.dialogs.openFrom = portableBackup;
+    assert.equal((await first.ipc['import-data']()).ok, true);
+    assert.deepEqual(await first.ipc['alert-images'](), []);
+  } finally {
+    first.cleanup();
+  }
+  const restarted = await launch({ userData });
+  try {
+    const backup = (await restarted.svc('listBackups')).find((entry) => entry.kind === 'before-import');
+    assert.equal((await restarted.svc('restoreBackup', { id: backup.id })).ok, true);
+    const [restored] = await restarted.ipc['alert-images']();
+    assert.equal(restored.id, id);
+    assert.match(restored.thumb, /^data:image\/jpeg;base64,/);
+    await restarted.ipc['remove-alert-image'](undefined, id);
+    const store = restarted.main.getService().store;
+    for (const backup of store.listFiles()) fs.unlinkSync(path.join(store.backupDir, backup.id));
+    await restarted.svc('saveSettings', { theme: 'dark' }); // Rotate the emergency data.json.bak too.
+  } finally {
+    restarted.cleanup();
+  }
+  const expired = await launch({ userData });
+  try {
+    assert.equal(fs.existsSync(path.join(userData, 'backgrounds', `${id}.jpg`)), false);
+  } finally {
+    expired.cleanup();
+  }
 });
 
 test('Alert pictures: a task set to "Solid Color" keeps the color; "Only Tasks I Choose" shows pictures only where chosen', async () => {

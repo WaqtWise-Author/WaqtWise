@@ -245,6 +245,21 @@ test('service timer: without the prayer choice it only mentions the prayer and k
   assert.equal(s.getPomodoroTimer().status, 'running');
 });
 
+test('a delayed tick honours an earlier prayer instead of logging a completed focus', () => {
+  const { s, set } = setup('11:30');
+  const { id } = s.savePomodoro({ id: null, form: form({ holdAtPrayer: true }) });
+  s.pomodoroAction({ action: 'start', id });
+  set('12:00');
+  const signal = s.pomodoroTick();
+  assert.equal(signal.kind, 'prayer');
+  assert.match(signal.lines[0], /7:00 left/);
+  assert.equal(s.getPomodoroTimer().status, 'paused');
+  assert.equal(s.getPomodoroTimer().remainingLabel, '7:00');
+  assert.deepEqual(s.data.pomodoroLog, []);
+  s.pomodoroAction({ action: 'resume' });
+  assert.equal(s.pomodoroDueMs(), at(DAY, '12:07').getTime());
+});
+
 test('the notification choice is kept on the signal; a long break comes after round 4', () => {
   const { s, advance } = setup('06:00');
   const { id } = s.savePomodoro({ id: null, form: form({ alert: 'notification', focusMinutes: 10, breakMinutes: 2, longBreakEvery: 2, longBreakMinutes: 7 }) });

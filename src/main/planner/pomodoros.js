@@ -164,13 +164,14 @@ class PomodoroMethods {
   pomodoroDueMs() {
     const state = this.pomodoroTimer;
     if (!state || state.status !== 'running') return null;
-    let due = state.endsAt;
     const p = (this.data.pomodoros || []).find((x) => x.id === state.pomodoroId);
-    if (p && p.holdAtPrayer) {
-      const prayer = this.nextPrayerAfter(state.runningSince || this.now().getTime() - 1);
-      if (prayer && prayer.ms < due) due = prayer.ms;
-    }
-    return due;
+    return this.pomodoroPrayerBeforeEnd(p, state)?.ms ?? state.endsAt;
+  }
+
+  pomodoroPrayerBeforeEnd(p, state) {
+    if (!p?.holdAtPrayer) return null;
+    const prayer = this.nextPrayerAfter(state.runningSince ?? this.now().getTime());
+    return prayer && prayer.ms < state.endsAt ? prayer : null;
   }
 
   setPomodoroTimer(state) {
@@ -241,18 +242,17 @@ class PomodoroMethods {
     }
     const nowMs = this.now().getTime();
     // Prayer time came before the end of the part: the timer stops (when this Pomodoro asks for it).
-    if (p.holdAtPrayer && nowMs < state.endsAt) {
-      const prayer = this.nextPrayerAfter((state.runningSince || nowMs) - 1);
-      if (prayer && prayer.ms <= nowMs) {
-        this.setPomodoroTimer(pauseTimer(state, nowMs, prayer.name));
-        const signal = {
-          kind: 'prayer', alert: 'notification', pomodoroId: p.id,
-          title: t('Pomodoro Paused for {prayer}', { prayer: prayer.name }),
-          lines: [t('"{title}" stopped at {time} left. Resume it when you are ready.', { title: p.title, time: clockLabel(remainingOf(state, nowMs)) })],
-        };
-        if (this.onPomodoroSignal) this.onPomodoroSignal(signal);
-        return signal;
-      }
+    const prayer = this.pomodoroPrayerBeforeEnd(p, state);
+    if (prayer && prayer.ms <= nowMs) {
+      const paused = pauseTimer(state, prayer.ms, prayer.name);
+      this.setPomodoroTimer(paused);
+      const signal = {
+        kind: 'prayer', alert: 'notification', pomodoroId: p.id,
+        title: t('Pomodoro Paused for {prayer}', { prayer: prayer.name }),
+        lines: [t('"{title}" stopped at {time} left. Resume it when you are ready.', { title: p.title, time: clockLabel(paused.remainingMs) })],
+      };
+      if (this.onPomodoroSignal) this.onPomodoroSignal(signal);
+      return signal;
     }
     if (nowMs < state.endsAt) return null;
     const finished = state.part;

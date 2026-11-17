@@ -7,20 +7,25 @@ Export / Import (Settings -> Data) uses one JSON file. Version 1:
   "app": "waqtwise",
   "formatVersion": 1,
   "exportedAt": "2026-10-04T10:00:00.000Z",
-  "settings":   { ... },
-  "categories": [ { "id": "cat-work", "name": "Work", "color": "#3b82f6" } ],
-  "tasks":      [ { ... } ],
-  "freeTasks":  [ { ... } ],  (optional; the free to-do list, see "Free task")
-  "statsHistory": { ... }       (optional; the saved statistics of finished days, see below)
+  "settings": {},
+  "categories": [{ "id": "cat-work", "name": "Work", "color": "#3b82f6" }],
+  "tasks": [],
+  "freeTasks": [],
+  "routines": [],
+  "pomodoros": [],
+  "pomodoroLog": [],
+  "statsHistory": { "through": null, "days": {} }
 }
 ```
 
 - `formatVersion` is checked on import. A file with a NEWER version than the app understands is refused with a
   friendly message; older versions will be converted step by step by future versions of the app.
-- Importing replaces all tasks, categories and settings. Damaged tasks or categories in the file are skipped
-  and reported; the rest is imported.
-- Only what the user entered is stored. Zones, end times, durations, generated occurrences and prayer times
-  are always recalculated and never saved.
+- Import replaces the planner data and settings from the export. It preserves
+  the current computer's start-with-Windows setting and its reminder and routine
+  engine state. Invalid tasks or categories are skipped and reported.
+- Task definitions save their input duration. End times, zones, occurrences and
+  prayer times are derived for the live planner. `statsHistory` separately keeps
+  the measurements of finished days.
 
 ## Task
 
@@ -76,7 +81,10 @@ In the task form, with the full-screen alert on, **Show One Note at Random** is 
 
 ## Routine
 
-A routine repeats several times a day inside a time window (for example "every 2 hours 30 minutes, 08:00 to 20:00"). It lives in `routines`, apart from the tasks: it has no zone and no statistics. A file without `routines` loads with an empty list.
+A routine repeats several times a day inside a time window (for example
+"every 2 hours 30 minutes, 08:00 to 20:00"). It lives in `routines` and has no task
+zone. The **Routines** statistics card derives its results from scheduled slots
+and saved completions. A file without `routines` loads with an empty list.
 
 ```json
 { "id": "…", "title": "Drink water", "notes": "", "categoryId": null,
@@ -133,18 +141,25 @@ the time zone being an IANA name such as `Asia/Riyadh`). An invalid city is drop
 
 `settings.weekStart` (6, 0 or 1) is also used to count the weeks of tasks that repeat every 2 or more weeks.
 
-## Saved Data File (Not the Export File)
+## Local Saved Data File
 
-`data.json` also holds `statsHistory`: `{ "through": "YYYY-MM-DD", "days": { "<day>": [[taskId, dateKey, title, categoryId, minutes, done(0/1), startMs, zone, completedMs], ...] } }`,
-the saved statistics of finished days. It is not part of the export file. Automatic copies of `data.json` are kept
-in the `backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.json`, `before-restore-*.json`).
+`data.json` stores the planner data, including `statsHistory`, and local state.
+Current exports also include `statsHistory`. See [Saved statistics](#saved-statistics-statshistory)
+for its structure and how import handles older exports. Restoring one of the
+local backups retains the current accumulated statistics and the current reminder
+and routine engine state. Automatic copies of `data.json` are kept in the
+`backups` folder next to it (`data-YYYY-MM-DD.json`, `before-import-*.json`,
+`before-restore-*.json`). Import and restore stop if the required safety copy cannot be saved.
+Safety copies capture the current in-memory data. A genuinely empty planner can import without a safety copy.
+Local picture files are retained while current settings or a recoverable local backup references them.
+The portable JSON export still carries image references only.
 The `logs` folder next to it holds the diagnostic log (`waqtwise.log`, rotated to `waqtwise.log.1` and `.2`; 256 KB each at most).
 It records app events only (start-up, page loading, sleep / wake, renderer crashes and repairs), never planner data; it is not part of the
 export file and is not data the app reads.
 
 ## Limits
 
-Numbers are checked when a task is saved and when a data file is loaded (a task or a part that fails is skipped with a message, never trusted): task duration 1 to 10080 minutes (7 days); "minutes before or after a prayer or task" and reminder times 0 to 10080; "every N" 1 to 999; "after N occurrences" 1 to 9999; at most 20000 tasks and 5000 free tasks per file; a title of at most 200 characters; a backup file larger than 20 MB is refused. The limits are in `src/core/limits.js`.
+Numbers are checked when a task is saved and when a data file is loaded (a task or a part that fails is skipped with a message, never trusted): task duration 1 to 10080 minutes (7 days); "minutes before or after a prayer or task" and reminder times 0 to 10080; "every N" 1 to 999; "after N occurrences" 1 to 9999; at most 20000 tasks and 5000 free tasks per file; a title of at most 200 characters. Portable backup export and import share a 32 MiB limit, measured in UTF-8 bytes. The limits are in `src/core/limits.js`.
 
 
 ## State.json (Reminder Bookkeeping)

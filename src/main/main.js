@@ -30,7 +30,7 @@ const { isValidSnoozeOption } = require('../core/snooze');
 const { createElectronNotifier, findActionUrlInArgv, APP_ID, PROTOCOL } = require('./toast');
 const { createTray } = require('./tray');
 const { createAlertManager, isValidAction } = require('./alert-window');
-const { MAX_IMPORT_BYTES } = require('../core/limits');
+const { MAX_BACKUP_BYTES } = require('../core/limits');
 const { MAX_ALERT_IMAGES } = require('../core/alert-background');
 const { createBackgrounds } = require('./backgrounds');
 const { createLogger } = require('./logger');
@@ -527,6 +527,16 @@ function alertImageList() {
   return bg.images.map((x) => ({ id: x.id, name: x.name, thumb: backgrounds ? backgrounds.dataUrl(x.id, true) : null }));
 }
 
+function pruneBackgroundImages() {
+  if (!backgrounds || !service?.getSaveStatus().ok) return;
+  try {
+    backgrounds.keepOnly(service.getSettings().alertBackground.images.map((image) => image.id),
+      () => service.store.retainedBackgroundIds());
+  } catch (error) {
+    log('Background cleanup:', error);
+  }
+}
+
 // ---- Pomodoro ----------------------------------------------------------------------------------------------------------------
 // The timer itself is in the service (see planner/pomodoros.js); here it gets a clock: one timeout aimed at the moment
 // the service asks for (the end of the part, or the next prayer when the Pomodoro stops for prayer).
@@ -969,7 +979,11 @@ function registerIpc() {
       filters: [{ name: t('WaqtWise Backup'), extensions: ['json'] }],
     });
     if (result.canceled || !result.filePath) return { canceled: true };
-    fs.writeFileSync(result.filePath, JSON.stringify(service.exportData(), null, 2), 'utf8');
+    const text = JSON.stringify(service.exportData());
+    if (Buffer.byteLength(text, 'utf8') > MAX_BACKUP_BYTES) {
+      throw new Error(t('The export exceeds the maximum backup size. No file was written.'));
+    }
+    fs.writeFileSync(result.filePath, text, 'utf8');
     return { ok: true, path: result.filePath };
   });
 
@@ -982,11 +996,11 @@ function registerIpc() {
     });
     if (result.canceled || result.filePaths.length === 0) return { canceled: true };
     // A backup is a small file; refuse a huge one before reading it into memory.
-    if (fs.statSync(result.filePaths[0]).size > MAX_IMPORT_BYTES) throw new Error(t('This file is too big to be a WaqtWise backup.'));
-    const text = fs.readFileSync(result.filePaths[0], 'utf8');
-    const imported = service.importData(text);
-    // Pictures the imported settings do not use any more are removed from the data folder.
-    if (backgrounds) backgrounds.keepOnly(service.getSettings().alertBackground.images.map((x) => x.id));
+    if (fs.statSync(result.filePaths[0]).size > MAX_BACKUP_BYTES) throw new Error(t('This file is too big to be a WaqtWise backup.'));
+    const bytes = fs.readFileSync(result.filePaths[0]);
+    if (bytes.length > MAX_BACKUP_BYTES) throw new Error(t('This file is too big to be a WaqtWise backup.'));
+    const imported = service.importData(bytes.toString('utf8'));
+    pruneBackgroundImages();
     return imported;
   });
 
@@ -1017,7 +1031,7 @@ function registerIpc() {
   ipcMain.handle('remove-alert-image', (event, id) => {
     refuseOutsiders(event);
     service.removeAlertImage(id);
-    backgrounds.remove(id);
+    pruneBackgroundImages();
     return alertImageList();
   });
 
@@ -1119,7 +1133,7 @@ function start() {
   });
 
   app.whenReady().then(() => {
-    const store = new FileStore(path.join(app.getPath('userData'), 'data.json'));
+    const store = new FileStore(path.join(app.getPath('userData'), 'data.json'), { onBackupsPruned: pruneBackgroundImages });
     try {
       service = new PlannerService({
         store,
@@ -1134,7 +1148,7 @@ function start() {
         onPomodoroSignal: signalPomodoro,
       });
       backgrounds = createBackgrounds({ dir: path.join(app.getPath('userData'), 'backgrounds'), fs, nativeImage, log });
-      backgrounds.keepOnly(service.getSettings().alertBackground.images.map((x) => x.id));
+      pruneBackgroundImages();
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
       dialog.showErrorBox('WaqtWise', error && error.message ? error.message : String(error));

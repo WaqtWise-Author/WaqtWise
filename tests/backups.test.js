@@ -90,6 +90,48 @@ test('Backups: a failed import makes no copy; odd names and damaged copies are n
   assert.equal(service.getTasks().length, 1, 'nothing changed');
 });
 
+test('Import and restore stop before replacing current data when a safety copy cannot be written', (t) => {
+  const dir = tmp();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const clock = { now: at('2026-10-04', '09:00') };
+  const { store, service } = make(dir, clock);
+  service.saveTask({ mode: 'create', form: form('Saved') });
+  const incoming = buildExport({ ...service.data, tasks: [] }, clock.now);
+  const restoreId = store.listBackups()[0].id;
+  fs.mkdirSync(path.join(store.backupDir, 'before-restore-20261004-090000.json.tmp'));
+  fs.mkdirSync(path.join(store.backupDir, 'before-import-20261004-090000.json.tmp'));
+  const original = fs.readFileSync(store.filePath, 'utf8');
+  assert.throws(() => service.importData(incoming), /safety backup could not be saved/);
+  assert.throws(() => service.restoreBackup({ id: restoreId }), /safety backup could not be saved/);
+  assert.equal(service.getTasks()[0].title, 'Saved');
+  assert.equal(fs.readFileSync(store.filePath, 'utf8'), original);
+});
+
+test('An untouched installation can import with no safety copy, even after automatic bookkeeping', (t) => {
+  const dir = tmp();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const clock = { now: at('2026-10-04', '09:00') };
+  const { store, service } = make(dir, clock);
+  fs.writeFileSync(store.backupDir, 'The backup directory is unavailable');
+  service.bootstrap();
+  assert.equal(service.importData(buildExport(service.data, clock.now)).ok, true);
+});
+
+test('Safety copies preserve current in-memory data and successive copies in the same second', (t) => {
+  const dir = tmp();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const clock = { now: at('2026-10-04', '09:00') };
+  const { store, service } = make(dir, clock);
+  service.saveTask({ mode: 'create', form: form('Saved') });
+  const incoming = buildExport({ ...service.data, tasks: [service.data.tasks[0]] }, clock.now);
+  for (let i = 1; i <= 8; i++) {
+    service.data.tasks[0].title = `Unsaved ${i}`;
+    service.importData(incoming);
+  }
+  const copies = store.listBackups().filter((b) => b.kind === 'before-import');
+  assert.deepEqual(copies.map((b) => store.readBackup(b.id).data.tasks[0].title), ['Unsaved 8', 'Unsaved 7', 'Unsaved 6', 'Unsaved 5', 'Unsaved 4']);
+});
+
 test('Backups: before-import / before-restore copies keep only the last 5 each', () => {
   const dir = tmp();
   const clock = { now: at('2026-10-04', '09:00') };

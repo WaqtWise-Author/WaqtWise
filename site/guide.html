@@ -387,10 +387,11 @@ Changing it can move such tasks to other weeks.</p>
   (<code>%APPDATA%\WaqtWise</code>, files <code>data.json</code> and <code>state.json</code>). WaqtWise does not use the network.</li>
 <li><strong>Export Data</strong> (Settings → Data) saves a backup file. <strong>Import Data</strong> restores one;
   it replaces what is in the app, so export first if unsure. Backups also carry the saved statistics, so they
-  move with you to another computer.</li>
-<li><strong>Automatic backups:</strong> one per day (the last 7 days) and one just before each import or restore (the last 5
-  of each) in a <code>backups</code> folder. To go back: Settings → Data → <strong>Restore from Backup…</strong>, pick a copy and
-  <strong>Restore</strong>. The data you had a moment before is saved first, so a restore can be undone.</li>
+  move with you to another computer. Both export and import accept portable backups up to 32 MiB.</li>
+<li><strong>Automatic backups:</strong> one per day (the last 7 days) and a safety copy before replacing existing data
+  during import or restore (the last 5 of each). If the safety copy fails, the operation stops. To go back,
+  open Settings → Data → <strong>Restore from Backup…</strong>, pick a copy and select <strong>Restore</strong>. Local copies
+  can restore background pictures that the app still holds for them.</li>
 <li>If saving ever fails (disk full, file locked) a red banner stays at the top with <strong>Try Again</strong> and
   <strong>Export a Copy</strong>.</li>
 <li><strong>If the window ever stays empty:</strong> WaqtWise repairs the window's page by itself (after sleep, a long idle time or a

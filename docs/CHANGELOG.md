@@ -3,6 +3,14 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.6.2
+
+Fixes
+- Import and restore stop before replacing existing data if their safety copy cannot be saved. Safety copies capture current planner data, including edits still in memory.
+- Background pictures remain available while a local backup references them, including after import and restart.
+- A delayed Pomodoro check pauses at the correct prayer deadline when prayer came before the end of the part.
+- Portable backup export and import use the same 32 MiB limit. An oversized export leaves the destination file untouched.
+
 ## 1.6.1
 
 Fixes
@@ -78,7 +86,7 @@ New
 ## 1.1.0
 
 New
-- **Routines** (menu -> Routines): things that repeat several times a day inside a time window, for example "drink water every 2 hours 30 minutes from 8:00 AM to 8:00 PM". Each routine has its own start and end time (a window may run past midnight), a repeat distance given in hours and minutes (at least 5 minutes), the days of the week it applies to, and its own way of reminding: a notification, a full-screen alert, or both. The page shows today's times for each routine to tick off; a routine can be paused. A time missed while the computer was off is skipped. Routines are a list of their own, separate from tasks: they are not in the five zones or the statistics (a statistics card for them may come later). They are saved with the data and travel with export, import and backups (`routines` in the file, see `docs/DATA_FORMAT.md`).
+- **Routines** (menu -> Routines): things that repeat several times a day inside a time window, for example "drink water every 2 hours 30 minutes from 8:00 AM to 8:00 PM". Each routine has its own start and end time (a window may run past midnight), a repeat distance given in hours and minutes (at least 5 minutes), the days of the week it applies to, and its own way of reminding: a notification, a full-screen alert, or both. The page shows today's times for each routine to tick off; a routine can be paused. A time missed while the computer was off is skipped. Routines have their own list outside the five task zones. The separate Routines statistics card is described below. They are saved with the data and travel with export, import and backups (`routines` in the file, see `docs/DATA_FORMAT.md`).
 - **One note at random for routines**: write several notes separated by `;` and the full-screen alert shows a different one each time it rings, none repeating until all were shown (same as for tasks).
 - **Statistics card for routines** (Statistics -> Manage -> *Routines*, on by default for new installs): for each routine the share of its times done in the chosen range, the current streak, the last days as small squares, and the time you miss most often. Only times that have passed count, on the days the routine applies, since the routine was made. Ticks are now kept for 400 days (were 60).
 - **Stay Quiet During Prayer** (per routine): a time that falls from a prayer's call until 10 to 60 minutes after it rings when that period ends instead.

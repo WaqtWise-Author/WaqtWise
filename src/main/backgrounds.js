@@ -75,17 +75,16 @@ function createBackgrounds({ dir, fs, nativeImage, newId = () => crypto.randomBy
       }
     },
 
-    // Deletes files that no setting points to any more (left over after an import, for example).
-    keepOnly(ids) {
+    // Look at saved backups only when there are managed pictures that the current settings no longer use.
+    keepOnly(ids, retainedIds = () => new Set()) {
       let names;
       try { names = fs.readdirSync(dir); } catch (error) { return; }
       const keep = new Set(ids);
-      for (const name of names) {
-        const match = /^([a-f0-9]{16,40})(-thumb)?\.jpg$/.exec(name);
-        if (match && !keep.has(match[1])) {
-          try { fs.unlinkSync(path.join(dir, name)); } catch (error) { /* ignore */ }
-        }
-      }
+      const unused = new Set(names.map((name) => /^([a-f0-9]{16,40})(?:-thumb)?\.jpg$/.exec(name)?.[1])
+        .filter((id) => id && !keep.has(id)));
+      if (!unused.size) return;
+      const retained = retainedIds();
+      for (const id of unused) if (!retained.has(id)) this.remove(id);
     },
   };
 }

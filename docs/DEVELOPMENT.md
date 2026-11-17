@@ -31,7 +31,9 @@ The guide pages of the website are produced by `python3 tools/build-site.py`.
 
 ## GitHub Does the Work
 
-- **Run tests**: runs the tests when you start it by hand (Actions -> Run tests -> Run workflow). The workflows no longer start by themselves on every upload.
+- **Run tests** and **Screen check** run on pushes and pull requests and can be
+  started by hand in Actions. **Build Windows installer** and **Release** are
+  manual. The Pages workflow also runs after relevant changes on `main`.
 - **Build Windows installer**: builds `WaqtWise-Setup-<version>.exe`. Open the Actions tab, click the
   newest "Build Windows installer" run, and download "WaqtWise-Installer" at the bottom of the page.
 
@@ -41,7 +43,10 @@ English and Arabic (Settings -> Language). Arabic is a full right-to-left screen
 
 ## Routines
 
-The side menu has **Routines**: things that repeat several times a day inside a window (`src/core/routines.js`: the model, the times of a day, ticks; `src/core/routine-engine.js`: the background engine that rings them; `src/main/planner/routines.js`: the service methods; `src/renderer/routines.js`: the screen and the form). It is a list of its own (like the free list) and does not touch the task engine, the zones or the statistics. Each routine rings as a notification, a full-screen alert (same alert window, `kind: 'routine'`), or both. Times missed while the computer was off are skipped. Data format: `docs/DATA_FORMAT.md`.
+The side menu has **Routines**: things that repeat several times a day inside a window (`src/core/routines.js`: the model, the times of a day, ticks; `src/core/routine-engine.js`: the background engine that rings them; `src/main/planner/routines.js`: the service methods; `src/renderer/routines.js`: the screen and the form). Routines have their own schedule and stay outside the five task zones.
+Statistics has a dedicated **Routines** card. `src/core/routine-stats.js` computes
+it from elapsed slots and saved ticks, and `src/main/planner/day-view.js` adds it
+to the Statistics response. Each routine rings as a notification, a full-screen alert (same alert window, `kind: 'routine'`), or both. Times missed while the computer was off are skipped. Data format: `docs/DATA_FORMAT.md`.
 
 ## Free To-Do List and Task Details
 

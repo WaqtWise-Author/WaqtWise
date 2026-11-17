@@ -9,6 +9,7 @@ const {
   buildExport, parseImport,
 } = core;
 const { copy } = require('./util');
+const { t } = require('../../core/i18n');
 
 class DataTransferMethods {
   // ---- export / import --------------------------------------------------------------------------------------------
@@ -19,9 +20,9 @@ class DataTransferMethods {
 
   // Replaces tasks, categories and settings with the contents of a backup.
   importData(input) {
-    this.freezePast();
     const { data, warnings, hasHistory } = parseImport(input);
-    if (this.store.backupNow) this.store.backupNow('before-import'); // so a wrong import can be undone
+    this.requireSafetyBackup('before-import');
+    this.freezePast();
     // A backup file must not switch on "start with Windows" by itself: that stays as this computer has it.
     data.settings = { ...data.settings, startWithWindows: this.data.settings.startWithWindows };
     // A file with saved statistics replaces the ones on this computer (they belong to the imported tasks); an older file keeps them.
@@ -46,9 +47,9 @@ class DataTransferMethods {
 
   // Replaces tasks, categories and settings with a saved copy. The current data is saved first, so this can be undone too.
   restoreBackup({ id }) {
-    this.freezePast();
     const { data, warnings } = this.store.readBackup(id);
-    this.store.backupNow('before-restore');
+    this.requireSafetyBackup('before-restore');
+    this.freezePast();
     this.data = { ...data, reminderState: this.data.reminderState, routineState: this.data.routineState, statsHistory: this.history() };
     this.providerCache = null;
     this.applyLanguage();
@@ -59,6 +60,12 @@ class DataTransferMethods {
       this.onDataChanged();
     }
     return { ok: true, tasks: data.tasks.length, categories: data.categories.length, warnings };
+  }
+
+  requireSafetyBackup(kind) {
+    if (!this.store.backupNow(kind, this.data)) {
+      throw new Error(t('The safety backup could not be saved. Your data was not replaced.'));
+    }
   }
 }
 

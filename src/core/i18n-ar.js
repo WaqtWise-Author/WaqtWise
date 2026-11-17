@@ -840,6 +840,8 @@
   "This file is not a WaqtWise backup (it could not be read).": "هذا الملف ليس نسخة احتياطية من WaqtWise (تعذّرت قراءته).",
   "This file is not a WaqtWise backup.": "هذا الملف ليس نسخة احتياطية من WaqtWise.",
   "This file is too big to be a WaqtWise backup.": "هذا الملف أكبر من أن يكون نسخة احتياطية من WaqtWise.",
+  "The export exceeds the maximum backup size. No file was written.": "يتجاوز التصدير الحد الأقصى لحجم النسخة الاحتياطية. لم يُكتب أي ملف.",
+  "The safety backup could not be saved. Your data was not replaced.": "تعذّر حفظ نسخة الأمان. لم تُستبدل بياناتك.",
   "This task and the one it follows depend on each other, so the backup start time is used.": "هذه المهمة والمهمة التي تتبعها تعتمدان على بعضهما، لذلك يُستخدم وقت البدء الاحتياطي.",
   "This task no longer exists.": "هذه المهمة لم تعد موجودة.",
   "This Week": "هذا الأسبوع",
