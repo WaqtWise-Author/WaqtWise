@@ -119,6 +119,7 @@ function cleanReminders(raw) {
   if ('fullScreen' in raw) out.fullScreen = raw.fullScreen;
   if ('randomNotes' in raw) out.randomNotes = raw.randomNotes;
   if ('background' in raw) out.background = raw.background;
+  if ('sound' in raw) out.sound = raw.sound;
   return out;
 }
 

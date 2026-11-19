@@ -97,9 +97,54 @@
     },
   };
 
+  // The person's own sounds (1.7.0): their bytes come from the main process, and are decoded once.
+  const CUSTOM_ID = /^[a-f0-9]{16,40}$/;
+  const decoded = new Map(); // id -> Promise of an AudioBuffer (null when it cannot be read or decoded)
+  function loadCustom(ctx, id) {
+    if (!decoded.has(id)) {
+      const ask = window.alertApi ? window.alertApi.getSound : window.api && window.api.getCustomSoundData;
+      const promise = Promise.resolve(ask ? ask(id) : null)
+        .then((bytes) => (bytes ? ctx.decodeAudioData(new Uint8Array(bytes).buffer) : null))
+        .catch(() => null);
+      decoded.set(id, promise);
+      promise.then((buffer) => { if (!buffer) decoded.delete(id); }); // try again next time
+    }
+    return decoded.get(id);
+  }
+
+  // Plays one of the person's own sounds. A sound that cannot be played rings with options.fallback (a built-in sound) instead.
+  function playCustom(id, level, opts, handle) {
+    const ctx = audio();
+    const fallback = () => {
+      const alt = opts.fallback && RECIPES[opts.fallback] ? opts.fallback : 'bell';
+      if (handle.stopped) return;
+      const inner = play(alt, level * 100, { repeat: opts.repeat });
+      handle.stop = () => { handle.stopped = true; inner.stop(); };
+    };
+    if (!ctx) return fallback();
+    loadCustom(ctx, id).then((buffer) => {
+      if (handle.stopped) return;
+      if (!buffer) return fallback();
+      const round = () => {
+        if (handle.stopped) return;
+        const master = ctx.createGain();
+        master.gain.value = level;
+        master.connect(ctx.destination);
+        handle.master = master;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(master);
+        source.start();
+        if (opts.repeat) handle.timer = setTimeout(round, (buffer.duration + 1.2) * 1000);
+      };
+      round();
+    });
+  }
+
   // Plays a sound. volume is 0-100. Returns { stop() }. Unknown names and "off" make no sound.
   function play(id, volume, options) {
     const opts = options || {};
+    const custom = CUSTOM_ID.test(String(id));
     const recipe = RECIPES[id];
     const level = Math.max(0, Math.min(100, Number(volume))) / 100;
     const handle = { stopped: false, timer: null, master: null, stop() {
@@ -107,7 +152,8 @@
       clearTimeout(handle.timer);
       if (handle.master) { try { handle.master.disconnect(); } catch (e) { /* already closed */ } }
     } };
-    if (!recipe || !level) return handle;
+    if (!level || (!recipe && !custom)) return handle;
+    if (custom) { playCustom(id, level, opts, handle); return handle; }
     const ctx = audio();
     if (!ctx) return handle;
 
@@ -124,5 +170,9 @@
     return handle;
   }
 
-  WW.sounds = { play, DONE_OPTIONS, ALERT_OPTIONS, ids: Object.keys(RECIPES) };
+  // Every sound a task can ring with: the sounds made by the app, then the person's own (customSounds: [{ id, name }]).
+  const TASK_OPTIONS = [['bell', 'Gentle bell'], ['alarm', 'Bright alarm'], ['rising', 'Rising chime'], ['pulse', 'Soft pulse'],
+    ['chime', 'Soft chime'], ['pop', 'Pop'], ['ding', 'Ding'], ['sparkle', 'Sparkle'], ['off', 'Off']];
+
+  WW.sounds = { play, DONE_OPTIONS, ALERT_OPTIONS, TASK_OPTIONS, ids: Object.keys(RECIPES) };
 })();

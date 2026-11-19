@@ -233,6 +233,7 @@ const MIXINS = [
   require('./planner/routines').RoutineMethods,
   require('./planner/pomodoros').PomodoroMethods,
   require('./planner/alert-background').AlertBackgroundMethods,
+  require('./planner/custom-sounds').CustomSoundMethods,
   require('./planner/undo').UndoMethods,
 ];
 for (const mixin of MIXINS) {
@@ -248,7 +249,7 @@ const PUBLIC_METHODS = [
   'deleteCategory', 'listBackups', 'restoreBackup', 'getCityInfo', 'getCountries', 'searchCities', 'chooseWorldCity',
   'getFreeTasks', 'getFreeTaskCount', 'saveFreeTask', 'deleteFreeTask', 'setFreeDone', 'clearFreeDone', 'moveFreeTask', 'getFreeTaskForSchedule', 'getRoutines', 'newRoutineDefaults', 'getRoutineForEdit', 'saveRoutine', 'deleteRoutine', 'setRoutineEnabled', 'setRoutineSlotDone', 'undoDelete',
   'getPomodoros', 'newPomodoroDefaults', 'getPomodoroForEdit', 'savePomodoro', 'deletePomodoro', 'getPomodoroTimer', 'pomodoroAction',
-  'getTaskDetails', 'getSaveStatus', 'retrySave',
+  'getTaskDetails', 'getSaveStatus', 'retrySave', 'getSoundUsage',
 ];
 
 // A light check of what the window sends, before it reaches the service: ids must be text and dates must be real dates.

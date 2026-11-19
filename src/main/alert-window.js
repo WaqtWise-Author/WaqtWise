@@ -20,6 +20,7 @@ function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getC
   let windows = [];
   let guardMs = GUARD_FIRST_MS;
   let soundSeq = 0; // goes up each time new tasks arrive, so the page rings once per arrival
+  let ringId = null; // the sound of the first task that arrived (its own, 1.7.0); null: the sound in Settings
 
   // "soundHere" is true for one window only (the first), so several screens do not ring at once.
   function payload(win) {
@@ -30,7 +31,9 @@ function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getC
       snoozeMinutes: config.snoozeMinutes,
       language: config.language || 'en',
       guardMs,
-      sound: config.sound || { id: 'off', volume: 0, repeat: false },
+      sound: ringId && !(config.sound && config.sound.id === ringId)
+        ? { ...(config.sound || { volume: 0, repeat: false }), id: ringId, fallbackId: config.sound ? config.sound.id : 'bell' }
+        : config.sound || { id: 'off', volume: 0, repeat: false },
       soundSeq,
       soundHere: Boolean(win) && win === windows.find(alive),
       background: items.length ? getBackground(items[0]) : null,
@@ -51,6 +54,7 @@ function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getC
     items = [];
     guardMs = GUARD_FIRST_MS;
     soundSeq = 0;
+    ringId = null;
     for (const win of open) {
       if (alive(win)) win.destroy();
     }
@@ -117,13 +121,16 @@ function createAlertManager({ BrowserWindow, screen, preloadPath, pagePath, getC
     // Adds tasks that are starting now. Opens the windows if they are not open yet.
     show(newItems) {
       let added = 0;
+      let firstSound = null;
       for (const item of newItems) {
         if (items.some((existing) => existing.id === item.id)) continue;
         items.push(item);
         added += 1;
+        if (firstSound === null) firstSound = typeof item.soundId === 'string' ? item.soundId : '';
       }
       if (added === 0) return;
       soundSeq += 1;
+      ringId = firstSound || null; // several tasks at once: the first one decides the sound
       if (windows.length === 0) {
         guardMs = GUARD_FIRST_MS;
         openWindows();

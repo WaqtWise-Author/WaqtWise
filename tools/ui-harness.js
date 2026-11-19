@@ -59,6 +59,12 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
     if (op === 'remove') service.removeAlertImage(arg);
     return JSON.parse(JSON.stringify(service.getSettings().alertBackground.images));
   });
+  // The person's own sounds: the same, the list lives in the real service (the files are not needed by the page checks).
+  await page.exposeFunction('__sounds', async (op, arg) => {
+    if (op === 'add') service.addCustomSounds(arg);
+    if (op === 'remove') service.removeCustomSound(arg);
+    return JSON.parse(JSON.stringify(service.getSettings().customSounds));
+  });
   await page.addInitScript(({ splashMs, startMs }) => {
     if (startMs) window.WW_START_TIMEOUT_MS = startMs; // the real wait for the first answer is 15 seconds
     if (splashMs !== null) window.WW_SPLASH_MS = splashMs; // the real start-up splash lasts 3 seconds; the checks do not wait for it
@@ -79,6 +85,14 @@ async function openApp({ playwright, service, colorScheme = 'light', width = 110
         return { added: 2, skipped: 0, images: window.__pictureList(list) };
       },
       removeAlertImage: async (id) => window.__pictureList(await window.__pictures('remove', id)),
+      addCustomSounds: async () => {
+        const n = (window.__soundCount = (window.__soundCount || 0) + 1);
+        const made = [{ id: `${'c'.repeat(22)}${String(n).padStart(2, '0')}`, name: `Door knock ${n}` }];
+        const list = await window.__sounds('add', made);
+        return { added: 1, skipped: 0, sounds: list };
+      },
+      removeCustomSound: async (id) => window.__sounds('remove', id),
+      getCustomSoundData: async () => null,
       getAlertPreviewPicture: async () => null,
       resumePause: async () => ({ reminders: null, routines: null }),
       on: (channel, cb) => { (window.__handlers = window.__handlers || {})[channel] = cb; },

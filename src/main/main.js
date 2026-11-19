@@ -33,6 +33,8 @@ const { createAlertManager, isValidAction } = require('./alert-window');
 const { MAX_BACKUP_BYTES } = require('../core/limits');
 const { MAX_ALERT_IMAGES } = require('../core/alert-background');
 const { createBackgrounds } = require('./backgrounds');
+const { createSoundFiles } = require('./sound-files');
+const { MAX_CUSTOM_SOUNDS } = require('../core/custom-sounds');
 const { createLogger } = require('./logger');
 const { createRecovery } = require('./recovery');
 const { createTaskbarTheme } = require('./taskbar-theme');
@@ -527,6 +529,20 @@ function alertImageList() {
   return bg.images.map((x) => ({ id: x.id, name: x.name, thumb: backgrounds ? backgrounds.dataUrl(x.id, true) : null }));
 }
 
+// ---- The person's own alert sounds (1.7.0) ----
+
+let soundFiles = null;
+
+function customSoundList() {
+  return service.getSettings().customSounds.map((x) => ({ id: x.id, name: x.name }));
+}
+
+// The bytes of a sound that is in the list (null otherwise).
+function customSoundBytes(id) {
+  if (!soundFiles || !service.getSettings().customSounds.some((x) => x.id === id)) return null;
+  return soundFiles.read(id);
+}
+
 function pruneBackgroundImages() {
   if (!backgrounds || !service?.getSaveStatus().ok) return;
   try {
@@ -1004,6 +1020,43 @@ function registerIpc() {
     return imported;
   });
 
+  // ---- The person's own alert sounds (1.7.0) ----
+  ipcMain.handle('add-custom-sounds', async (event) => {
+    refuseOutsiders(event);
+    const left = MAX_CUSTOM_SOUNDS - service.getSettings().customSounds.length;
+    if (left <= 0) throw new Error(t('You already have {max} sounds. Remove one to add another.', { max: MAX_CUSTOM_SOUNDS }));
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: t('Add Sounds'),
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: t('Sounds'), extensions: soundFiles.EXTENSIONS }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    const copied = soundFiles.add(result.filePaths.slice(0, left));
+    const { added } = service.addCustomSounds(copied.sounds);
+    // Copies that did not make it into the list are not kept.
+    const kept = new Set(service.getSettings().customSounds.map((x) => x.id));
+    for (const x of copied.sounds) if (!kept.has(x.id)) soundFiles.remove(x.id);
+    return { added, skipped: copied.skipped.length + Math.max(0, result.filePaths.length - left), sounds: customSoundList() };
+  });
+
+  ipcMain.handle('remove-custom-sound', (event, id) => {
+    refuseOutsiders(event);
+    service.removeCustomSound(id);
+    soundFiles.remove(id);
+    return customSoundList();
+  });
+
+  ipcMain.handle('custom-sound-data', (event, id) => {
+    refuseOutsiders(event);
+    return customSoundBytes(id);
+  });
+
+  // The alert page asks for the sound it should ring with (only sounds in the list are given).
+  ipcMain.handle('alert-sound', (event, id) => {
+    if (!fromAlertWindow(event)) throw new Error(t('Unknown request.'));
+    return customSoundBytes(id);
+  });
+
   // ---- Pictures behind the full-screen alert ----
   ipcMain.handle('alert-images', (event) => {
     refuseOutsiders(event);
@@ -1148,6 +1201,7 @@ function start() {
         onPomodoroSignal: signalPomodoro,
       });
       backgrounds = createBackgrounds({ dir: path.join(app.getPath('userData'), 'backgrounds'), fs, nativeImage, log });
+      soundFiles = createSoundFiles({ dir: path.join(app.getPath('userData'), 'sounds'), fs, log });
       pruneBackgroundImages();
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.

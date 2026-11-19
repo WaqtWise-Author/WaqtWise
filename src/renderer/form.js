@@ -428,6 +428,31 @@
         h('p', { class: 'hint', text: hint }));
     }
 
+    // The sound of this task's full-screen alert (1.7.0): as in Settings, a sound made by the app, Off, or one of the person's own.
+    // A different sound for each task lets you tell them apart without looking at the screen.
+    function soundChoice(rem) {
+      const mine = settings.customSounds || [];
+      const known = (id) => id === 'default' || WW.sounds.TASK_OPTIONS.some(([v]) => v === id) || mine.some((x) => x.id === id);
+      if (!known(rem.sound)) rem.sound = 'default'; // a sound that was removed: the task follows Settings again
+      const volume = settings.alertSoundVolume;
+      const select = h('select', {
+        id: 'f-alert-sound', class: 'sel-auto', 'aria-label': T('Alert Sound'),
+        onchange: (e) => { rem.sound = e.target.value; },
+      },
+      h('option', { value: 'default', text: T('As in Settings'), selected: rem.sound === 'default' }),
+      WW.sounds.TASK_OPTIONS.filter(([v]) => v !== 'off').map(([v, text]) => h('option', { value: v, text: T(text), selected: rem.sound === v })),
+      mine.map((x) => h('option', { value: x.id, text: x.name, selected: rem.sound === x.id })),
+      h('option', { value: 'off', text: T('Off'), selected: rem.sound === 'off' }));
+      const preview = h('button', {
+        type: 'button', class: 'btn small', id: 'f-alert-sound-preview', text: T('Preview'), 'aria-label': T('Preview the alert sound'),
+        onclick: () => WW.sounds.play(rem.sound === 'default' ? settings.alertSound : rem.sound, volume),
+      });
+      return h('div', { style: { marginTop: '12px' } },
+        h('label', { class: 'label', for: 'f-alert-sound', text: T('Alert Sound') }),
+        h('div', { class: 'row tight' }, select, preview),
+        h('p', { class: 'hint', text: T('The sound this task rings with when its full-screen alert appears. Give each task its own sound to tell them apart by ear. Your own sounds are added in Settings → Sounds.') }));
+    }
+
     // ---- reminders ----
     function renderReminders() {
       clear(remindersBox);
@@ -449,7 +474,8 @@
               WW.onOffSwitch(T('Show One Note at Random'), Boolean(rem.randomNotes), (on) => { rem.randomNotes = on; }, null, { id: 'f-random-notes' }),
               h('p', { class: 'hint', text: T('Separate the notes with ; (for example: first note; second note). The alert shows one of them each time, and every note is shown once before any is repeated.') }))
             : null,
-          rem.fullScreen ? backgroundChoice(rem) : null)
+          rem.fullScreen ? backgroundChoice(rem) : null,
+          rem.fullScreen ? soundChoice(rem) : null)
       );
       remindersBox.appendChild(
         h('div', { class: 'field' },

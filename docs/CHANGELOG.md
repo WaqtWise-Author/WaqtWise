@@ -3,6 +3,14 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.7.0
+
+New
+- **Your own alert sounds.** Settings → Sounds → My Sounds → **Add Sounds** opens the Windows file dialog. Choose MP3, WAV, OGG, M4A or FLAC files (up to 10 MB each, 20 sounds at most). WaqtWise keeps its own copy, so a sound stays even if you move or delete the original. Preview and Remove are next to each sound. Your sounds appear in the Full-Screen Alert sound list beside the built-in ones. The built-in sounds are unchanged.
+- **A sound for each task.** With the full-screen alert on, the task form has an **Alert Sound** choice: As in Settings (the default), any of the eight built-in sounds, Off, or one of your own sounds, with a Preview button. Each task keeps its own choice, so you can tell tasks apart by ear. It follows the usual This / Following / All scopes. If several tasks arrive together, the first one decides the sound.
+- If a sound is removed, tasks that used it ring with the Full-Screen Alert sound from Settings. Removing a sound that is in use asks first.
+- Saved data: no format change. Tasks and settings without the new fields load as before. Your sound files are not part of an export or a backup; import and restore keep the sound list of this computer.
+
 ## 1.6.2
 
 Fixes

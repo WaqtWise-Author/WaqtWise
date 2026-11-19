@@ -919,6 +919,8 @@ html[dir="rtl"] .task-notes { text-align: right; }
 /* ---- Pictures behind the full-screen alert (Settings, 1.4.0) ---- */
 .bg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-width: 560px; }
 .bg-item { position: relative; }
+.my-sounds li { margin-block-end: 6px; }
+.my-sound-name { min-width: 160px; overflow-wrap: anywhere; }
 .bg-thumb { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface-2) center / cover no-repeat; cursor: pointer; padding: 0; }
 .bg-thumb:disabled { cursor: default; opacity: 1; }
 .bg-thumb.on { outline: 3px solid var(--accent); outline-offset: 2px; }

@@ -281,6 +281,7 @@ class ReminderEngine {
         notes: occurrence.notes,
         randomNotes: Boolean(occurrence.reminders && occurrence.reminders.randomNotes),
         background: (occurrence.reminders && occurrence.reminders.background) || 'default',
+        sound: (occurrence.reminders && occurrence.reminders.sound) || 'default',
         priority: occurrence.priority,
         categoryId: occurrence.categoryId,
         durationMinutes: occurrence.durationMinutes,

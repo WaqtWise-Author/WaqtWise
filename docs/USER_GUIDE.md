@@ -200,6 +200,7 @@ the start time the whole screen (all screens, if you have several) shows the tas
 - **Got It** (always there), **Snooze**, **Open Task**, **Mark as Done**. The small arrow beside **Snooze** opens more choices: 5, 15 or 30 minutes, 1 hour, or **After the Next Prayer**.
 - **One note at random:** write several notes separated by `;` (for example `Drink water; Stretch; Breathe`)
   and tick *Show One Note at Random*. Each alert shows one note, and all are used before any repeats.
+- **Your own sounds and a sound for each task**: Settings → Sounds → **My Sounds** → **Add Sounds** opens the Windows file dialog; choose MP3, WAV, OGG, M4A or FLAC files (up to 10 MB each, 20 sounds at most). WaqtWise keeps its own copy, so a sound stays even if you move the original file. Your sounds appear in the Full-Screen Alert list beside the built-in ones; **Preview** and **Remove** are next to each one. In the task form, under the full-screen switch, **Alert Sound** = *As in Settings*, any built-in sound, *Off*, or one of yours, so you can tell tasks apart by ear. Each task keeps its own choice. If several alerts arrive together, the first task decides the sound. If a sound is removed, its tasks ring with the Settings sound. Your sound files are not in an export or a backup.
 - **The sound**: Settings → Sounds → Full-Screen Alert. With **Repeat the Sound** on, **Stop the Sound After** can stop it by itself after 1 to 10 minutes (or *Never*, until a button is pressed); only the sound stops, the alert stays on the screen.
 - A few presses right after it appears are ignored on purpose, so typing cannot close it by accident.
 - If it is more than 15 seconds late (for example after sleep), the task goes into the missed list instead.
@@ -269,7 +270,7 @@ Open the menu → **Settings**. A row of buttons at the top jumps to each sectio
 | **Application** | **Start with Windows**, the background message, theme (system, light or dark), **Tray Icon** (the normal colored icon near the clock, or a monochrome one that is white on a dark taskbar and black on a light one and follows Windows by itself), first day of the week, **late tasks** (after how long a ticked task counts as late) and working days (used by "last working day" repeats). |
 | **Daily View** | Which details each task row shows (with *Show Everything*, *Standard* and *Name Only* presets and a live preview), and whether empty and finished zones are collapsed. |
 | **Full-Screen Reminder** | Whether new tasks get it, which screens, colours, font, name and note sizes, details and buttons shown, and ready-made looks. |
-| **Sounds** | The sound for finishing a task and for the full-screen alert (or off). |
+| **Sounds** | The sound for finishing a task and for the full-screen alert (or off), and **My Sounds**: your own sound files. |
 | **Categories** | Add, rename, colour or delete categories. Deleting one also clears it from tasks. |
 | **Data** | Export, import, restore from backup. |
 

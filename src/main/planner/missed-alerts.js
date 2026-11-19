@@ -122,6 +122,7 @@ class MissedAlertMethods {
         priority: i.priority,
         snoozed: Boolean(i.snoozed),
         backgroundId: this.pickAlertImageFor(i.background), // the picture behind it ('' = the solid color)
+        soundId: this.alertSoundFor(i.sound), // the sound it rings with: the task's own, or the one in Settings (1.7.0)
       };
     });
   }
@@ -134,7 +135,7 @@ class MissedAlertMethods {
       screens: s.alertScreens,
       language: s.language,
       snoozeMinutes: s.snoozeMinutes,
-      sound: { id: s.alertSound, volume: s.alertSoundVolume, repeat: s.alertSoundRepeat, stopAfterMinutes: s.alertSoundStopMinutes },
+      sound: { id: this.alertSoundFor('default'), volume: s.alertSoundVolume, repeat: s.alertSoundRepeat, stopAfterMinutes: s.alertSoundStopMinutes },
     };
   }
 

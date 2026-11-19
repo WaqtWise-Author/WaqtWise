@@ -13,11 +13,15 @@ contextBridge.exposeInMainWorld('api', {
   importData: () => ipcRenderer.invoke('import-data'),
   testNotification: () => ipcRenderer.invoke('test-notification'),
   previewAlert: () => ipcRenderer.invoke('preview-alert'),
-  // The pictures behind the full-screen alert (Settings): list, add (a file dialog opens in the main process), remove.
+  // The pictures behind the full-screen alert (Settings): add (a file dialog opens in the main process), remove.
   getAlertImages: () => ipcRenderer.invoke('alert-images'),
   addAlertImages: () => ipcRenderer.invoke('add-alert-images'),
   removeAlertImage: (id) => ipcRenderer.invoke('remove-alert-image', String(id)),
   getAlertPreviewPicture: () => ipcRenderer.invoke('alert-preview-picture'),
+  // The person's own alert sounds (Settings -> Sounds): list, add (a file dialog opens in the main process), remove, and the bytes for Preview.
+  addCustomSounds: () => ipcRenderer.invoke('add-custom-sounds'),
+  removeCustomSound: (id) => ipcRenderer.invoke('remove-custom-sound', String(id)),
+  getCustomSoundData: (id) => ipcRenderer.invoke('custom-sound-data', String(id)),
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   getPauseState: () => ipcRenderer.invoke('pause-state'),
   resumePause: (kind) => ipcRenderer.invoke('resume-pause', kind),

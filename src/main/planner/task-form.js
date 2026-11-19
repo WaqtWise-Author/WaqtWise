@@ -12,6 +12,7 @@ const {
 const EDIT_FIELDS = ['title', 'start', 'durationMinutes', 'notes', 'priority', 'categoryId', 'reminders'];
 const { copy, same } = require('./util');
 const { MAX_TITLE_LENGTH } = require('../../core/limits');
+const { isValidTaskSound } = require('../../core/custom-sounds');
 
 class TaskFormMethods {
   // ---- the task form ---------------------------------------------------------------------------------------
@@ -25,7 +26,7 @@ class TaskFormMethods {
       date: key,
       recurrence: null,
       // empty list = the default reminder time from Settings; the full-screen switch follows the Settings default
-      reminders: { enabled: true, offsets: [], fullScreen: Boolean(this.settings.fullScreenDefaultForNewTasks), randomNotes: false, background: 'default' },
+      reminders: { enabled: true, offsets: [], fullScreen: Boolean(this.settings.fullScreenDefaultForNewTasks), randomNotes: false, background: 'default', sound: 'default' },
       priority: 'Medium',
       categoryId: null,
       notes: '',
@@ -134,6 +135,8 @@ class TaskFormMethods {
         randomNotes: Boolean(form.reminders && form.reminders.randomNotes),
         // the background of the full-screen alert: as in Settings, a picture, or the solid color (1.4.0)
         background: form.reminders && ['image', 'color'].includes(form.reminders.background) ? form.reminders.background : 'default',
+        // the sound of the full-screen alert: 'default' (as in Settings), a built-in sound, 'off', or one of the person's own sounds (1.7.0)
+        sound: form.reminders && isValidTaskSound(form.reminders.sound) ? form.reminders.sound : 'default',
       },
     };
     return { fields, recurrence: form.recurrence ? normalizeRule(form.recurrence) : null, date: form.date };

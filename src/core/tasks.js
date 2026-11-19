@@ -41,6 +41,7 @@ const {
 } = require('./zones');
 const { t } = require('./i18n');
 const { normalizeRule, validateRule, generateDates } = require('./recurrence');
+const { isValidTaskSound } = require('./custom-sounds');
 
 const { MAX_DURATION_MINUTES, MAX_OFFSET_MINUTES, MAX_TITLE_LENGTH, MAX_NOTES_LENGTH } = require('./limits');
 const PRIORITIES = ['Low', 'Medium', 'High'];
@@ -100,6 +101,9 @@ function validateReminders(reminders) {
   }
   if ('background' in reminders && !['default', 'image', 'color'].includes(reminders.background)) {
     return [t('Choose the alert background from the list')];
+  }
+  if ('sound' in reminders && !isValidTaskSound(reminders.sound)) {
+    return [t('Choose the alert sound from the list')];
   }
   return [];
 }

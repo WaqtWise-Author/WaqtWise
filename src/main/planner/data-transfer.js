@@ -24,7 +24,9 @@ class DataTransferMethods {
     this.requireSafetyBackup('before-import');
     this.freezePast();
     // A backup file must not switch on "start with Windows" by itself: that stays as this computer has it.
-    data.settings = { ...data.settings, startWithWindows: this.data.settings.startWithWindows };
+    // The sounds the person added are files on this computer: the list stays as it is here (tasks that ask for a sound not here ring with the Settings sound).
+    data.settings = { ...data.settings, startWithWindows: this.data.settings.startWithWindows, customSounds: this.data.settings.customSounds };
+    if (data.settings.alertSound.length >= 16 && !data.settings.customSounds.some((x) => x.id === data.settings.alertSound)) data.settings.alertSound = 'bell';
     // A file with saved statistics replaces the ones on this computer (they belong to the imported tasks); an older file keeps them.
     this.data = { ...data, reminderState: this.data.reminderState, routineState: this.data.routineState, statsHistory: hasHistory ? data.statsHistory : this.history() };
     this.providerCache = null;
@@ -50,6 +52,9 @@ class DataTransferMethods {
     const { data, warnings } = this.store.readBackup(id);
     this.requireSafetyBackup('before-restore');
     this.freezePast();
+    // The sounds the person added stay as they are on this computer (their files are not in a backup).
+    data.settings = { ...data.settings, customSounds: this.data.settings.customSounds };
+    if (data.settings.alertSound.length >= 16 && !data.settings.customSounds.some((x) => x.id === data.settings.alertSound)) data.settings.alertSound = 'bell';
     this.data = { ...data, reminderState: this.data.reminderState, routineState: this.data.routineState, statsHistory: this.history() };
     this.providerCache = null;
     this.applyLanguage();

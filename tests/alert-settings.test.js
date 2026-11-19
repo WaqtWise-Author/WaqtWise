@@ -148,6 +148,7 @@ test('Service: alert payload, config, presets and the sample', () => {
     id: 'x', taskId, dateKey: DAY, title: 'Study', notes: 'Chapter 4', startMs: at(DAY, '12:00').getTime(), startLabel: '12:00 PM', endLabel: '12:45 PM',
     durationLabel: '45m', zoneName: 'Dhuhr → Asr', zoneIndex: 2, categoryName: 'Study', categoryColor: '#8b5cf6',
     priority: 'High', snoozed: false, backgroundId: '', // the solid color (no pictures chosen)
+    soundId: 'bell', // the sound of the alert: the task's own, or the one in Settings (1.7.0)
   });
 
   const config = service.getAlertConfig();

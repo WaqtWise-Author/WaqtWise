@@ -9,6 +9,7 @@ const { isCountryCode } = require('./world');
 const { PRAYERS } = require('./zones');
 const { DEFAULT_REMINDER_SETTINGS } = require('./reminders');
 const { DEFAULT_ALERT_BACKGROUND, validateAlertBackground, sanitizeAlertBackground } = require('./alert-background');
+const { validateCustomSounds, sanitizeCustomSounds, isCustomSoundId } = require('./custom-sounds');
 
 const METHOD_KEYS = [
   'egyptian',
@@ -210,7 +211,8 @@ const DEFAULT_SETTINGS = {
   fullScreenAlerts: true, // master switch; each task still has its own switch
   fullScreenDefaultForNewTasks: false,
   alertScreens: 'all', // 'all' screens, or only the 'main' one
-  alertSound: 'bell', // played when a full-screen alert appears
+  alertSound: 'bell', // played when a full-screen alert appears: one of ALERT_SOUNDS, or the id of one of customSounds (1.7.0)
+  customSounds: [], // sounds the person added: [{ id, name }] (1.7.0), see custom-sounds.js; each task can choose its own
   alertSoundVolume: 70, // 0-100
   alertSoundRepeat: false, // keep repeating until a button is pressed
   alertSoundStopMinutes: 0, // 1-10: the sound stops by itself after that many minutes (the alert stays); 0 = until a button is pressed
@@ -266,7 +268,8 @@ function validateSettings(settings) {
     }
   }
   if ('doneSound' in s && !DONE_SOUNDS.includes(s.doneSound)) errors.push(t('Choose one of the sounds in the list'));
-  if ('alertSound' in s && !ALERT_SOUNDS.includes(s.alertSound)) errors.push(t('Choose one of the sounds in the list'));
+  if ('alertSound' in s && !ALERT_SOUNDS.includes(s.alertSound) && !isCustomSoundId(s.alertSound)) errors.push(t('Choose one of the sounds in the list'));
+  if ('customSounds' in s) errors.push(...validateCustomSounds(s.customSounds));
   if ('alertSoundStopMinutes' in s && !(Number.isInteger(s.alertSoundStopMinutes) && s.alertSoundStopMinutes >= 0 && s.alertSoundStopMinutes <= 10)) {
     errors.push(t('The sound can stop after 1 to 10 minutes, or keep going until a button is pressed'));
   }
@@ -323,6 +326,10 @@ function sanitizeSettings(raw) {
       clean.alertBackground = sanitizeAlertBackground(raw.alertBackground);
       continue;
     }
+    if (key === 'customSounds') {
+      clean.customSounds = sanitizeCustomSounds(raw.customSounds);
+      continue;
+    }
     const candidate = key === 'adjustments' ? { adjustments: { ...clean.adjustments, ...raw.adjustments } }
       : key === 'taskInfo' ? { taskInfo: { ...clean.taskInfo, ...(raw.taskInfo && typeof raw.taskInfo === 'object' && !Array.isArray(raw.taskInfo) ? raw.taskInfo : {}) } }
         : { [key]: raw[key] };
@@ -332,6 +339,7 @@ function sanitizeSettings(raw) {
       else clean[key] = raw[key];
     }
   }
+  if (isCustomSoundId(clean.alertSound) && !clean.customSounds.some((x) => x.id === clean.alertSound)) clean.alertSound = DEFAULT_SETTINGS.alertSound;
   if (clean.useCustomCity && !clean.customCity) clean.useCustomCity = false;
   // Before 1.0.0 a custom city was always typed by hand; Egypt's list never uses one.
   if (clean.useCustomCity && clean.countryCode === 'EG' && !('countryCode' in raw)) clean.countryCode = null;

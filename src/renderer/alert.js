@@ -66,7 +66,7 @@
       lastSoundSeq = next.soundSeq;
       stopSound();
       if (next.soundHere && next.sound && next.sound.id !== 'off') {
-        ringing = WW.sounds.play(next.sound.id, next.sound.volume, { repeat: next.sound.repeat });
+        ringing = WW.sounds.play(next.sound.id, next.sound.volume, { repeat: next.sound.repeat, fallback: next.sound.fallbackId });
         const minutes = next.sound.stopAfterMinutes;
         if (next.sound.repeat && Number.isInteger(minutes) && minutes > 0) soundTimer = setTimeout(stopSound, minutes * 60000);
       }

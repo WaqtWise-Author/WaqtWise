@@ -1005,7 +1005,7 @@ test('The alert page preload exposes only what it needs', () => {
   };
   delete require.cache[require.resolve('../src/main/alert-preload.js')];
   require('../src/main/alert-preload.js');
-  assert.deepEqual(Object.keys(exposed.alertApi).sort(), ['action', 'onRender', 'ready']);
+  assert.deepEqual(Object.keys(exposed.alertApi).sort(), ['action', 'getSound', 'onRender', 'ready']);
   exposed.alertApi.action('done', 'abc');
   assert.deepEqual(sent[0], ['alert-action', { type: 'done', itemId: 'abc' }]);
 });
@@ -1019,7 +1019,7 @@ test('The preload script exposes only the expected functions', () => {
   };
   delete require.cache[require.resolve('../src/main/preload.js')];
   require('../src/main/preload.js');
-  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getPauseState', 'importData', 'on', 'openLogsFolder', 'previewAlert', 'ready', 'removeAlertImage', 'resumePause', 'testNotification']);
+  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'addCustomSounds', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getCustomSoundData', 'getPauseState', 'importData', 'on', 'openLogsFolder', 'previewAlert', 'ready', 'removeAlertImage', 'removeCustomSound', 'resumePause', 'testNotification']);
   exposed.api.call('getDay', '2030-01-10');
   assert.deepEqual(sent[0], ['svc', 'getDay', ['2030-01-10']]);
 });
@@ -1271,6 +1271,54 @@ test('Alert pictures: add from the disk (copied, made smaller), shown behind the
   assert.equal(fs.existsSync(path.join(dir, `${id}-thumb.jpg`)), true);
   // Another page may not use these
   await assert.rejects(Promise.resolve().then(() => app.ipc['alert-images']({ sender: {} })));
+  app.cleanup();
+});
+
+// ---- The person's own alert sounds (1.7.0) ----------------------------------------------------------------------
+
+test('Own alert sounds: added from the disk (copied), preview bytes only for listed sounds, a task rings with its own sound, removal deletes the copy', async () => {
+  const app = await launch();
+  app.win().emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const ev = { sender: app.win().webContents, senderFrame: { url: pathToFileURL(app.win().file).href, parent: null } };
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'sounds-'));
+  const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WAVEfmt '), Buffer.alloc(8)]);
+  const good = path.join(src, 'Knock.wav');
+  const fake = path.join(src, 'Fake.mp3');
+  fs.writeFileSync(good, wav);
+  fs.writeFileSync(fake, 'not a sound');
+  app.dialogs.openFrom = [good, fake];
+  const result = await app.ipc['add-custom-sounds'](ev);
+  assert.equal(result.added, 1);
+  assert.equal(result.skipped, 1, 'a file that is not a sound is skipped');
+  assert.deepEqual(result.sounds.map((x) => x.name), ['Knock']);
+  const id = result.sounds[0].id;
+  const copy = path.join(app.userData, 'sounds', `${id}.snd`);
+  assert.deepEqual(fs.readFileSync(copy), wav);
+  fs.rmSync(good);
+  assert.deepEqual(Buffer.from(await app.ipc['custom-sound-data'](ev, id)), wav, 'the copy stays when the original is deleted');
+  assert.equal(await app.ipc['custom-sound-data'](ev, 'e'.repeat(24)), null, 'a sound that is not in the list is not given');
+  assert.equal(await app.ipc['custom-sound-data'](ev, '../../data.json'), null);
+
+  // the alert page can ask for the bytes of a listed sound (the task-to-alert path is in tests/custom-sounds.test.js)
+  await app.svc('saveSettings', { alertSound: 'pulse' });
+  const created = await app.svc('saveTask', { mode: 'create', scope: 'all', form: { title: 'Knock task', start: { mode: 'fixed', time: '08:00' }, durationMinutes: 30, date: '2026-10-04', recurrence: null, priority: 'Medium', categoryId: null, notes: '', reminders: { enabled: false, offsets: [], fullScreen: true, sound: id } } });
+  assert.ok(created);
+  app.ipc['preview-alert'](ev);
+  const win = app.alertWindows()[0];
+  app.ipcOn['alert-ready'](alertEvent(win));
+  const render = win.sent.find(([c]) => c === 'alert-render')[1];
+  assert.equal(render.sound.id, 'pulse', 'the preview rings with the sound from Settings');
+  assert.deepEqual(Buffer.from(await app.ipc['alert-sound'](alertEvent(win), id)), wav);
+  await assert.rejects(Promise.resolve().then(() => app.ipc['alert-sound'](ev, id)), 'only the alert page may ask');
+  app.ipcOn['alert-action'](alertEvent(win), { type: 'dismiss', itemId: render.items[0].id });
+
+  const left = await app.ipc['remove-custom-sound'](ev, id);
+  assert.deepEqual(left, []);
+  assert.equal(fs.existsSync(copy), false, 'the copy is deleted with the sound');
+  assert.equal(await app.ipc['custom-sound-data'](ev, id), null);
+  assert.equal((await app.svc('getSettings')).alertSound, 'pulse', 'the Settings sound was not the removed one');
+  await assert.rejects(Promise.resolve().then(() => app.ipc['custom-sound-data']({ sender: {} }, id)));
   app.cleanup();
 });
 

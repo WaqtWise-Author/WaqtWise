@@ -371,6 +371,38 @@ async function setTime(page, hour, minute, ampm) {
     await page.evaluate(() => window.WW.afterChange());
   });
 
+  await step('task form: each task chooses its own alert sound (built-in, Off or one of yours); old tasks stay on "As in Settings"', async () => {
+    service.addCustomSounds([{ id: 'd'.repeat(24), name: 'Task test sound' }]); // removed again at the end of this step
+    await page.evaluate(async () => {
+      window.WW.state.settings = await window.WW.call('getSettings');
+      window.__played = [];
+      window.WW.sounds.play = (id, volume) => { window.__played.push([id, volume]); return { stop() {} }; };
+    });
+    await page.click('#add-btn');
+    await page.fill('#f-title', 'Sound task');
+    assert.equal(await page.$('#f-alert-sound'), null, 'only shown when the full-screen alert is on');
+    await page.check('#f-fullscreen');
+    await page.waitForSelector('#f-alert-sound');
+    assert.equal(await page.inputValue('#f-alert-sound'), 'default');
+    const mine = service.getSettings().customSounds[0];
+    const labels = await page.$$eval('#f-alert-sound option', (els) => els.map((o) => o.textContent));
+    assert.deepEqual([labels[0], labels[1], labels[labels.length - 1]], ['As in Settings', 'Gentle bell', 'Off']);
+    assert.ok(labels.includes(mine.name) && labels.includes('Sparkle'), 'built-in (all eight) and your own');
+    await page.selectOption('#f-alert-sound', mine.id);
+    await page.click('#f-alert-sound-preview');
+    assert.equal((await page.evaluate(() => window.__played)).pop()[0], mine.id);
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForSelector('.dialog', { state: 'detached' });
+    const saved = service.data.tasks.find((t) => t.title === 'Sound task');
+    assert.equal(saved.reminders.sound, mine.id);
+    // another task keeps its own choice when this one is edited
+    assert.notEqual(service.data.tasks.find((t) => t.title === 'Alarm task').reminders.sound, mine.id);
+    await page.evaluate(() => window.WW.afterChange());
+    service.deleteTask({ taskId: saved.id, scope: 'all' });
+    service.removeCustomSound(mine.id);
+    await page.evaluate(async () => { window.WW.state.settings = await window.WW.call('getSettings'); await window.WW.afterChange(); });
+  });
+
   console.log('Tasks relative to tasks');
   await step('"Relative to Task": pick a task, minutes, before/after, start/end - the start time updates live', async () => {
     await page.click('#add-btn');
@@ -1018,6 +1050,31 @@ async function setTime(page, hour, minute, ampm) {
     await page.waitForTimeout(150);
     assert.equal(service.getSettings().alertSoundStopMinutes, 2);
     await shot(page, 'settings-sounds');
+  });
+  await step('settings: My Sounds - add (twice), listed beside the built-in sounds, preview, remove with a question', async () => {
+    assert.match(await page.textContent('#my-sounds-empty'), /No sounds of your own yet/);
+    await page.click('#sounds-add');
+    await page.waitForSelector('.my-sounds li');
+    await page.click('#sounds-add');
+    await page.waitForFunction(() => document.querySelectorAll('.my-sounds li').length === 2);
+    const mine = service.getSettings().customSounds;
+    assert.deepEqual(mine.map((x) => x.name), ['Door knock 1', 'Door knock 2']);
+    const options = await page.$$eval('select[aria-label="Full-Screen Alert sound"] option', (els) => els.map((o) => o.textContent));
+    assert.deepEqual(options.slice(0, 4), ['Gentle bell', 'Bright alarm', 'Rising chime', 'Soft pulse'], 'the built-in sounds are still there');
+    assert.ok(options.includes('Door knock 1') && options.includes('Door knock 2') && options[options.length - 1] === 'Off');
+    await page.selectOption('select[aria-label="Full-Screen Alert sound"]', mine[0].id);
+    await page.waitForTimeout(150);
+    assert.equal(service.getSettings().alertSound, mine[0].id);
+    await page.click('button[aria-label="Preview \\"Door knock 2\\""]');
+    assert.equal((await page.evaluate(() => window.__played)).pop()[0], mine[1].id);
+    await shot(page, 'settings-my-sounds');
+    await page.click('button[aria-label="Remove \\"Door knock 1\\""]'); // it is the alert sound now: a question first
+    await page.waitForSelector('.dialog');
+    assert.match(await page.textContent('.dialog'), /Gentle Bell will be used instead/);
+    await page.click('.dialog-footer .btn.primary');
+    await page.waitForFunction(() => document.querySelectorAll('.my-sounds li').length === 1);
+    assert.equal(service.getSettings().alertSound, 'bell');
+    assert.deepEqual(service.getSettings().customSounds.map((x) => x.name), ['Door knock 2']);
   });
   await step('toggles save: sound, zone-start, start with Windows', async () => {
     await page.click('label:has-text("Play a Sound") input');

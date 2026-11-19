@@ -76,7 +76,7 @@
     const select = h('select', {
       class: 'sel-auto', 'aria-label': T('{label} sound', { label }),
       onchange: (e) => { id = e.target.value; save({ [idKey]: id }); },
-    }, options.map(([value, text]) => h('option', { value, text: T(text), selected: id === value })));
+    }, options.map(([value, text, own]) => h('option', { value, text: own ? text : T(text), selected: id === value })));
     const slider = h('input', {
       type: 'range', min: '0', max: '100', step: '5', value: String(volume), class: 'vol', 'aria-label': T('{label} volume', { label }),
       oninput: (e) => { volume = Number(e.target.value); readout.textContent = `${volume}%`; },
@@ -89,23 +89,84 @@
     return h('div', {}, h('div', { class: 'row' }, select, slider, readout, preview), extra ? h('div', { class: 'sound-extra' }, extra) : null);
   }
 
-  function soundsSection() {
+  // The sounds the person added (1.7.0): Add Sounds opens the computer's file dialog; each sound can be previewed and removed.
+  function mySoundsBlock(redraw) {
     const st = WW.state.settings;
+    async function addSounds() {
+      try {
+        const result = await window.api.addCustomSounds();
+        if (!result || result.canceled) return;
+        WW.state.settings = await WW.call('getSettings');
+        if (result.skipped) WW.toast(TP(result.skipped, '{n} file could not be used as a sound', '{n} files could not be used as sounds'), 'error');
+        else WW.toast(TP(result.added, '{n} sound added', '{n} sounds added'));
+      } catch (error) {
+        WW.toast(error.message, 'error');
+      }
+      redraw('sounds-add');
+    }
+    async function removeSound(sound) {
+      try {
+        const usage = await WW.call('getSoundUsage', { id: sound.id });
+        if (usage.tasks > 0 || usage.settings) {
+          const go = await WW.ask({
+            title: T('Remove Sound'),
+            message: usage.tasks > 0
+              ? TP(usage.tasks, '{n} task uses this sound. It will ring with the Full-Screen Alert sound from Settings instead. Remove it?', '{n} tasks use this sound. They will ring with the Full-Screen Alert sound from Settings instead. Remove it?')
+              : T('This is the Full-Screen Alert sound now. The Gentle Bell will be used instead. Remove it?'),
+            choices: [{ label: T('Cancel'), value: false }, { label: T('Remove'), value: true, kind: 'primary' }],
+          });
+          if (!go) return;
+        }
+        await window.api.removeCustomSound(sound.id);
+        WW.state.settings = await WW.call('getSettings');
+      } catch (error) {
+        WW.toast(error.message, 'error');
+      }
+      redraw('sounds-add');
+    }
+    const list = st.customSounds.length === 0
+      ? h('p', { class: 'hint', id: 'my-sounds-empty', text: T('No sounds of your own yet. Add sound files from your computer.') })
+      : h('ul', { class: 'my-sounds', style: { listStyle: 'none', margin: '8px 0 0', padding: '0' } }, st.customSounds.map((x) => h('li', { class: 'row tight', 'data-id': x.id },
+        h('span', { class: 'my-sound-name', text: x.name }),
+        h('button', { class: 'btn small', type: 'button', text: T('Preview'), 'aria-label': T('Preview \"{name}\"', { name: x.name }), onclick: () => WW.sounds.play(x.id, st.alertSoundVolume) }),
+        h('button', { class: 'btn small', type: 'button', text: T('Remove'), 'aria-label': T('Remove \"{name}\"', { name: x.name }), onclick: () => removeSound(x) }))));
+    return h('div', {},
+      h('button', { class: 'btn small', type: 'button', id: 'sounds-add', text: T('Add Sounds'), onclick: addSounds }),
+      list,
+      h('p', { class: 'hint', text: T('MP3, WAV, OGG, M4A or FLAC files up to 10 MB, 20 sounds at most. WaqtWise keeps its own copy, so the sounds stay even if you move the original files. You can choose a sound for each task in its form.') }));
+  }
+
+  function soundsSection() {
+    const host = h('div');
+    const draw = (focusId) => {
+      clear(host);
+      host.appendChild(soundsContent(draw));
+      const target = focusId && document.getElementById(focusId);
+      if (target) target.focus();
+    };
+    draw();
+    return section(T('Sounds'), host);
+  }
+
+  function soundsContent(redraw) {
+    const st = WW.state.settings;
+    const alertOptions = [...WW.sounds.ALERT_OPTIONS.slice(0, -1), ...st.customSounds.map((x) => [x.id, x.name, true]), WW.sounds.ALERT_OPTIONS[WW.sounds.ALERT_OPTIONS.length - 1]];
     // A repeating alert sound can stop by itself after 1 to 10 minutes (the alert stays until a button is pressed).
     const stopSelect = h('select', { id: 'alert-sound-stop', class: 'sel-auto', disabled: !st.alertSoundRepeat, onchange: (e) => save({ alertSoundStopMinutes: Number(e.target.value) }) },
       h('option', { value: '0', text: T('Never (until a button is pressed)'), selected: !st.alertSoundStopMinutes }),
       Array.from({ length: 10 }, (_, i) => h('option', { value: String(i + 1), text: TP(i + 1, '{n} minute', '{n} minutes'), selected: st.alertSoundStopMinutes === i + 1 })));
-    return section(T('Sounds'),
-      h('p', { class: 'dialog-message', text: T('Sounds are made by WaqtWise itself and play only while it is running. They are separate from the Windows notification sound above.') }),
+    return h('div', {},
+      h('p', { class: 'dialog-message', text: T('Sounds are played by WaqtWise itself, from its own sounds or your files, and play only while it is running. They are separate from the Windows notification sound above.') }),
       h('div', { class: 'settings-grid' },
         row(T('Task Done'), soundPicker({ label: T('Task Done'), options: WW.sounds.DONE_OPTIONS, idKey: 'doneSound', volumeKey: 'doneSoundVolume',
           extra: h('p', { class: 'hint', text: T('Plays when you tick a task as done.') }) })),
-        row(T('Full-Screen Alert'), soundPicker({ label: T('Full-Screen Alert'), options: WW.sounds.ALERT_OPTIONS, idKey: 'alertSound', volumeKey: 'alertSoundVolume',
+        row(T('Full-Screen Alert'), soundPicker({ label: T('Full-Screen Alert'), options: alertOptions, idKey: 'alertSound', volumeKey: 'alertSoundVolume',
           extra: h('div', {},
             toggle(T('Repeat the Sound'), st.alertSoundRepeat, (v) => { stopSelect.disabled = !v; save({ alertSoundRepeat: v }); }),
             h('div', { class: 'row tight', style: { marginTop: '8px' } }, h('label', { for: 'alert-sound-stop', text: T('Stop the Sound After') }), stopSelect),
             h('p', { class: 'hint', text: T('When the sound repeats, it can stop by itself; the alert stays on the screen until you press a button.') }),
-            h('p', { class: 'hint', text: T('Plays when a full-screen alert appears (on one screen only, even if several are covered).') })) }))));
+            h('p', { class: 'hint', text: T('Plays when a full-screen alert appears (on one screen only, even if several are covered).') })) })),
+        row(T('My Sounds'), mySoundsBlock(redraw))));
   }
 
   function categoriesSection() {
