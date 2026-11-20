@@ -70,6 +70,25 @@ class MissedAlertMethods {
       });
   }
 
+  // Everything that is still waiting on the bell, oldest first, in the shape the reminder engine uses.
+  // One Windows notification is made from all of it, so the same reminders are never listed twice (1.7.1).
+  missedSummary() {
+    this.getMissed(); // drops the entries that no longer apply
+    return this.missedList()
+      .slice()
+      .sort((a, b) => a.startMs - b.startMs)
+      .map((m) => ({
+        occurrenceId: `${m.taskId}:${m.dateKey}`,
+        taskId: m.taskId,
+        dateKey: m.dateKey,
+        title: m.title,
+        start: new Date(m.startMs),
+        notifyAt: new Date(m.startMs),
+        zoneName: m.zoneName,
+        alreadyStarted: m.alreadyStarted,
+      }));
+  }
+
   dismissMissed({ taskId, dateKey: key }) {
     this.data.missedReminders = this.missedList().filter((m) => !(m.taskId === taskId && m.dateKey === key));
     this.changed();

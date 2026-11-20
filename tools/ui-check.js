@@ -932,6 +932,21 @@ async function setTime(page, hour, minute, ampm) {
     await page.click('.overlay .btn.primary');
   });
 
+  await step('missed reminders: a second list while the window is open is the same single window, with everything in it', async () => {
+    const one = { taskId: 't2', dateKey: '2026-10-04', title: 'Study SQL', startLabel: '8:00 AM', whenLabel: 'Today, 8:00 AM', zoneName: 'Fajr → Dhuhr', alreadyStarted: true };
+    const two = { taskId: 't3', dateKey: '2026-10-03', title: 'Read papers', startLabel: '9:30 AM', whenLabel: 'Yesterday, 9:30 AM', zoneName: 'Fajr → Dhuhr', alreadyStarted: true };
+    await page.evaluate((x) => window.__handlers.missed(x), [one]);
+    await page.waitForSelector('text=You missed 1 reminder');
+    await page.evaluate((x) => window.__handlers.missed(x), [one, two]); // later: the whole list again (new and old)
+    await page.waitForSelector('text=You missed 2 reminders');
+    assert.equal(await page.locator('.overlay').count(), 1, 'one window, not two on top of each other');
+    assert.equal(await page.locator('text=You missed 1 reminder').count(), 0);
+    assert.match(await page.textContent('.overlay'), /Study SQL[\s\S]*Read papers|Read papers[\s\S]*Study SQL/);
+    assert.match(await page.textContent('.overlay'), /Yesterday, 9:30 AM/, 'older ones say which day');
+    await page.click('.overlay .btn.primary');
+    await page.waitForFunction(() => !document.querySelector('.overlay'));
+  });
+
   console.log('Settings');
   await step('every section is there', async () => {
     const titles = await page.$$eval('.settings-section h2', (els) => els.map((e) => e.textContent));

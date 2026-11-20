@@ -762,9 +762,14 @@
 
   // ---- Missed reminders --------------------------------------------------------------------------------------------------
 
+  // One window for the whole missed list: when more arrive while it is open (or after a restart) it is redrawn with
+  // everything that is waiting, not opened again on top of itself (1.7.1).
+  let missedDialog = null;
   WW.showMissed = function showMissed(items) {
     if (!items || items.length === 0) return;
-    const dlg = WW.openDialog({ title: TP(items.length, 'You missed 1 reminder', 'You missed {n} reminders') });
+    if (missedDialog) missedDialog.close();
+    const dlg = WW.openDialog({ title: TP(items.length, 'You missed 1 reminder', 'You missed {n} reminders'), onClose: () => { if (missedDialog === dlg) missedDialog = null; } });
+    missedDialog = dlg;
     dlg.body.appendChild(h('p', { class: 'hint', text: T('These reminders came due while the computer was off or asleep:') }));
     items.forEach((i) =>
       dlg.body.appendChild(h('div', {
@@ -777,7 +782,7 @@
         },
       },
         h('div', { class: 'when', text: i.title }),
-        h('div', { class: 'what', text: `${i.alreadyStarted ? T('Started at {at}', { at: i.startLabel }) : T('Starts at {at}', { at: i.startLabel })} · ${i.zoneName}` }))));
+        h('div', { class: 'what', text: `${i.alreadyStarted ? T('Started at {at}', { at: i.whenLabel || i.startLabel }) : T('Starts at {at}', { at: i.whenLabel || i.startLabel })} · ${i.zoneName}` }))));
     dlg.footer.appendChild(h('button', { class: 'btn primary', text: T('OK'), onclick: () => dlg.close() }));
   };
 
@@ -862,7 +867,24 @@
   // The splash covers the window for 3 seconds at every start. Nothing skips it: a click or a key press does nothing.
   const SPLASH_MS = Number.isFinite(window.WW_SPLASH_MS) ? window.WW_SPLASH_MS : 3000; // the checks in tools/ui-check.js shorten it
   function ignoreWhileSplash(event) { event.preventDefault(); event.stopPropagation(); }
-  const splashStarted = Date.now();
+  // The 3 seconds count from the moment the window is visible (not from the start of the page, which is drawn before the window
+  // is shown), so the splash is on screen for 3 seconds. A window that is hidden has a hidden page: the clock starts when it is
+  // shown, and also after a while in any case, so the splash can never wait for ever.
+  let splashClock = null;
+  let splashWaiting = null; // set by hideSplash while the clock has not started
+  const SPLASH_FALLBACK_MS = Number.isFinite(window.WW_SPLASH_FALLBACK_MS) ? window.WW_SPLASH_FALLBACK_MS : 5000;
+  function startSplashClock() {
+    if (splashClock !== null) return;
+    splashClock = Date.now();
+    document.removeEventListener('visibilitychange', onSplashVisible);
+    if (splashWaiting) splashWaiting();
+  }
+  function onSplashVisible() { if (document.visibilityState === 'visible') startSplashClock(); }
+  if (document.visibilityState === 'visible') startSplashClock();
+  else {
+    document.addEventListener('visibilitychange', onSplashVisible);
+    setTimeout(startSplashClock, SPLASH_FALLBACK_MS);
+  }
   // From the very first moment (also while the data is still loading) key presses are swallowed and the page behind
   // the splash cannot be reached with Tab, so nothing behind it can be triggered by accident.
   const splashBehind = document.getElementById('splash')
@@ -885,7 +907,9 @@
       splash.classList.add('hide');
       setTimeout(() => splash.remove(), 500);
     };
-    setTimeout(leave, Math.max(0, SPLASH_MS - (Date.now() - splashStarted)));
+    const schedule = () => setTimeout(leave, Math.max(0, SPLASH_MS - (Date.now() - splashClock)));
+    if (splashClock !== null) schedule();
+    else splashWaiting = schedule;
   }
 
   // ---- Start-up -------------------------------------------------------------------------------------------------------------

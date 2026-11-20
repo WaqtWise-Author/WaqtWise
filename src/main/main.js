@@ -34,6 +34,7 @@ const { MAX_BACKUP_BYTES } = require('../core/limits');
 const { MAX_ALERT_IMAGES } = require('../core/alert-background');
 const { createBackgrounds } = require('./backgrounds');
 const { createSoundFiles } = require('./sound-files');
+const { formatMissedNotification } = require('../core/reminders');
 const { MAX_CUSTOM_SOUNDS } = require('../core/custom-sounds');
 const { createLogger } = require('./logger');
 const { createRecovery } = require('./recovery');
@@ -66,7 +67,7 @@ const pendingEvents = []; // events waiting for the window to be ready
 const MAX_PENDING_EVENTS = 20;
 let showAfterReload = false; // a reload (not a new window) must show the window once the page is ready
 // What is known about the current window's page; it starts again with every window and every reload.
-const winState = { createdAt: 0, loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false };
+const winState = { createdAt: 0, loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false, shown: false };
 let paintTimer = null; // see armPaintWatch
 
 // ---- Log file ---------------------------------------------------------------------------------------------------
@@ -114,6 +115,10 @@ function sendToWindow(channel, payload) {
     }
   } else if (channel !== 'data-changed' && channel !== 'pause-changed' && channel !== 'pomodoro-changed') {
     // While the page is not ready the same event is kept once, and only the newest ones are kept.
+    // The missed list always holds everything that is waiting, so only the newest one is needed (never two lists).
+    if (channel === 'missed') {
+      for (let i = pendingEvents.length - 1; i >= 0; i -= 1) if (pendingEvents[i].channel === 'missed') pendingEvents.splice(i, 1);
+    }
     let key = channel;
     try { key = JSON.stringify([channel, payload]); } catch (error) { /* keep the channel as the key */ }
     if (pendingEvents.some((event) => event.key === key)) return;
@@ -160,10 +165,15 @@ function createWindow({ visible }) {
   rendererReady = false;
   showOnReady = visible;
   showAfterReload = false;
-  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false });
+  Object.assign(winState, { createdAt: Date.now(), loadFinishedAt: 0, loadFailed: false, crashed: false, painted: false, shown: false });
+  // The window is made as big as the screen's work area, because it always opens maximized: the page is laid out once, at its
+  // final size, and the splash does not jump when the window is maximized (1.7.1).
+  const area = screen.getPrimaryDisplay().workArea;
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 860,
+    x: area.x,
+    y: area.y,
+    width: area.width,
+    height: area.height,
     minWidth: 640,
     minHeight: 520,
     show: false, // shown when ready (or kept hidden for a start with Windows)
@@ -177,6 +187,8 @@ function createWindow({ visible }) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // The saved theme and language, so the splash is drawn in them from its first frame (see preload.js, splash-boot.js).
+      additionalArguments: [`--ww-theme=${service ? service.getSettings().theme : 'system'}`, `--ww-lang=${service ? service.getSettings().language : 'en'}`],
     },
   });
   mainWindow.setMenuBarVisibility(false);
@@ -197,11 +209,10 @@ function createWindow({ visible }) {
   mainWindow.once('ready-to-show', () => {
     diag.info('Window ready to show', { show: showOnReady });
     if (win === mainWindow) winState.painted = true;
-    if (win === mainWindow && showOnReady && !mainWindow.isDestroyed()) {
-      mainWindow.maximize(); // always opens full size
-      mainWindow.show();
-      bringToFront();
-    }
+    showWhenLoaded(win);
+    // A page that is slow to finish loading must not keep the window hidden for long: it is shown anyway after a moment.
+    const lateShow = setTimeout(() => showWhenLoaded(win, true), 3000);
+    if (lateShow.unref) lateShow.unref();
   });
 
   // The window only ever shows our own page.
@@ -260,6 +271,7 @@ function watchPage(win) {
     if (!current()) return;
     winState.loadFinishedAt = Date.now();
     winState.loadFailed = false;
+    showWhenLoaded(mainWindow);
   });
   wc.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
     if (!isMainFrame) {
@@ -367,6 +379,17 @@ function armPaintWatch(win) {
   if (paintTimer.unref) paintTimer.unref();
 }
 
+// The first time a new window is shown it has drawn something (ready-to-show) and has finished loading (its logo is in), so the
+// first thing seen is the whole splash, not an empty window that fills in (1.7.1). force: show it even if loading is not finished.
+function showWhenLoaded(win, force) {
+  if (win !== mainWindow || win.isDestroyed() || winState.shown || !showOnReady || !winState.painted) return;
+  if (!winState.loadFinishedAt && !force) return;
+  winState.shown = true;
+  win.maximize(); // always opens full size
+  win.show();
+  bringToFront();
+}
+
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     diag.info('Opening: creating the window');
@@ -394,6 +417,7 @@ function showWindow() {
   }
   if (mainWindow.isMinimized()) mainWindow.restore();
   if (!mainWindow.isMaximized()) mainWindow.maximize(); // opening from the tray brings it back full size
+  winState.shown = true;
   mainWindow.show();
   bringToFront();
 }
@@ -809,10 +833,7 @@ function startAlerts() {
     onAbandoned: (left) => {
       const real = left.filter((i) => i.taskId !== '__sample__' && i.kind !== 'routine' && i.kind !== 'pomodoro'); // a routine time (or a Pomodoro alert) that was not answered is just skipped
       if (real.length === 0) return;
-      service.addMissed(real.map((i) => ({ ...i, start: new Date(i.startMs), alreadyStarted: true })));
-      sendToWindow('missed', real.map((i) => ({
-        taskId: i.taskId, dateKey: i.dateKey, title: i.title, startLabel: i.startLabel, zoneName: t(i.zoneName), alreadyStarted: true,
-      })));
+      announceMissed(real.map((i) => ({ ...i, start: new Date(i.startMs), alreadyStarted: true })), { toast: false });
     },
     log,
   });
@@ -850,6 +871,27 @@ function handleAlertAction(sender, { type, itemId, option }) {
   }
 }
 
+// ---- Missed reminders (the bell) ----------------------------------------------------------------------------------------------
+// There is one list: the one saved on the bell. New missed reminders are added to it, and what the person sees (the window,
+// or one Windows notification) is always that whole list, never only the newest part (1.7.1).
+
+let missedToast = null; // the Windows notification of the missed list, replaced (not stacked) while the app runs
+
+// A window that is open, or is about to be shown, already shows the list: no Windows notification is made then.
+function windowIsOpen() {
+  return Boolean(mainWindow && !mainWindow.isDestroyed() && showOnReady);
+}
+
+function announceMissed(items, { toast = true } = {}) {
+  service.addMissed(items);
+  const all = service.getMissed();
+  if (toast && all.length > 0 && !windowIsOpen()) {
+    if (missedToast) { try { missedToast.close(); } catch (error) { /* it is already gone */ } }
+    missedToast = notify(formatMissedNotification(service.missedSummary(), engineSettings('reminders')));
+  }
+  sendToWindow('missed', all);
+}
+
 // ---- Reminder engine ---------------------------------------------------------------------------------------------------------
 
 function startEngine() {
@@ -859,18 +901,7 @@ function startEngine() {
     getProvider: () => service.provider(),
     getSettings: () => engineSettings('reminders'),
     notify,
-    onMissed: (items, payload) => {
-      notify(payload);
-      service.addMissed(items);
-      sendToWindow('missed', items.map((i) => ({
-        taskId: i.taskId,
-        dateKey: i.dateKey,
-        title: i.title,
-        startLabel: formatTime12(i.start),
-        zoneName: t(i.zoneName),
-        alreadyStarted: i.alreadyStarted,
-      })));
-    },
+    onMissed: (items) => announceMissed(items),
     showAlert: (items) => alertManager.show(service.buildAlertItems(items)),
     updateTask: (task, dateKey) => service.updateTaskFromEngine(task, dateKey),
     initialState: service.getReminderState(),
@@ -1145,6 +1176,7 @@ function registerIpc() {
     if (showAfterReload) {
       showAfterReload = false;
       if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        winState.shown = true;
         mainWindow.maximize();
         mainWindow.show();
         bringToFront();
@@ -1202,7 +1234,6 @@ function start() {
       });
       backgrounds = createBackgrounds({ dir: path.join(app.getPath('userData'), 'backgrounds'), fs, nativeImage, log });
       soundFiles = createSoundFiles({ dir: path.join(app.getPath('userData'), 'sounds'), fs, log });
-      pruneBackgroundImages();
     } catch (error) {
       // The data file exists but cannot be read right now. Starting empty would overwrite it, so stop instead.
       dialog.showErrorBox('WaqtWise', error && error.message ? error.message : String(error));
@@ -1215,6 +1246,16 @@ function start() {
       if (session.defaultSession.setPermissionCheckHandler) session.defaultSession.setPermissionCheckHandler(() => false);
     }
     diag.info('App started', { hidden: process.argv.includes(STARTUP_ARG) });
+    // The window is made first, as soon as the data is open, so the splash is the first thing to appear. The rest of the start
+    // (below) runs while the window's process starts. Nothing in the page can reach the main process before registerIpc() has run:
+    // this function does not give way to messages until it ends.
+    // Started by Windows at login: stay hidden in the tray. The window is not even created then: it is created when it is
+    // first opened (tray, notification, shortcut). At login the disk and the PC are busy with everything else, and a page
+    // that nobody asked for must not compete with them (or fail, as it did when the app's drive was slow to answer).
+    const startedHidden = process.argv.includes(STARTUP_ARG);
+    if (startedHidden) diag.info('Started hidden: the window is created when it is first opened');
+    else createWindow({ visible: true });
+    pruneBackgroundImages();
     registerIpc();
     if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
     applyStartWithWindows(service.getSettings());
@@ -1223,13 +1264,6 @@ function start() {
     startEngine();
     startTray();
     startSystemWatch();
-
-    // Started by Windows at login: stay hidden in the tray. The window is not even created then: it is created when it is
-    // first opened (tray, notification, shortcut). At login the disk and the PC are busy with everything else, and a page
-    // that nobody asked for must not compete with them (or fail, as it did when the app's drive was slow to answer).
-    const startedHidden = process.argv.includes(STARTUP_ARG);
-    if (startedHidden) diag.info('Started hidden: the window is created when it is first opened');
-    else createWindow({ visible: true });
 
     const launchAction = findActionUrlInArgv(process.argv);
     if (launchAction) handleAction(launchAction);
@@ -1270,6 +1304,7 @@ function start() {
 start();
 
 module.exports = {
+  announceMissed, // for the tests
   handleAction, getEngine: () => engine, getRoutineEngine: () => routineEngine, getService: () => service, getRecovery: () => recovery,
   getTaskbarTheme: () => taskbarTheme, // for the tests: the reader of the taskbar's mode
 };

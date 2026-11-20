@@ -5,18 +5,22 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title data-t>WaqtWise</title>
+  <link rel="preload" as="image" href="logo-large.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="alert.css">
+  <script src="../core/i18n.js"></script>
+  <script src="../core/i18n-ar.js"></script>
 </head>
 <body>
   <div id="splash" class="splash" role="img" aria-label="WaqtWise. Make every waqt count, wisely." data-t-label>
-    <img class="splash-logo" src="logo-large.png" alt="">
+    <img class="splash-logo" src="logo-large.png" width="460" height="460" decoding="sync" alt="">
     <div class="splash-title">WaqtWise</div>
     <p class="splash-slogan" data-t>Make every waqt count, wisely.</p>
     <div class="splash-strip" aria-hidden="true">
       <div class="z1"></div><div class="z2"></div><div class="z3"></div><div class="z4"></div><div class="z5"></div>
     </div>
   </div>
+  <script src="splash-boot.js"></script>
 
   <div class="titlebar" aria-hidden="true">
     <img class="titlebar-logo" src="logo.png" alt="">
@@ -49,8 +53,6 @@
   <div id="dialog-root"></div>
   <div id="toast-root" aria-live="polite"></div>
 
-  <script src="../core/i18n.js"></script>
-  <script src="../core/i18n-ar.js"></script>
   <script src="dom.js"></script>
   <script src="sounds.js"></script>
   <script src="alert-view.js"></script>

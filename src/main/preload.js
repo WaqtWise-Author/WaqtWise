@@ -5,9 +5,21 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// The saved theme and language, passed by the main process when it makes the window (webPreferences.additionalArguments),
+// so the splash can be drawn in them from its first frame (1.7.1). Anything unexpected is ignored.
+function bootInfo() {
+  const read = (name, allowed) => {
+    const found = process.argv.find((arg) => typeof arg === 'string' && arg.startsWith(`--ww-${name}=`));
+    const value = found ? found.slice(name.length + 6) : '';
+    return allowed.test(value) ? value : '';
+  };
+  return { theme: read('theme', /^(light|dark|system)$/), language: read('lang', /^[a-z]{2}$/) };
+}
+
 const EVENTS = ['data-changed', 'missed', 'open-task', 'show-daily', 'show-routines', 'pause-changed', 'show-pomodoro', 'pomodoro-changed'];
 
 contextBridge.exposeInMainWorld('api', {
+  boot: bootInfo(),
   call: (method, ...args) => ipcRenderer.invoke('svc', method, args),
   exportData: () => ipcRenderer.invoke('export-data'),
   importData: () => ipcRenderer.invoke('import-data'),

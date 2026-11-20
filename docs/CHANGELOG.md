@@ -3,6 +3,14 @@
 The version number is in `package.json` (`version`). The installer file is named after it: `WaqtWise-Setup-<version>.exe`.
 Before a release: raise the number, add a section here, then build ("Build Windows installer" on GitHub).
 
+## 1.7.1
+
+Fixed
+- **Missed reminders are one list.** Opening the app again, with reminders still not opened or marked as read, no longer makes another list on top of the earlier one. The missed-reminders window shows everything that is waiting (new and old) and is redrawn when more arrive, never opened twice. Older ones say which day (for example "Yesterday, 9:30 AM").
+- **One Windows notification for missed reminders.** It lists everything that is waiting, and replaces the earlier one while the app runs. While the window is open, or about to be shown, no Windows notification is made because the window shows the list. A notification left in the Windows notification area by an earlier run of the app is not removed by the app.
+- **A steadier splash screen.** The logo and slogan are on screen, complete and still, from the first moment the window appears: no fading or sliding in, no empty window first, and no jump when the window is maximized. The saved theme and language are used from the first frame, so the splash no longer changes to them after loading. The 3 seconds count from the moment the window is visible. The window is created as soon as the data is open, before the rest of the start.
+- Saved data: no format change.
+
 ## 1.7.0
 
 New

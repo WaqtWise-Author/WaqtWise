@@ -388,6 +388,8 @@ main { width: 100%; margin: 0; padding: 6px clamp(16px, 3vw, 56px) 64px; }
 .splash-strip > div { border-radius: 99px; background: var(--zf); }
 .splash-strip .z1 { flex: 414 1 0; } .splash-strip .z2 { flex: 206 1 0; } .splash-strip .z3 { flex: 147 1 0; }
 .splash-strip .z4 { flex: 83 1 0; } .splash-strip .z5 { flex: 590 1 0; }
+/* The start-up splash does not fade or slide in: it is complete and still from its first frame (1.7.1). */
+#splash .splash-logo, #splash .splash-title, #splash .splash-slogan, #splash .splash-strip { animation: none; }
 @keyframes splash-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .splash, .splash * { animation: none !important; transition: none !important; }

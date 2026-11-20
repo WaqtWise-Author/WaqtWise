@@ -48,7 +48,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     loginSettings: [],
     powerEvents: {},
     dialogs: { saveTo, openFrom },
-    displays: displays || [{ id: 1, bounds: { x: 0, y: 0, width: 1920, height: 1080 } }],
+    displays: displays || [{ id: 1, bounds: { x: 0, y: 0, width: 1920, height: 1080 }, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }],
   };
 
   fake.app = {
@@ -104,6 +104,8 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     once(event, fn) { this.on(event, fn); }
     // Pretend Windows/Electron raised an event. Returns an event object that records preventDefault().
     emit(event) {
+      // The first draw of a real page comes together with its load finishing; a test can keep the load unfinished (keepLoading).
+      if (event === 'ready-to-show' && !this.keepLoading) this.page('did-finish-load');
       const e = { prevented: false, preventDefault() { this.prevented = true; } };
       (this.handlers[event] || []).forEach((fn) => fn(e));
       return e;
@@ -173,6 +175,7 @@ function makeFakeElectron({ userData, lock = true, saveTo, openFrom, packaged = 
     constructor(options) { this.options = options; this.shown = false; fake.notifications.push(this); }
     on() {}
     show() { this.shown = true; }
+    close() { this.closed = true; }
     static isSupported() { return true; }
   };
   return fake;
@@ -438,6 +441,92 @@ test('Opening from the tray after the window was destroyed creates a new window'
   assert.equal(app.windows.length, 2);
   app.windows[1].emit('ready-to-show');
   assert.equal(app.windows[1].visible, true);
+  app.cleanup();
+});
+
+test('The saved theme and language are passed to a new window', async () => {
+  const app = await launch();
+  await app.svc('saveSettings', { theme: 'dark' });
+  app.win().emit('closed');
+  trayItem(app, 'Open / Show').click();
+  assert.deepEqual(app.windows[1].options.webPreferences.additionalArguments, ['--ww-theme=dark', '--ww-lang=en']);
+  app.cleanup();
+});
+
+// ---- Missed reminders: one list (1.7.1) -----------------------------------------------------------------------
+
+async function missedTasks(app, titles) {
+  const service = app.main.getService();
+  const found = [];
+  for (const title of titles) {
+    await app.svc('saveTask', { mode: 'create', form: form({ title }) });
+    const task = service.data.tasks.find((x) => x.title === title);
+    found.push({ taskId: task.id, dateKey: task.date, title, start: new Date(2030, 0, 10, 9 + found.length), zoneName: 'Fajr → Dhuhr', alreadyStarted: true });
+  }
+  return found;
+}
+const missedSends = (win) => win.sent.filter(([channel]) => channel === 'missed').map(([, payload]) => payload);
+
+test('Missed reminders with the window open: no Windows notification, and the window gets the whole list each time', async () => {
+  const app = await launch();
+  const win = app.win();
+  win.emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const [one, two] = await missedTasks(app, ['One', 'Two']);
+  app.main.announceMissed([one]);
+  app.main.announceMissed([two]);
+  assert.equal(app.notifications.length, 0, 'the open window already shows the list');
+  const sends = missedSends(win);
+  assert.deepEqual(sends.map((list) => list.map((x) => x.title).sort()), [['One'], ['One', 'Two']], 'the second time it is the whole list, not only the new one');
+  assert.equal((await app.svc('getMissed')).length, 2, 'the bell holds one list');
+  app.main.announceMissed([one, two]); // the same reminders again: nothing is added twice
+  assert.equal((await app.svc('getMissed')).length, 2);
+  app.cleanup();
+});
+
+test('Missed reminders with the window in the tray: one notification for everything waiting, and the previous one is replaced', async () => {
+  const app = await launch();
+  const win = app.win();
+  win.emit('ready-to-show');
+  win.emit('close'); // hidden in the tray
+  assert.equal(win.visible, false);
+  const [one, two, three] = await missedTasks(app, ['One', 'Two', 'Three']);
+  app.main.announceMissed([one]);
+  assert.equal(app.notifications.length, 1);
+  assert.ok(app.notifications[0].options.toastXml.includes('One'));
+  app.main.announceMissed([two, three]);
+  assert.equal(app.notifications.length, 2);
+  assert.equal(app.notifications[0].closed, true, 'the earlier notification is taken away, not left under the new one');
+  const xml = app.notifications[1].options.toastXml;
+  assert.ok(['One', 'Two', 'Three'].every((title) => xml.includes(title)), 'the new one lists everything that is waiting');
+  assert.match(xml, /3/);
+  app.cleanup();
+});
+
+test('A closed alert goes to the same list and makes no extra notification', async () => {
+  const app = await launch();
+  const win = app.win();
+  win.emit('ready-to-show');
+  win.emit('close');
+  const [one] = await missedTasks(app, ['One']);
+  app.main.announceMissed([one], { toast: false });
+  assert.equal(app.notifications.length, 0);
+  assert.equal((await app.svc('getMissed')).length, 1);
+  app.cleanup();
+});
+
+test('Missed lists waiting for a page that is not ready are kept once: only the newest (and whole) list is sent', async () => {
+  const app = await launch();
+  const win = app.win(); // the page is not ready yet
+  const [one, two] = await missedTasks(app, ['One', 'Two']);
+  app.main.announceMissed([one]);
+  app.main.announceMissed([two]);
+  assert.equal(missedSends(win).length, 0, 'nothing is sent to a page that is not ready');
+  win.emit('ready-to-show');
+  app.ipcOn['renderer-ready']();
+  const sends = missedSends(win);
+  assert.equal(sends.length, 1, 'one list, not one per event');
+  assert.deepEqual(sends[0].map((x) => x.title).sort(), ['One', 'Two']);
   app.cleanup();
 });
 
@@ -717,8 +806,8 @@ function alertForm(extra = {}) {
 }
 
 const twoScreens = [
-  { id: 1, bounds: { x: 0, y: 0, width: 1920, height: 1080 } },
-  { id: 2, bounds: { x: 1920, y: 0, width: 1280, height: 1024 } },
+  { id: 1, bounds: { x: 0, y: 0, width: 1920, height: 1080 }, workArea: { x: 0, y: 0, width: 1920, height: 1040 } },
+  { id: 2, bounds: { x: 1920, y: 0, width: 1280, height: 1024 }, workArea: { x: 1920, y: 0, width: 1280, height: 984 } },
 ];
 
 test('Full-screen alert: at the start time one borderless window covers each screen, above everything', async () => {
@@ -1019,9 +1108,71 @@ test('The preload script exposes only the expected functions', () => {
   };
   delete require.cache[require.resolve('../src/main/preload.js')];
   require('../src/main/preload.js');
-  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'addCustomSounds', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getCustomSoundData', 'getPauseState', 'importData', 'on', 'openLogsFolder', 'previewAlert', 'ready', 'removeAlertImage', 'removeCustomSound', 'resumePause', 'testNotification']);
+  assert.deepEqual(Object.keys(exposed.api).sort(), ['addAlertImages', 'addCustomSounds', 'boot', 'call', 'exportData', 'getAlertImages', 'getAlertPreviewPicture', 'getCustomSoundData', 'getPauseState', 'importData', 'on', 'openLogsFolder', 'previewAlert', 'ready', 'removeAlertImage', 'removeCustomSound', 'resumePause', 'testNotification']);
   exposed.api.call('getDay', '2030-01-10');
   assert.deepEqual(sent[0], ['svc', 'getDay', ['2030-01-10']]);
+});
+
+test('The page is told the saved theme and language by the window arguments (only valid values)', () => {
+  const load = (argv) => {
+    const exposed = {};
+    stand.electron = { contextBridge: { exposeInMainWorld: (name, api) => { exposed[name] = api; } }, ipcRenderer: { invoke() {}, send() {}, on() {} } };
+    const before = process.argv;
+    process.argv = argv;
+    try {
+      delete require.cache[require.resolve('../src/main/preload.js')];
+      require('../src/main/preload.js');
+    } finally {
+      process.argv = before;
+    }
+    return exposed.api.boot;
+  };
+  assert.deepEqual(load(['x', '--ww-theme=dark', '--ww-lang=ar']), { theme: 'dark', language: 'ar' });
+  assert.deepEqual(load(['x', '--ww-theme=system', '--ww-lang=en']), { theme: 'system', language: 'en' });
+  assert.deepEqual(load(['x', '--ww-theme=<script>', '--ww-lang=arabic']), { theme: '', language: '' }, 'anything else is ignored');
+  assert.deepEqual(load(['x']), { theme: '', language: '' });
+});
+
+test('The window is made at the size of the work area, with the saved theme and language, and is shown only when drawn and loaded', async () => {
+  const app = await launch();
+  const win = app.win();
+  assert.deepEqual([win.options.x, win.options.y, win.options.width, win.options.height], [0, 0, 1920, 1040], 'no jump when it is maximized');
+  assert.deepEqual(win.options.webPreferences.additionalArguments, ['--ww-theme=system', '--ww-lang=en']);
+  win.keepLoading = true; // the page has drawn, but is not finished loading (its logo is not in yet)
+  win.emit('ready-to-show');
+  assert.equal(win.visible, false, 'not shown yet: it would show a half-drawn splash');
+  win.page('did-finish-load');
+  assert.equal(win.visible, true, 'shown as soon as it is loaded');
+  assert.equal(win.shownCount, 1);
+  win.page('did-finish-load'); // a later reload never shows it again by itself
+  assert.equal(win.shownCount, 1);
+  app.cleanup();
+});
+
+test('A page that is slow to finish loading is shown anyway after a moment', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const app = await launch();
+  const win = app.win();
+  win.keepLoading = true;
+  win.emit('ready-to-show');
+  assert.equal(win.visible, false);
+  t.mock.timers.tick(3000);
+  assert.equal(win.visible, true);
+  app.cleanup();
+});
+
+test('The saved theme and language are passed to a new window', async () => {
+  const app = await launch();
+  await app.svc('saveSettings', { theme: 'dark', language: 'ar' });
+  app.win().emit('close');
+  app.win().destroy();
+  app.trayClick && app.trayClick();
+  app.cleanup();
+  const second = await launch();
+  await second.svc('saveSettings', { theme: 'dark', language: 'ar' });
+  second.win().destroy();
+  second.openFromTray && second.openFromTray();
+  second.cleanup();
 });
 
 test('The title bar follows the theme chosen in Settings', async () => {
